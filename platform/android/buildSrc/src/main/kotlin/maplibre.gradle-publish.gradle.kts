@@ -90,11 +90,11 @@ fun configureMavenPublication(
 
 // workaround for https://github.com/gradle/gradle/issues/26091#issuecomment-1836156762
 // https://github.com/gradle-nexus/publish-plugin/issues/208
-tasks {
-    withType<PublishToMavenRepository> {
-        dependsOn(withType<Sign>())
-    }
-}
+//tasks {
+//    withType<PublishToMavenRepository> {
+//        dependsOn(withType<Sign>())
+//    }
+//}
 
 afterEvaluate {
     configureMavenPublication("drawable", "opengl", "", "")
@@ -114,8 +114,11 @@ afterEvaluate {
             }
         }
     }
+    tasks.named("publishReleasePublicationToGitHubPackagesRepository") {
+        dependsOn("bundleDrawableReleaseAar")
+    }
 }
 
-signing {
-    sign(publishing.publications)
-}
+//signing {
+//    sign(publishing.publications)
+//}

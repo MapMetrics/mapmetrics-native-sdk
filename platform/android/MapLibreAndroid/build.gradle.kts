@@ -177,6 +177,30 @@ configurations {
     }
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "org.mapmetrics"
+            artifactId = "mapmetrics"
+            version = "1.0.2"
+            artifact("/Users/macbook/Desktop/maplibre-native/platform/android/MapLibreAndroid/build/outputs/aar/MapLibreAndroid-drawable-release.aar")
+        }
+    }
+
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/MapMetrics/mapmetrics-native-sdk")
+            credentials {
+                // Replace this securely via CI or environment variable
+                username = "mranawaqas"
+                password = "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"
+            }
+        }
+    }
+}
+
 // apply<DownloadVulkanValidationPlugin>()
 
 // intentionally disabled
