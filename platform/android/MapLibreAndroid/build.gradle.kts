@@ -44,7 +44,7 @@ dokka {
             includes.from("Module.md")
 
             sourceLink {
-                remoteUrl("https://github.com/maplibre/maplibre-native/tree/main/platform/android/")
+                remoteUrl("https://github.com/MapMetrics/mapmetrics-native-sdk/tree/main/platform/android/")
                 localDirectory.set(rootDir)
             }
 

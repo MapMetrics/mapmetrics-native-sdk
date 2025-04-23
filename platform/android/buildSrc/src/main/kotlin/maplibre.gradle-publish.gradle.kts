@@ -84,6 +84,7 @@ fun configureMavenPublication(
                 }
             }
         }
+
     }
 }
 
@@ -92,6 +93,13 @@ fun configureMavenPublication(
 // https://github.com/gradle-nexus/publish-plugin/issues/208
 tasks {
     withType<PublishToMavenRepository> {
+        dependsOn(withType<Sign>())
+    }
+}
+
+// Did this to ensure the publish task knows it depends on the sign task.
+tasks {
+    withType<PublishToMavenLocal> {
         dependsOn(withType<Sign>())
     }
 }
