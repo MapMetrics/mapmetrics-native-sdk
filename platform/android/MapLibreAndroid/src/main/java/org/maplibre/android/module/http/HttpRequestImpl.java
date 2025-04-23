@@ -22,12 +22,16 @@ import java.net.NoRouteToHostException;
 import java.net.ProtocolException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import javax.net.ssl.SSLException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
 import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -40,21 +44,65 @@ import static org.maplibre.android.module.http.HttpRequestUtil.toHumanReadableAs
 public class HttpRequestImpl implements HttpRequest {
 
   private static final String userAgentString = toHumanReadableAscii(
-    String.format("%s %s (%s) Android/%s (%s)",
-      HttpIdentifier.getIdentifier(),
-      BuildConfig.MAPLIBRE_VERSION_STRING,
-      BuildConfig.GIT_REVISION_SHORT,
-      Build.VERSION.SDK_INT,
-      Build.SUPPORTED_ABIS[0])
+          String.format("%s %s (%s) Android/%s (%s)",
+                  HttpIdentifier.getIdentifier(),
+                  BuildConfig.MAPLIBRE_VERSION_STRING,
+                  BuildConfig.GIT_REVISION_SHORT,
+                  Build.VERSION.SDK_INT,
+                  Build.SUPPORTED_ABIS[0])
   );
 
+  private static final InMemoryCookieJar cookieJar = new InMemoryCookieJar();
+
   @VisibleForTesting
-  static final OkHttpClient DEFAULT_CLIENT = new OkHttpClient.Builder().dispatcher(getDispatcher()).build();
+  static final OkHttpClient DEFAULT_CLIENT = new OkHttpClient.Builder()
+          .dispatcher(getDispatcher())
+          .cookieJar(cookieJar)
+          .build();
 
   @VisibleForTesting
   static Call.Factory client = DEFAULT_CLIENT;
 
   private Call call;
+
+  // Simple in-memory cookie storage implementation
+  private static class InMemoryCookieJar implements CookieJar {
+    private final List<Cookie> cookies = new ArrayList<>();
+
+    @Override
+    public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+      this.cookies.addAll(cookies);
+    }
+
+    @Override
+    public List<Cookie> loadForRequest(HttpUrl url) {
+      List<Cookie> validCookies = new ArrayList<>();
+      for (Cookie cookie : cookies) {
+        if (cookie.matches(url)) {
+          validCookies.add(cookie);
+        }
+      }
+      return validCookies;
+    }
+
+    public List<Cookie> getAllCookies() {
+      return new ArrayList<>(cookies);
+    }
+
+    public void clearCookies() {
+      cookies.clear();
+    }
+  }
+
+  // Method to get all stored cookies
+  public static List<Cookie> getAllCookies() {
+    return cookieJar.getAllCookies();
+  }
+
+  // Method to clear all stored cookies
+  public static void clearCookies() {
+    cookieJar.clearCookies();
+  }
 
   @Override
   public void executeRequest(HttpResponder httpRequest, long nativePtr, @NonNull String resourceUrl,
@@ -63,6 +111,7 @@ public class HttpRequestImpl implements HttpRequest {
     OkHttpCallback callback = new OkHttpCallback(httpRequest);
     try {
       HttpUrl httpUrl = HttpUrl.parse(resourceUrl);
+      HttpLogger.log(Log.WARN, String.format("[HTTP] parse resourceUrl %s", resourceUrl));
       if (httpUrl == null) {
         HttpLogger.log(Log.ERROR, String.format("[HTTP] Unable to parse resourceUrl %s", resourceUrl));
         return;
@@ -72,9 +121,9 @@ public class HttpRequestImpl implements HttpRequest {
       resourceUrl = HttpRequestUrl.buildResourceUrl(host, resourceUrl, httpUrl.querySize(), offlineUsage);
 
       final Request.Builder builder = new Request.Builder()
-        .url(resourceUrl)
-        .tag(resourceUrl.toLowerCase(MapLibreConstants.MAPLIBRE_LOCALE))
-        .addHeader("User-Agent", userAgentString);
+              .url(resourceUrl)
+              .tag(resourceUrl.toLowerCase(MapLibreConstants.MAPLIBRE_LOCALE))
+              .addHeader("User-Agent", userAgentString);
 
       if (dataRange.length() > 0) {
         builder.addHeader("Range", dataRange);
@@ -99,7 +148,7 @@ public class HttpRequestImpl implements HttpRequest {
     // call can be null if the constructor gets aborted (e.g, under a NoRouteToHostException).
     if (call != null) {
       HttpLogger.log(Log.DEBUG, String.format("[HTTP] This request was cancelled (%s). This is expected for tiles"
-        + " that were being prefetched but are no longer needed for the map to render.", call.request().url()));
+              + " that were being prefetched but are no longer needed for the map to render.", call.request().url()));
       call.cancel();
     }
   }
@@ -157,13 +206,13 @@ public class HttpRequestImpl implements HttpRequest {
       }
 
       httpRequest.onResponse(response.code(),
-        response.header("ETag"),
-        response.header("Last-Modified"),
-        response.header("Cache-Control"),
-        response.header("Expires"),
-        response.header("Retry-After"),
-        response.header("x-rate-limit-reset"),
-        body);
+              response.header("ETag"),
+              response.header("Last-Modified"),
+              response.header("Cache-Control"),
+              response.header("Expires"),
+              response.header("Retry-After"),
+              response.header("x-rate-limit-reset"),
+              body);
     }
 
     private void handleFailure(@Nullable Call call, Exception e) {
@@ -179,7 +228,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     private int getFailureType(Exception e) {
       if ((e instanceof NoRouteToHostException) || (e instanceof UnknownHostException) || (e instanceof SocketException)
-        || (e instanceof ProtocolException) || (e instanceof SSLException)) {
+              || (e instanceof ProtocolException) || (e instanceof SSLException)) {
         return CONNECTION_ERROR;
       } else if ((e instanceof InterruptedIOException)) {
         return TEMPORARY_ERROR;
