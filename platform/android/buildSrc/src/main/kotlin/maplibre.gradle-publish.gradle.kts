@@ -73,7 +73,7 @@ fun configureMavenPublication(
                         developer {
                             id.set(project.extra["mapLibreDeveloperId"].toString())
                             name.set(project.extra["mapLibreDeveloperName"].toString())
-                            email.set("team@maplibre.org")
+                            email.set("Jack@mapmetrics.org")
                         }
                     }
                     scm {

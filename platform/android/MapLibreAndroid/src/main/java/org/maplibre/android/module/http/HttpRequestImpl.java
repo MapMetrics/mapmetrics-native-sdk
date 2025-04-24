@@ -1,6 +1,9 @@
 package org.maplibre.android.module.http;
 
+import android.content.Context;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -250,5 +253,104 @@ public class HttpRequestImpl implements HttpRequest {
       dispatcher.setMaxRequestsPerHost(10);
     }
     return dispatcher;
+  }
+
+  public static class HttpCookieInitializer {
+    private static final String BASE_GATEWAY_URL = "https://gateway.mapmetrics.org/20250110/1/1/3.mvt?token=";
+    
+    public static void initializeSessionCookie(Context context, String token, Runnable onComplete) {
+        // Construct the full URL with the base URL and token
+        String gatewayUrl = BASE_GATEWAY_URL + token;
+        
+        // Use the same OkHttp client
+        OkHttpClient client = (OkHttpClient) HttpRequestImpl.client;
+        
+        Request request = new Request.Builder()
+            .url(gatewayUrl)
+            .header("User-Agent", HttpRequestImpl.userAgentString)
+            .build();
+            
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e("HttpCookieInitializer", "Failed to initialize session cookie", e);
+                // Run the completion handler on the main thread even if there's a failure
+                if (onComplete != null) {
+                    new Handler(Looper.getMainLooper()).post(onComplete);
+                }
+            }
+            
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                // The response should contain cookies which will be automatically
+                // saved to the CookieJar by OkHttp
+                Log.d("HttpCookieInitializer", "Session cookie initialized successfully");
+                
+                // Print the cookies that were received
+                List<Cookie> cookies = HttpRequestImpl.getAllCookies();
+                for (Cookie cookie : cookies) {
+                    Log.d("HttpCookieInitializer", "Cookie: " + cookie.name() + "=" + cookie.value());
+                }
+                
+                // Always close the response body
+                response.close();
+                
+                // Run the completion handler on the main thread
+                if (onComplete != null) {
+                    new Handler(Looper.getMainLooper()).post(onComplete);
+                }
+            }
+        });
+    }
+    
+    // Method that accepts full URL for backward compatibility
+    public static void initializeSessionCookieWithUrl(Context context, String gatewayUrl, Runnable onComplete) {
+        // Use the same OkHttp client
+        OkHttpClient client = (OkHttpClient) HttpRequestImpl.client;
+        
+        Request request = new Request.Builder()
+            .url(gatewayUrl)
+            .header("User-Agent", HttpRequestImpl.userAgentString)
+            .build();
+            
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e("HttpCookieInitializer", "Failed to initialize session cookie", e);
+                // Run the completion handler on the main thread even if there's a failure
+                if (onComplete != null) {
+                    new Handler(Looper.getMainLooper()).post(onComplete);
+                }
+            }
+            
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                // The response should contain cookies which will be automatically
+                // saved to the CookieJar by OkHttp
+                Log.d("HttpCookieInitializer", "Session cookie initialized successfully");
+                
+                // Print the cookies that were received
+                List<Cookie> cookies = HttpRequestImpl.getAllCookies();
+                for (Cookie cookie : cookies) {
+                    Log.d("HttpCookieInitializer", "Cookie: " + cookie.name() + "=" + cookie.value());
+                }
+                
+                // Always close the response body
+                response.close();
+                
+                // Run the completion handler on the main thread
+                if (onComplete != null) {
+                    new Handler(Looper.getMainLooper()).post(onComplete);
+                }
+            }
+        });
+    }
+    
+    // Backward compatibility method with just context and callback, using a default token
+    public static void initializeSessionCookie(Context context, Runnable onComplete) {
+        // Use default token for backward compatibility
+        String defaultToken = "";
+        initializeSessionCookie(context, defaultToken, onComplete);
+    }
   }
 }

@@ -289,4 +289,60 @@ public final class MapLibre {
   private static AssetManager getAssetManager() {
     return getApplicationContext().getResources().getAssets();
   }
+
+  /**
+   * Initialize a session with the MapMetrics gateway.
+   * This should be called early in the app lifecycle to ensure cookies
+   * are set before any map requests are made.
+   * 
+   * @param context Application context
+   * @param gatewayUrl The URL to use for initializing the session cookie
+   * @param callback Optional callback to be notified when initialization is complete
+   */
+  public static void initializeSession(@NonNull Context context, @NonNull String gatewayUrl, @Nullable Runnable callback) {
+    ThreadUtils.checkThread(TAG);
+    validateMapLibre();
+    
+    // Initialize the cookie with the provided URL
+    org.maplibre.android.module.http.HttpRequestImpl.HttpCookieInitializer
+        .initializeSessionCookieWithUrl(context, gatewayUrl, callback);
+  }
+
+  /**
+   * Initialize a session with the MapMetrics gateway using the default URL.
+   * This should be called early in the app lifecycle to ensure cookies
+   * are set before any map requests are made.
+   * 
+   * @param context Application context
+   * @param callback Optional callback to be notified when initialization is complete
+   */
+  public static void initializeSession(@NonNull Context context, @Nullable Runnable callback) {
+    ThreadUtils.checkThread(TAG);
+    validateMapLibre();
+    
+    // Default token to use when none is provided
+    String defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiMjNjZDA1OS1lNTJkLTRhOTItYjNiNC04NDlhNjU4M2I3ZGUiLCJzY29wZSI6WyJtYXBzIiwiYXV0b2NvbXBsZXRlIiwiZ2VvY29kaW5nIl0sImlhdCI6MTc0NDk4ODAzM30.COL4ojur_dpbuX9SnG_iOBLkxQM76GIgWLg90oOt2Mo";
+    
+    // Pass the default token to the cookie initializer
+    org.maplibre.android.module.http.HttpRequestImpl.HttpCookieInitializer
+        .initializeSessionCookie(context, defaultToken, callback);
+  }
+
+  /**
+   * Initialize a session with the MapMetrics gateway using just a token.
+   * This should be called early in the app lifecycle to ensure cookies
+   * are set before any map requests are made.
+   * 
+   * @param context Application context
+   * @param token The token to use for initializing the session cookie
+   * @param callback Optional callback to be notified when initialization is complete
+   */
+  public static void initializeSessionWithToken(@NonNull Context context, @NonNull String token, @Nullable Runnable callback) {
+    ThreadUtils.checkThread(TAG);
+    validateMapLibre();
+    
+    // Initialize the cookie with just the token
+    org.maplibre.android.module.http.HttpRequestImpl.HttpCookieInitializer
+        .initializeSessionCookie(context, token, callback);
+  }
 }
