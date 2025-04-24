@@ -231,7 +231,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     logoView.setTag("logoView");
     logoView.getLayoutParams().width = LayoutParams.WRAP_CONTENT;
     logoView.getLayoutParams().height = LayoutParams.WRAP_CONTENT;
-    logoView.setImageDrawable(BitmapUtils.getDrawableFromRes(getContext(), R.drawable.maplibre_logo_icon));
+    logoView.setImageDrawable(BitmapUtils.getDrawableFromRes(getContext(), R.drawable.maplibre_mapmetrics_map_logo));
     return logoView;
   }
 

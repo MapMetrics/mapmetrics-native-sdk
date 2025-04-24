@@ -98,6 +98,7 @@
     <public name="maplibre_offline_error_region_definition_invalid" type="string" />
 
     <!-- Exposed drawables -->
+    <public name="maplibre_mapmetrics_map_logo" type="drawable"/>
     <public name="maplibre_logo_icon" type="drawable" />
     <public name="maplibre_compass_icon" type="drawable" />
     <public name="maplibre_marker_icon_default" type="drawable" />
