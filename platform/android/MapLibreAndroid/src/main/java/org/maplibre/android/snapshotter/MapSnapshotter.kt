@@ -172,15 +172,15 @@ open class MapSnapshotter(context: Context, options: Options) {
             return this
         }
 
-        /**
-         * @param uri The style URI to use
-         * @return the mutated [Options]
-         */
-        @Deprecated("use {@link  #withStyleBuilder(Style.Builder)} instead")
-        fun withStyle(uri: String?): Options {
-            withStyleBuilder(Style.Builder().fromUri(uri!!))
-            return this
-        }
+//        /**
+//         * @param uri The style URI to use
+//         * @return the mutated [Options]
+//         */
+//        @Deprecated("use {@link  #withStyleBuilder(Style.Builder)} instead")
+//        fun withStyle(uri: String?): Options {
+//            withStyleBuilder(Style.Builder().fromUri(uri!!))
+//            return this
+//        }
 
         /**
          * @param styleJson The style json to use

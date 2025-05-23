@@ -26,7 +26,10 @@ class BootstrapTest : AppCenter() {
     @UiThreadTest
     fun after() {
         val context = InstrumentationRegistry.getInstrumentation().context
-        MapLibre.getInstance(context)
+        MapLibre.getInstance(context, "") { instance ->
+            // Safe to use MapLibre instance here
+            //  Log.d("App", "MapLibre is ready!")
+        }
     }
 
     @Test
@@ -34,7 +37,10 @@ class BootstrapTest : AppCenter() {
     fun defaultBootstrap() {
         val context = InstrumentationRegistry.getInstrumentation().context
 
-        MapLibre.getInstance(context)
+        MapLibre.getInstance(context, "") { instance ->
+            // Safe to use MapLibre instance here
+            //  Log.d("App", "MapLibre is ready!")
+        }
 
         val tileServerOptions = TileServerOptions.get(WellKnownTileServer.MapLibre)
         Assert.assertTrue(
@@ -54,7 +60,10 @@ class BootstrapTest : AppCenter() {
         val context = InstrumentationRegistry.getInstrumentation().context
 
         val key = "abcdef"
-        MapLibre.getInstance(context, key, WellKnownTileServer.MapTiler)
+        MapLibre.getInstance(context, key, "", WellKnownTileServer.MapTiler) { instance ->
+            // Safe to use MapLibre instance here
+            //  Log.d("App", "MapLibre is ready!")
+        }
 
         val tileServerOptions = TileServerOptions.get(WellKnownTileServer.MapTiler)
         Assert.assertTrue(
@@ -76,9 +85,15 @@ class BootstrapTest : AppCenter() {
 
         val key = "pk.abcdef"
 
-        MapLibre.getInstance(context, key, WellKnownTileServer.MapTiler)
-        MapLibre.getInstance(context)
-        MapLibre.getInstance(context, key, WellKnownTileServer.Mapbox)
+        MapLibre.getInstance(context, key, "",WellKnownTileServer.MapTiler) {
+
+        }
+        MapLibre.getInstance(context , "") {
+
+        }
+        MapLibre.getInstance(context, key, "" , WellKnownTileServer.Mapbox) {
+
+        }
 
         val tileServerOptions = TileServerOptions.get(WellKnownTileServer.Mapbox)
         Assert.assertTrue(

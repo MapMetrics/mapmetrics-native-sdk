@@ -40,7 +40,9 @@ class JsonApiActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Init MapLibre
-        MapLibre.getInstance(this)
+        MapLibre.getInstance(this ,"") {
+
+        }
 
         // Init layout view
         setContentView(R.layout.activity_json_api)

@@ -69,6 +69,7 @@ android {
             "MAPLIBRE_VERSION_STRING",
             "\"MapLibre Native/${project.property("VERSION_NAME")}\""
         )
+        buildConfigField("String", "BASE_URL", "\"https://gateway.mapmetrics.org/styles/?fileName=\"")
         consumerProguardFiles("proguard-rules.pro")
     }
 
