@@ -572,7 +572,7 @@ open class MapSnapshotter(context: Context, options: Options) {
      * @return the scaled large logo
      */
     private fun createScaledLogo(snapshot: Bitmap): Logo {
-        val logo = context.resources.getDrawable(R.drawable.maplibre_logo_icon, null)?.toBitmap()!!
+        val logo = context.resources.getDrawable(R.drawable.maplibre_mapmetrics_map_logo, null)?.toBitmap()!!
         val scale = calculateLogoScale(snapshot, logo)
         val matrix = Matrix()
         matrix.postScale(scale, scale)

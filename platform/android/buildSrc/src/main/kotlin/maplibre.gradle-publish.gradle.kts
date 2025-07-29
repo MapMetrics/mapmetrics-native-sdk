@@ -84,6 +84,7 @@ fun configureMavenPublication(
                 }
             }
         }
+
     }
 }
 
@@ -95,6 +96,13 @@ fun configureMavenPublication(
 //        dependsOn(withType<Sign>())
 //    }
 //}
+
+// Did this to ensure the publish task knows it depends on the sign task.
+tasks {
+    withType<PublishToMavenLocal> {
+        dependsOn(withType<Sign>())
+    }
+}
 
 afterEvaluate {
     configureMavenPublication("drawable", "opengl", "", "")
