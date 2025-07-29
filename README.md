@@ -262,6 +262,7 @@ Backers and Supporters:
 
 [![](https://opencollective.com/maplibre/backers.svg?avatarHeight=50&width=600)](https://opencollective.com/maplibre)
 
+
 ## License
 
 **MapLibre Native** is licensed under the [BSD 2-Clause License](./LICENSE.md).
