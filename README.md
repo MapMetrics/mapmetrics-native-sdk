@@ -37,7 +37,7 @@ Add a `MapView` to your layout XML file:
 ```
 
 > [!TIP]
-> There are external projects such as [Ramani Maps](https://github.com/ramani-maps/ramani-maps) and [MapLibre Compose Playground](https://github.com/Rallista/maplibre-compose-playground) available to intergrate MapLibre Native Android with Compose-based projects.
+> There are external projects such as [Ramani Maps](https://github.com/ramani-maps/ramani-maps) and [MapLibre Compose Playground](https://github.com/Rallista/maplibre-compose-playground) available to intergrate MapMetrics Native Android with Compose-based projects.
 
 Next, initialize the map in an activity:
 
@@ -119,9 +119,9 @@ For more information, refer to the [Android API Documentation](https://maplibre.
 
 ## iOS
 
-You can find MapLibre Native iOS on [Cocoapods](https://cocoapods.org/) and on the [Swift Package Index](https://swiftpackageindex.com/maplibre/maplibre-gl-native-distribution). You can also MapLibre Native iOS [as a dependency to Xcode directly](https://maplibre.org/maplibre-native/ios/latest/documentation/maplibre-native-for-ios/gettingstarted/#Add-MapLibre-Native-as-a-dependency).
+You can find MapMetrics Native iOS on [Cocoapods](https://cocoapods.org/) and on the [Swift Package Index](https://swiftpackageindex.com/maplibre/maplibre-gl-native-distribution). You can also MapMetrics Native iOS [as a dependency to Xcode directly](https://maplibre.org/maplibre-native/ios/latest/documentation/maplibre-native-for-ios/gettingstarted/#Add-MapLibre-Native-as-a-dependency).
 
-MapLibre Native iOS uses UIKit. To intergrate it with an UIKit project, you can use
+MapMetrics Native iOS uses UIKit. To intergrate it with an UIKit project, you can use
 
 ```swift
 class SimpleMap: UIViewController, MLNMapViewDelegate {
@@ -143,7 +143,7 @@ class SimpleMap: UIViewController, MLNMapViewDelegate {
 You need to create a wrapper when using SwiftUI.
 
 ```swift
-import MapLibre
+import MapMetrics
 
 struct SimpleMap: UIViewRepresentable {
     func makeUIView(context _: Context) -> MLNMapView {
@@ -168,27 +168,24 @@ There is an [npm package](https://www.npmjs.com/package/@maplibre/maplibre-gl-na
 
 Please check out the [`maplibre/maplibre-native-qt` repository](https://github.com/maplibre/maplibre-native-qt) to learn how to intergrate MapLibre Native with a Qt project.
 
-## Other Platforms
-
-MapLibre Native can also be built on [Linux](platform/linux/README.md), [Windows](platform/windows/README.md) and [macOS](platform/macos/README.md).
 
 ## Contributing
 
 > [!NOTE]
-> This section is only relevant for people who want to contribute to MapLibre Native.
+> This section is only relevant for people who want to contribute to MapMetrics Native.
 
-MapLibre Native has at its core a C++ library. This is where the bulk of development is currently happening.
+MapMetrics Native has at its core a C++ library. This is where the bulk of development is currently happening.
 
 To get started with the code base, you need to clone the the repository including all its submodules.
 
 All contributors use pull requests from a private fork. [Fork the project](https://github.com/maplibre/maplibre-native/fork). Then run:
 
 ```bash
-git clone --recurse-submodules git@github.com:<YOUR NAME>/maplibre-native.git
-git remote add origin https://github.com/maplibre/maplibre-native.git
+git clone --recurse-submodules git@github.com:<YOUR NAME>/mapmetrics-native-sdk.git
+git remote add origin https://github.com/maplibre/mapmetrics-native-sdk.git
 ```
 
-The go-to reference is the [MapLibre Native Developer Documentation](https://maplibre.org/maplibre-native/docs/book/).
+The go-to reference is the [MapMetrics Native Developer Documentation](https://maplibre.org/maplibre-native/docs/book/).
 
 > [!TIP]
 > Check out issues labelled as a [good first issue](https://github.com/maplibre/maplibre-native/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
@@ -203,7 +200,7 @@ The go-to reference is the [MapLibre Native Developer Documentation](https://map
 
 Open `platform/android` with Android Studio.
 
-More information: [MapLibre Android Developer Guide](https://maplibre.org/maplibre-native/docs/book/android/index.html).
+More information: [MapMetrics Android Developer Guide](https://maplibre.org/maplibre-native/docs/book/android/index.html).
 
 ### iOS
 
@@ -216,7 +213,7 @@ xed platform/ios/MapLibre.xcodeproj
 
 To generate and open the Xcode project.
 
-More information: [MapLibre iOS Developer Guide](https://maplibre.org/maplibre-native/docs/book/ios/index.html).
+More information: [MapMetrics iOS Developer Guide](https://maplibre.org/maplibre-native/docs/book/ios/index.html).
 
 ## Other Platforms
 
@@ -225,4 +222,4 @@ See [`/platform`](/platform) and navigate to the platform you are interested in 
 
 ## License
 
-**MapLibre Native** is licensed under the [BSD 2-Clause License](./LICENSE.md).
+**MapMetrics Native** is licensed under the [BSD 2-Clause License](./LICENSE.md).
