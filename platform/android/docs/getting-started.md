@@ -50,30 +50,39 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
     import org.maplibre.android.geometry.LatLng
     import org.maplibre.android.maps.MapView
 
-    class MainActivity : AppCompatActivity() {
+    class SimpleMapActivity : AppCompatActivity() {
 
         // Declare a variable for MapView
         private lateinit var mapView: MapView
 
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-
-            // Init MapLibre
-            MapLibre.getInstance(this)
-
-            // Init layout view
-            val inflater = LayoutInflater.from(this)
-            val rootView = inflater.inflate(R.layout.activity_main, null)
-            setContentView(rootView)
-
-            // Init the MapView
-            mapView = rootView.findViewById(R.id.mapView)
-            mapView.getMapAsync { map ->
-                map.setStyle("https://demotiles.maplibre.org/style.json")
-                map.cameraPosition = CameraPosition.Builder().target(LatLng(0.0,0.0)).zoom(1.0).build()
+        private lateinit var mapView: MapView
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, object: OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // activity uses singleInstance for testing purposes
+                // code below provides a default navigation when using the app
+                NavUtils.navigateHome(this@SimpleMapActivity)
+            }
+        })
+        setContentView(R.layout.activity_map_simple)
+        mapView = findViewById(R.id.mapView)
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync {
+            val key = ApiKeyUtils.getApiKey(applicationContext)
+            if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
+                it.setStyle(
+                    Style.Builder().fromUri("https://gateway.mapmetrics.org/styles/?fileName=facc61a1-d7f6-4ad5-9b80-580949f35509/jim.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYWNjNjFhMS1kN2Y2LTRhZDUtOWI4MC01ODA5NDlmMzU1MDkiLCJzY29wZSI6WyJtYXBzIiwic2VhcmNoIl0sImlhdCI6MTc0NDc5MDQzOX0.kIuOVdSqr6ifYnNkrt6b2I11ySlW96H9Gg_E1UpQ_ck")
+                )
+            } else {
+                val styles = Style.getPredefinedStyles()
+                if (styles.isNotEmpty()) {
+                    val styleUrl = styles[0].url
+                    it.setStyle(Style.Builder().fromUri(styleUrl))
+                }
             }
         }
-
+    }
         override fun onStart() {
             super.onStart()
             mapView.onStart()
