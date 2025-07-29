@@ -119,7 +119,7 @@ For more information, refer to the [Android API Documentation](https://maplibre.
 
 ## iOS
 
-You can find MapMetrics Native iOS on [Cocoapods](https://cocoapods.org/) and on the [Swift Package Index](https://swiftpackageindex.com/maplibre/maplibre-gl-native-distribution). You can also MapMetrics Native iOS [as a dependency to Xcode directly](https://maplibre.org/maplibre-native/ios/latest/documentation/maplibre-native-for-ios/gettingstarted/#Add-MapLibre-Native-as-a-dependency).
+You can find MapMetrics Native iOS on [Cocoapods](https://cocoapods.org/) and on the [Pods](https://cocoapods.org/pods/MapMetrics).
 
 MapMetrics Native iOS uses UIKit. To intergrate it with an UIKit project, you can use
 
@@ -155,19 +155,7 @@ struct SimpleMap: UIViewRepresentable {
 }
 ```
 
-> [!TIP]
-> You can also use [MapLibreSwiftUI](https://github.com/maplibre/swiftui-dsl), a wrapper around MapLibre Native iOS that offers a declarative API like SwiftUI.
-
 The [iOS Documentation](https://maplibre.org/maplibre-native/ios/latest/documentation/maplibre/) contains many examples and the entire API of the library.
-
-## Node.js
-
-There is an [npm package](https://www.npmjs.com/package/@maplibre/maplibre-gl-native) for using MapLibre Native in a Node.js project. The source code of this project [can be found in this repository](https://github.com/maplibre/maplibre-native/tree/main/platform/node).
-
-## Qt
-
-Please check out the [`maplibre/maplibre-native-qt` repository](https://github.com/maplibre/maplibre-native-qt) to learn how to intergrate MapLibre Native with a Qt project.
-
 
 ## Contributing
 
