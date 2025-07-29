@@ -20,7 +20,7 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
     ```gradle
     dependencies {
         ...
-        implementation 'org.maplibre.gl:android-sdk:<version>'
+        implementation 'org.mapmetrics.android-sdk:<version>'
 
     }
     ```

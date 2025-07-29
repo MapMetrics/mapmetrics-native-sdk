@@ -1,4 +1,4 @@
-# MapLibre Android Examples
+# MapMetrics Android Examples
 
 To build the Examples Documentation you need to have Docker installed.
 
@@ -32,7 +32,7 @@ Where `example.kt` is the path to the file.
 
 ## Static Assets
 
-Static assets are ideally uploaded to the [MapLibre Native S3 Bucket](https://maplibre-native.s3.eu-central-1.amazonaws.com/index.html#android-documentation-resources/).
+Static assets are ideally uploaded to the [MapMetrics Native S3 Bucket](https://maplibre-native.s3.eu-central-1.amazonaws.com/index.html#android-documentation-resources/).
 
 Please open an issue with the ARN of your AWS account to get upload privileges.
 

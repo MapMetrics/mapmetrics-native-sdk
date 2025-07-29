@@ -21,7 +21,7 @@ def define_env(env):
         return f"""
 !!! note
 
-    You can find the full source code of this example in [`{filename}`](https://github.com/maplibre/maplibre-native/blob/main/platform/android/{file_path}) of the MapLibreAndroidTestApp.
+    You can find the full source code of this example in [`{filename}`](https://github.com/MapMetrics/mapmetrics-native-sdk/blob/main/platform/android/{file_path}) of the MapLibreAndroidTestApp.
 """
 
     @env.macro
