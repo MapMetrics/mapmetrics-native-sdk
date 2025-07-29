@@ -42,6 +42,7 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
 5. Initialize the `MapView` in your `MainActivity` file by following the example below.  If modifying a newly-created "Empty Views Activity" example, it replaces all the Kotlin code after the "package" line.
 
     ```kotlin
+   
     import androidx.appcompat.app.AppCompatActivity
     import android.os.Bundle
     import android.view.LayoutInflater
