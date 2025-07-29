@@ -2,12 +2,12 @@
 
 ## Documentation
 
-The [MapLibre Native Developer Docs](https://maplibre.org/maplibre-native/docs/book/) is the go-to reference for developing MapLibre Native.
+The [MapMetrics Native Developer Docs](https://maplibre.org/maplibre-native/docs/book/) is the go-to reference for developing MapMetrics Native.
 
 ## Source code checkout
 
 ```bash
-git clone --recurse-submodules https://github.com/maplibre/maplibre-native.git
+git clone --recurse-submodules https://github.com/MapMetrics/mapmetrics-native-sdk.git
 ```
 
 ## Guidelines

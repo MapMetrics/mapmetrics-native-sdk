@@ -5,7 +5,7 @@
   "QtUsage": "Used in the MapLibre Native backend of Qt Location.",
 
   "Description": "MapLibre Native is a community led fork derived from mapbox-gl-native.",
-  "Homepage": "https://github.com/maplibre/maplibre-native",
+  "Homepage": "https://github.com/MapMetrics/mapmetrics-native-sdk",
   "LicenseId": "BSD-2-Clause",
   "License": "BSD 2-Clause License",
   "LicenseFile": "LICENSE.md",
