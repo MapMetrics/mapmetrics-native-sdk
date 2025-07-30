@@ -30,7 +30,7 @@ class SimpleMapActivity : AppCompatActivity() {
             val key = ApiKeyUtils.getApiKey(applicationContext)
             if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
                 it.setStyle(
-                    Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
+                    Style.Builder().fromUri("https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZDUwODgyMi05NTAyLTRhYjUtYmZlMi01ZTZlZDU4MDljMmQiLCJzY29wZSI6WyJtYXBzIl0sImlhdCI6MTc1MzQ0MjMzOH0.TogFJJb58kA7QP2664xA3g5tIEZGcX8mNHVkRBlHLBM")
                 )
             } else {
                 val styles = Style.getPredefinedStyles()

@@ -212,16 +212,17 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   protected ImageView initialiseAttributionView() {
     ImageView attrView = new ImageView(this.getContext());
     addView(attrView);
-    attrView.setTag("attrView");
-    attrView.getLayoutParams().width = LayoutParams.WRAP_CONTENT;
-    attrView.getLayoutParams().height = LayoutParams.WRAP_CONTENT;
-    attrView.setAdjustViewBounds(true);
-    attrView.setClickable(true);
-    attrView.setFocusable(true);
-    attrView.setContentDescription(getResources().getString(R.string.maplibre_attributionsIconContentDescription));
-    attrView.setImageDrawable(BitmapUtils.getDrawableFromRes(getContext(), R.drawable.maplibre_info_bg_selector));
-    // inject widgets with MapLibreMap
-    attrView.setOnClickListener(attributionClickListener = new AttributionClickListener(getContext(), maplibreMap));
+//    attrView.setTag("attrView");
+//    attrView.getLayoutParams().width = LayoutParams.WRAP_CONTENT;
+//    attrView.getLayoutParams().height = LayoutParams.WRAP_CONTENT;
+//    attrView.setAdjustViewBounds(true);
+//    attrView.setClickable(true);
+//    attrView.setFocusable(true);
+//    attrView.setContentDescription(getResources().getString(R.string.maplibre_attributionsIconContentDescription));
+//    attrView.setImageDrawable(BitmapUtils.getDrawableFromRes(getContext(), R.drawable.maplibre_info_bg_selector));
+//    // inject widgets with MapLibreMap
+//    attrView.setOnClickListener(attributionClickListener = new AttributionClickListener(getContext(), maplibreMap));
+//
     return attrView;
   }
 

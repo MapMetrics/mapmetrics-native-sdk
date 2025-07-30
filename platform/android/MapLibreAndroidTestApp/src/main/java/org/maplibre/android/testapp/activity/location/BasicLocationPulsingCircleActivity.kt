@@ -1,6 +1,7 @@
 package org.maplibre.android.testapp.activity.location
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
 import android.view.Menu
@@ -38,7 +39,8 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
         setContentView(R.layout.activity_location_layer_basic_pulsing_circle)
         mapView = findViewById(R.id.mapView)
         if (savedInstanceState != null) {
-            lastLocation = savedInstanceState.getParcelable(SAVED_STATE_LOCATION, Location::class.java)
+            lastLocation =
+                savedInstanceState.getParcelable(SAVED_STATE_LOCATION, Location::class.java)
         }
         mapView.onCreate(savedInstanceState)
         checkPermissions()
@@ -49,11 +51,17 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
     @SuppressLint("MissingPermission")
     override fun onMapReady(maplibreMap: MapLibreMap) {
         this.maplibreMap = maplibreMap
-        maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style ->
+
+        maplibreMap.setStyle(
+            Style.Builder()
+                .fromUri("https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZDUwODgyMi05NTAyLTRhYjUtYmZlMi01ZTZlZDU4MDljMmQiLCJzY29wZSI6WyJtYXBzIl0sImlhdCI6MTc1MzQ0MjMzOH0.TogFJJb58kA7QP2664xA3g5tIEZGcX8mNHVkRBlHLBM")
+        ) { style: Style ->
             locationComponent = maplibreMap.locationComponent
             val locationComponentOptions =
                 LocationComponentOptions.builder(this@BasicLocationPulsingCircleActivity)
                     .pulseEnabled(true)
+                    .pulseColor(Color.RED)             // Set color of pulse
+                    .foregroundTintColor(Color.BLACK)  // Set color of user location
                     .build()
             val locationComponentActivationOptions =
                 buildLocationComponentActivationOptions(style, locationComponentOptions)
@@ -100,14 +108,17 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
                 loadNewStyle()
                 return true
             }
+
             R.id.action_component_disable -> {
                 locationComponent!!.isLocationComponentEnabled = false
                 return true
             }
+
             R.id.action_component_enabled -> {
                 locationComponent!!.isLocationComponentEnabled = true
                 return true
             }
+
             R.id.action_stop_pulsing -> {
                 locationComponent!!.applyStyle(
                     LocationComponentOptions.builder(
@@ -118,6 +129,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
                 )
                 return true
             }
+
             R.id.action_start_pulsing -> {
                 locationComponent!!.applyStyle(
                     LocationComponentOptions.builder(
@@ -128,6 +140,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
                 )
                 return true
             }
+
             else -> return super.onOptionsItemSelected(item)
         }
     }
