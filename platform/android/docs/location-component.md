@@ -77,7 +77,7 @@ val locationComponentOptions =
 Here is the final results with different color configurations. For the complete content of this demo, please refer to the source code of the [Test App].
 
 <figure markdown="span">
-  ![result](https://github.com/maplibre/maplibre-native/assets/19887090/03dfc87b-111b-4dd0-b4a3-d89e30ed6b63)
+  ![result](https://github.com/MapMetrics/mapmetrics-native-sdk/assets/19887090/03dfc87b-111b-4dd0-b4a3-d89e30ed6b63)
   {{ openmaptiles_caption() }}
 </figure>
 
@@ -91,8 +91,8 @@ Here is the final results with different color configurations. For the complete 
 [PermissionManager]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.location.permissions/-permissions-manager/index.html
 [LocationComponentOptions]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.location/-location-component-options/index.html
 [demotiles]: https://demotiles.maplibre.org/style.json
-[predefined styles]: https://github.com/maplibre/maplibre-native/tree/main/src/mbgl/util/tile_server_options.cpp
+[predefined styles]: https://github.com/MapMetrics/mapmetrics-native-sdk/tree/main/src/mbgl/util/tile_server_options.cpp
 [LocationComponentActivationOptions]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.location/-location-component-activation-options/index.html
 [LocationEngine]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.location.engine/-location-engine/index.html
-[Test APP]: https://github.com/maplibre/maplibre-native/tree/main/platform/android/MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt
+[Test APP]: https://github.com/MapMetrics/mapmetrics-native-sdk/tree/main/platform/android/MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt
 [camera modes]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.location.modes/-camera-mode/index.html
