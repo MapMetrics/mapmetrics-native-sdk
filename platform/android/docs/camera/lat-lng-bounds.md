@@ -2,13 +2,18 @@
 
 {{ activity_source_note("LatLngBoundsActivity.kt") }}
 
-This example demonstrates setting the camera to some bounds defined by some features. It sets these bounds when the map is initialized and when the [bottom sheet](https://m2.material.io/components/sheets-bottom) is opened or closed.
+[//]: # (This example demonstrates setting the camera to some bounds defined by some features. It sets these bounds when the map is initialized and when the [bottom sheet]&#40;https://m2.material.io/components/sheets-bottom&#41; is opened or closed.)
 
-<figure markdown="span">
-  <video controls width="250" poster="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/lat_lng_bounds_thumbnail.jpg">
-    <source src="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/lat_lng_bounds.mp4" />
-  </video>
-</figure>
+[//]: # ()
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="250" poster="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/lat_lng_bounds_thumbnail.jpg">)
+
+[//]: # (    <source src="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/lat_lng_bounds.mp4" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 
 Here you can see how the feature collection is loaded and how `MapLibreMap.getCameraForLatLngBounds` is used to set the bounds during map initialization:

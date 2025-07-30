@@ -2,12 +2,17 @@
 
 {{ activity_source_note("AnimatedSymbolLayerActivity.kt") }}
 
-<figure markdown="span">
-  <video controls width="250" poster="{{ s3_url("animated_symbol_layer_thumbnail.jpg") }}" >
-    <source src="{{ s3_url("animated_symbol_layer.mp4") }}" />
-  </video>
-  {{ openmaptiles_caption() }}
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="250" poster="{{ s3_url&#40;"animated_symbol_layer_thumbnail.jpg"&#41; }}" >)
+
+[//]: # (    <source src="{{ s3_url&#40;"animated_symbol_layer.mp4"&#41; }}" />)
+
+[//]: # (  </video>)
+
+[//]: # (  {{ openmaptiles_caption&#40;&#41; }})
+
+[//]: # (</figure>)
 
 
 Notice that there are (red) cars randomly moving around, and a (yellow) taxi that is always heading to the passenger (indicated by the M symbol), which upon arrival hops to a different location again. We will focus on the passanger and the taxi, because the cars randomly moving around follow a similar pattern.

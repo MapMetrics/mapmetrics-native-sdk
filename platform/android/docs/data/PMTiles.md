@@ -10,6 +10,8 @@ https://raw.githubusercontent.com/wipfli/foursquare-os-places-pmtiles/refs/heads
 
 The neat thing about this style is that it only uses PMTiles vector sources. PMTiles can be hosted with a relatively simple file server (or file hosting service) instead of a more complex specialized tile server.
 
-<figure markdown="span">
-  ![Screenshot of PMTiles based style using Protomaps basemap with Foursquare POIs]({{ s3_url("pmtiles-demo.png") }}){ width="300" }
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  ![Screenshot of PMTiles based style using Protomaps basemap with Foursquare POIs]&#40;{{ s3_url&#40;"pmtiles-demo.png"&#41; }}&#41;{ width="300" })
+
+[//]: # (</figure>)

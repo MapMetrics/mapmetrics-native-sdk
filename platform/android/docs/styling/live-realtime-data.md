@@ -4,11 +4,15 @@
 
 In this example you will learn how to add a live GeoJSON source. We have set up a [lambda function](https://m6rgfvqjp34nnwqcdm4cmmy3cm0dtupu.lambda-url.us-east-1.on.aws/) that returns a new GeoJSON point every time it is called.
 
-<figure markdown="span">
-  <video controls width="250" poster="{{ s3_url("live_realtime_data_thumbnail.jpg") }}" >
-    <source src="{{ s3_url("live_realtime_data.mp4") }}" />
-  </video>
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="250" poster="{{ s3_url&#40;"live_realtime_data_thumbnail.jpg"&#41; }}" >)
+
+[//]: # (    <source src="{{ s3_url&#40;"live_realtime_data.mp4"&#41; }}" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 First we will create a `GeoJSONSource`.
 

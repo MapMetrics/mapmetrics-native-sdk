@@ -16,11 +16,15 @@ The examples with 'Source' in the title apply data-driven styling the [parks of 
 --8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/style/DataDrivenStyleActivity.kt:addExponentialZoomFunction"
 ```
 
-<figure markdown="span">
-  <video controls width="250" poster="{{ s3_url("exponential_zoom_function_thumbnail.jpg") }}" >
-    <source src="{{ s3_url("exponential_zoom_function.mp4") }}" />
-  </video>
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="250" poster="{{ s3_url&#40;"exponential_zoom_function_thumbnail.jpg"&#41; }}" >)
+
+[//]: # (    <source src="{{ s3_url&#40;"exponential_zoom_function.mp4"&#41; }}" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 
 ## Interval Zoom Function

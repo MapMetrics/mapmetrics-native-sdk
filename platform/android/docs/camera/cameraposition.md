@@ -2,13 +2,18 @@
 
 {{ activity_source_note("CameraPositionActivity.kt") }}
 
-This example showcases how to listen to camera change events.
+[//]: # (This example showcases how to listen to camera change events.)
 
-<figure markdown="span">
-  <video controls width="250" poster="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/cameraposition_thumbnail.jpg">
-    <source src="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/cameraposition.mp4" />
-  </video>
-</figure>
+[//]: # ()
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="250" poster="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/cameraposition_thumbnail.jpg">)
+
+[//]: # (    <source src="https://dwxvn1oqw6mkc.cloudfront.net/android-documentation-resources/cameraposition.mp4" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 The camera animation is kicked off with this code:
 

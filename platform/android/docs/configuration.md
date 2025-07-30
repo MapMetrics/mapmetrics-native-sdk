@@ -61,11 +61,14 @@ A `MapLibreMapOptions` object must be created and passed to the MapView construc
 
 This can be found in [`MapOptionsRuntimeActivity.kt`](https://github.com/MapMetrics/mapmetrics-native-sdk/blob/main/platform/android/MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/options/MapOptionsRuntimeActivity.kt).
 
-Finally you will see a result similar to this:
+[//]: # (Finally you will see a result similar to this:)
 
-<div style="text-align: center">
-  <img src="https://github.com/user-attachments/assets/dd85f496-3e6f-4788-933e-4ec3d5999935" alt="Screenshot with the MapLibreMapOptions">
-</div>
+[//]: # ()
+[//]: # (<div style="text-align: center">)
+
+[//]: # (  <img src="https://github.com/user-attachments/assets/dd85f496-3e6f-4788-933e-4ec3d5999935" alt="Screenshot with the MapLibreMapOptions">)
+
+[//]: # (</div>)
 
 For the full contents of `MapOptionsRuntimeActivity` and `MapOptionsXmlActivity`, please take a look at the source code of [MapLibreAndroidTestApp](https://github.com/MapMetrics/mapmetrics-native-sdk/tree/main/platform/android/MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/options).
 

@@ -4,11 +4,15 @@
 
 In this example we will add a circle layer for a GeoJSON source. We also show how you can use the [cluster](https://maplibre.org/maplibre-style-spec/sources/#cluster) property of a GeoJSON source.
 
-<figure markdown="span">
-  <video controls width="400" poster="{{ s3_url("circle_layer_cluster_thumbnail.jpg") }}" >
-    <source src="{{ s3_url("circle_layer_cluster.mp4") }}" />
-  </video>
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="400" poster="{{ s3_url&#40;"circle_layer_cluster_thumbnail.jpg"&#41; }}" >)
+
+[//]: # (    <source src="{{ s3_url&#40;"circle_layer_cluster.mp4"&#41; }}" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 Create a `GeoJsonSource` instance, pass a unique identifier for the source and the URL where the GeoJSON is available. Next add the source to the style.
 

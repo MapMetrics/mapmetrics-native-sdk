@@ -2,11 +2,15 @@
 
 {{ activity_source_note("DraggableMarkerActivity.kt") }}
 
-<figure markdown="span">
-  <video controls width="400" poster="{{ s3_url("draggable_marker_thumbnail.jpg") }}" >
-    <source src="{{ s3_url("draggable_marker.mp4") }}" />
-  </video>
-</figure>
+[//]: # (<figure markdown="span">)
+
+[//]: # (  <video controls width="400" poster="{{ s3_url&#40;"draggable_marker_thumbnail.jpg"&#41; }}" >)
+
+[//]: # (    <source src="{{ s3_url&#40;"draggable_marker.mp4"&#41; }}" />)
+
+[//]: # (  </video>)
+
+[//]: # (</figure>)
 
 ## Adding a marker on tap
 

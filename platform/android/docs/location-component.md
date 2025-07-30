@@ -74,12 +74,16 @@ val locationComponentOptions =
        .build()
 ```
 
-Here is the final results with different color configurations. For the complete content of this demo, please refer to the source code of the [Test App].
+[//]: # (Here is the final results with different color configurations. For the complete content of this demo, please refer to the source code of the [Test App].)
 
-<figure markdown="span">
-  ![result](https://github.com/MapMetrics/mapmetrics-native-sdk/assets/19887090/03dfc87b-111b-4dd0-b4a3-d89e30ed6b63)
-  {{ openmaptiles_caption() }}
-</figure>
+[//]: # ()
+[//]: # (<figure markdown="span">)
+
+[//]: # (  ![result]&#40;https://github.com/MapMetrics/mapmetrics-native-sdk/assets/19887090/03dfc87b-111b-4dd0-b4a3-d89e30ed6b63&#41;)
+
+[//]: # (  {{ openmaptiles_caption&#40;&#41; }})
+
+[//]: # (</figure>)
 
 
 [^1]: A variety of [camera modes] determine how the camera will track the user location.

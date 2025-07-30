@@ -6,89 +6,89 @@
 
 ### ✨ Features and improvements
 
-- Change Java Transfrom class from final to normal ([#3332](https://github.com/maplibre/maplibre-native/pull/3332)).
+- Change Java Transfrom class from final to normal ([#3332](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3332)).
 
 ### 🐞 Bug fixes
 
-- Fix rare crash LatLngAnimator ([#3352](https://github.com/maplibre/maplibre-native/pull/3352)).
-- Sync surface destruction with main thread ([#3368](https://github.com/maplibre/maplibre-native/pull/3368)).
-- Prevent exception SymbolLocationLayerRenderer with new style ([#3369](https://github.com/maplibre/maplibre-native/pull/3369)).
+- Fix rare crash LatLngAnimator ([#3352](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3352)).
+- Sync surface destruction with main thread ([#3368](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3368)).
+- Prevent exception SymbolLocationLayerRenderer with new style ([#3369](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3369)).
 
 ## 11.8.5
 
 ### 🐞 Bug fixes
 
-- Add regression test for [#3323](https://github.com/maplibre/maplibre-native/pull/3323), bug in layer dependency tracking ([#3326](https://github.com/maplibre/maplibre-native/pull/3326))
-- Fix `ErrorSurfaceLostKHR` exception ([#3337](https://github.com/maplibre/maplibre-native/pull/3337)).
+- Add regression test for [#3323](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3323), bug in layer dependency tracking ([#3326](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3326))
+- Fix `ErrorSurfaceLostKHR` exception ([#3337](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3337)).
 
 ## 11.8.4
 
 ### 🐞 Bug fixes
 
--  Add workaround for android emulator as crash on Android emulation is still presented ([#3310](https://github.com/maplibre/maplibre-native/pull/3310))
+-  Add workaround for android emulator as crash on Android emulation is still presented ([#3310](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3310))
 
 ## 11.8.3
 
 ### 🐞 Bug fixes
 
-- Revert "Eliminate copies in deferred cleanup" ([#3035](https://github.com/maplibre/maplibre-native/pull/3035)) which was causing a memory growth issue.
+- Revert "Eliminate copies in deferred cleanup" ([#3035](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3035)) which was causing a memory growth issue.
 
 ## 11.8.2
 
 ### ✨ Features and improvements
 
-- Eliminate copies in deferred cleanup ([#3035](https://github.com/maplibre/maplibre-native/pull/3035)).
-- (Custom Layer Support) Reset depth stencil state for render pass ([#3230](https://github.com/maplibre/maplibre-native/pull/3230)).
+- Eliminate copies in deferred cleanup ([#3035](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3035)).
+- (Custom Layer Support) Reset depth stencil state for render pass ([#3230](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3230)).
 
 ### 🐞 Bug fixes
 
-- Fix texture view cleanup ([#3254](https://github.com/maplibre/maplibre-native/pull/3254)). Possible fix for [issue](https://github.com/maplibre/maplibre-native/issues/3241) reported by Lyft.
+- Fix texture view cleanup ([#3254](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3254)). Possible fix for [issue](https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3241) reported by Lyft.
 
 ## 11.8.1
 
 > [!NOTE]
-> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/maplibre/maplibre-native/releases/tag/android-v11.7.0) for details.
+> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/MapMetrics/mapmetrics-native-sdk/releases/tag/android-v11.7.0) for details.
 
 ### ✨ Features and improvements
 
-- Bind global uniform buffers at the end of the custom layer tweaker ([#3186](https://github.com/maplibre/maplibre-native/pull/3186)).
+- Bind global uniform buffers at the end of the custom layer tweaker ([#3186](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3186)).
 
 ### 🐞 Bug fixes
 
-- (Vulkan) Fix TextureMode crash ([#3144](https://github.com/maplibre/maplibre-native/pull/3144)).
-- (Vulkan) Use timestamps for image descriptor updates ([#3152](https://github.com/maplibre/maplibre-native/pull/3152)).
-- Change runtime error to the nullptr returning ([#3184](https://github.com/maplibre/maplibre-native/pull/3184)).
+- (Vulkan) Fix TextureMode crash ([#3144](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3144)).
+- (Vulkan) Use timestamps for image descriptor updates ([#3152](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3152)).
+- Change runtime error to the nullptr returning ([#3184](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3184)).
 
 ## 11.8.0
 
 > [!NOTE]
-> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/maplibre/maplibre-native/releases/tag/android-v11.7.0) for details.
+> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/MapMetrics/mapmetrics-native-sdk/releases/tag/android-v11.7.0) for details.
 
 ### ✨ Features and improvements
 
-- Add PMTiles support ([#2882](https://github.com/maplibre/maplibre-native/pull/2882)).
-- Consolidate UBOs ([#3089](https://github.com/maplibre/maplibre-native/pull/3089)).
+- Add PMTiles support ([#2882](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2882)).
+- Consolidate UBOs ([#3089](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3089)).
 
 ### 🐞 Bug fixes
 
-- (Vulkan) Fix in-flight frame update Vulkan ([#3122](https://github.com/maplibre/maplibre-native/pull/3122)). Fixes jittery labels and some similar issues.
+- (Vulkan) Fix in-flight frame update Vulkan ([#3122](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3122)). Fixes jittery labels and some similar issues.
 
-We have a new feature in the C++ Core to constrain the screen (instead of the center of the camera) to some bounds ([#2475](https://github.com/maplibre/maplibre-native/pull/2475)). This functionality still has to be exposed to Android. If you are interested in implementing this, see [this issue](https://github.com/maplibre/maplibre-native/issues/3128).
+We have a new feature in the C++ Core to constrain the screen (instead of the center of the camera) to some bounds ([#2475](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2475)). This functionality still has to be exposed to Android. If you are interested in implementing this, see [this issue](https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3128).
 
 ## 11.7.1
 
 > [!NOTE]
-> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/maplibre/maplibre-native/releases/tag/android-v11.7.0) for details.
+> We are now releasing OpenGL ES and Vulkan variants of MapLibre Android. See the [11.7.0 release notes](https://github.com/MapMetrics/mapmetrics-native-sdk/releases/tag/android-v11.7.0) for details.
 
 ### ✨ Features and improvements
 
-- Batch up scheduling of deferred deletions ([#3030](https://github.com/maplibre/maplibre-native/pull/3030)).
-- Specify Vulkan version needed in AndroidManifest.xml ([#3095](https://github.com/maplibre/maplibre-native/pull/3095)).
+- Batch up scheduling of deferred deletions ([#3030](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3030)).
+- Specify Vulkan version needed in AndroidManifest.xml ([#3095](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3095)).
 
 ### 🐞 Bug fixes
 
-- Remove `Pass3D` ([#3077](https://github.com/maplibre/maplibre-native/pull/3077)).
-      Fixes issue where filters applied to fill extrusion layers are not rendered unless a manual zoom is applied to the map ([#3039](https://github.com/maplibre/maplibre-native/issues/3039)).
+- Remove `Pass3D` ([#3077](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3077)).
+      Fixes issue where filters applied to fill extrusion layers are not rendered unless a manual zoom is applied to the map ([#3039](https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3039)).
 
 ## 11.7.0
 
@@ -98,95 +98,95 @@ This release marks the official release of MapLibre Android with Vulkan support.
 - `org.maplibre.gl:android-sdk-opengl` (OpenGL ES).
 - `org.maplibre.gl:android-sdk-vulkan` (Vulkan).
 
-Stability has proven to be excellent, but there are a few [known issues with Vulkan](https://github.com/maplibre/maplibre-native/issues?q=is%3Aissue%20state%3Aopen%20label%3AVulkan%20type%3ABug) that will be addressed in a future update.
+Stability has proven to be excellent, but there are a few [known issues with Vulkan](https://github.com/MapMetrics/mapmetrics-native-sdk/issues?q=is%3Aissue%20state%3Aopen%20label%3AVulkan%20type%3ABug) that will be addressed in a future update.
 
-Currently it is not possible to choose a backend at runtime. If you care about supporting devices that only support OpenGL ES and you want to use Vulkan, you will need to produce and ship [multiple APKs](https://developer.android.com/google/play/publishing/multiple-apks). Please see [this issue](https://github.com/maplibre/maplibre-native/issues/3079) if you are interested in choosing a rendering backend during initialization.
+Currently it is not possible to choose a backend at runtime. If you care about supporting devices that only support OpenGL ES and you want to use Vulkan, you will need to produce and ship [multiple APKs](https://developer.android.com/google/play/publishing/multiple-apks). Please see [this issue](https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3079) if you are interested in choosing a rendering backend during initialization.
 
 Thanks to everyone who helped test the pre-releases!
 
 ### ✨ Features and improvements
 
-- Fix the issue that the empty polyline cannot be updated ([#3046](https://github.com/maplibre/maplibre-native/pull/3046)).
-- feat: add `getZoom` and `setZoom` function support for Android Auto ([#3037](https://github.com/maplibre/maplibre-native/pull/3037)).
-- Use MapLibre Android as attribution string across languages ([#3080](https://github.com/maplibre/maplibre-native/pull/3080)).
-- Use CMake 3.24.0+ for Android ([#3065](https://github.com/maplibre/maplibre-native/pull/3065)).
+- Fix the issue that the empty polyline cannot be updated ([#3046](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3046)).
+- feat: add `getZoom` and `setZoom` function support for Android Auto ([#3037](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3037)).
+- Use MapLibre Android as attribution string across languages ([#3080](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3080)).
+- Use CMake 3.24.0+ for Android ([#3065](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3065)).
 
 ### 🐞 Bug fixes
 
-- Fix crash on unsupported attribute type conversion ([#3066](https://github.com/maplibre/maplibre-native/pull/3066)).
+- Fix crash on unsupported attribute type conversion ([#3066](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/3066)).
 
 ## 11.6.1
 
 ### 🐞 Bug fixes
 
-- Fix 16K alignment Android builds ([#2995](https://github.com/maplibre/maplibre-native/issues/2995)).
+- Fix 16K alignment Android builds ([#2995](https://github.com/MapMetrics/mapmetrics-native-sdk/issues/2995)).
 
 ### ✨ Features and improvements
 
-- Allow configuring a `Call.Factory` instead of a `OkHttpClient` ([https://github.com/maplibre/maplibre-native/pull/2987](#2987)). Since an `OkHttpClient` can be assigned to a `Call.Factory` this should not cause any issues.
+- Allow configuring a `Call.Factory` instead of a `OkHttpClient` ([https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2987](#2987)). Since an `OkHttpClient` can be assigned to a `Call.Factory` this should not cause any issues.
 
 ### 🐞 Bug fixes
 
-- Fix puck rendering behavior Android ([#2957](https://github.com/maplibre/maplibre-native/pull/2957)).
+- Fix puck rendering behavior Android ([#2957](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2957)).
 
 ## 11.6.0
 
 ### ✨ Features and improvements
 
-- Add support for `text-variable-anchor-offset` property ([#2921](https://github.com/maplibre/maplibre-native/pull/2921)).
-- Change `parameters.currentLayer` to `index` instead of `layerIndex` ([#2956](https://github.com/maplibre/maplibre-native/pull/2956)).
+- Add support for `text-variable-anchor-offset` property ([#2921](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2921)).
+- Change `parameters.currentLayer` to `index` instead of `layerIndex` ([#2956](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2956)).
 
 ### 🐞 Bug fixes
 
-- Fix MapSnapshotter icon loading ([#2967](https://github.com/maplibre/maplibre-native/pull/2967)).
+- Fix MapSnapshotter icon loading ([#2967](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2967)).
 
 ## 11.5.2
 
 ### ✨ Features and improvements
 
-- Use Kotlin instead of Groovy for Android build configuration ([#2902](https://github.com/maplibre/maplibre-native/pull/2902)).
-- Performance improvements ([#2892](https://github.com/maplibre/maplibre-native/pull/2892)).
-- Remove workaround for emulator crashes, and apply proper fix: revert index buffers to dirty flag instead of timestamps ([#2927](https://github.com/maplibre/maplibre-native/pull/2927)).
+- Use Kotlin instead of Groovy for Android build configuration ([#2902](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2902)).
+- Performance improvements ([#2892](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2892)).
+- Remove workaround for emulator crashes, and apply proper fix: revert index buffers to dirty flag instead of timestamps ([#2927](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2927)).
 
 ### 🐞 Bug fixes
 
-- Fix line atlas, which was causing an issue with `line-pattern`s ([#2908](https://github.com/maplibre/maplibre-native/pull/2908)).
+- Fix line atlas, which was causing an issue with `line-pattern`s ([#2908](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2908)).
 
 ## 11.5.1
 
 ### ✨ Features and improvements
 
-- Add `PropertyFactory.iconPadding(Float)` overload for better backcompat ([#2880](https://github.com/maplibre/maplibre-native/pull/2880)).
+- Add `PropertyFactory.iconPadding(Float)` overload for better backcompat ([#2880](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2880)).
 
 ### 🐞 Bug fixes
 
-- Android renderThreadManager changed to non static ([#2872](https://github.com/maplibre/maplibre-native/pull/2872)).
-- Make sure `Scheduler::GetCurrent()` cannot return a nullptr ([#2887](https://github.com/maplibre/maplibre-native/pull/2887)). This should fix a crash on startup when the library is not initialized on the main thread.
+- Android renderThreadManager changed to non static ([#2872](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2872)).
+- Make sure `Scheduler::GetCurrent()` cannot return a nullptr ([#2887](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2887)). This should fix a crash on startup when the library is not initialized on the main thread.
 
 ## 11.5.0
 
 ### ✨ Features and improvements
 
-- Expose `RENDERMODE_CONTINUOUSLY` and `RENDERMODE_WHEN_DIRTY` ([#2801](https://github.com/maplibre/maplibre-native/pull/2801)). Toggling this can be helpful for development (e.g. when testing and optimizing performance).
-- Compile for Android with support for 16 KB page sizes ([#2852](https://github.com/maplibre/maplibre-native/pull/2852)).
-- Enable crash mitigation when running OpenGL in the Android emulator ([#2858](https://github.com/maplibre/maplibre-native/pull/2858)). Technically the crashes were caused by an issue with the Android Emulator, but we were able to find a workaround.
-- Add array support for `icon-padding` ([#2845](https://github.com/maplibre/maplibre-native/pull/2845)).
+- Expose `RENDERMODE_CONTINUOUSLY` and `RENDERMODE_WHEN_DIRTY` ([#2801](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2801)). Toggling this can be helpful for development (e.g. when testing and optimizing performance).
+- Compile for Android with support for 16 KB page sizes ([#2852](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2852)).
+- Enable crash mitigation when running OpenGL in the Android emulator ([#2858](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2858)). Technically the crashes were caused by an issue with the Android Emulator, but we were able to find a workaround.
+- Add array support for `icon-padding` ([#2845](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2845)).
   More information can be found in the [MapLibre Style Spec Documentation](https://maplibre.org/maplibre-style-spec/types/#padding). This is the first (code) contribution from [@random3940](https://github.com/random3940)! 🎉
-- Use `thread_local` for thread local scheduler ([#2863](https://github.com/maplibre/maplibre-native/pull/2863)).
+- Use `thread_local` for thread local scheduler ([#2863](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2863)).
 
 ### 🐞 Bug fixes
 
-- Move WeakPtrFactory in `map_renderer.hpp` ([#2861](https://github.com/maplibre/maplibre-native/pull/2861)).
-- Fix updates hillshade geometry ([#2842](https://github.com/maplibre/maplibre-native/pull/2842)).
+- Move WeakPtrFactory in `map_renderer.hpp` ([#2861](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2861)).
+- Fix updates hillshade geometry ([#2842](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2842)).
 
 ## 11.4.0
 
 ### ✨ Features and improvements
 
-- Add `textFitWidth` and `textFitHeight` properties to sprites ([#2780](https://github.com/maplibre/maplibre-native/pull/2780)).
+- Add `textFitWidth` and `textFitHeight` properties to sprites ([#2780](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2780)).
   More information can be found in the [MapLibre Style Spec](https://maplibre.org/maplibre-style-spec/sprite/#text-fit-properties).
-- Move UBO updates from render layers to tweakers ([#2703](https://github.com/maplibre/maplibre-native/pull/2703)).
-- Improve tile lifecycle determinism  ([#2819](https://github.com/maplibre/maplibre-native/pull/2819)).
+- Move UBO updates from render layers to tweakers ([#2703](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2703)).
+- Improve tile lifecycle determinism  ([#2819](https://github.com/MapMetrics/mapmetrics-native-sdk/pull/2819)).
 - Make sure swapBehavior is NoFlush ([#2827](https://github.com/maplibre/maplibre-native/pull/2827)).
 
 ### 🐞 Bug fixes

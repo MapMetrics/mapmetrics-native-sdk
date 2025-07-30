@@ -6,11 +6,14 @@ This guide will help you walk through how to use [MapSnapshotter](https://maplib
 
 {{ activity_source_note("MapSnapshotterLocalStyleActivity.kt") }}
 
-To get started we will show how to use the map snapshotter with a local style.
+[//]: # (To get started we will show how to use the map snapshotter with a local style.)
 
-<figure markdown="span">
-  ![Map Snapshotter with Local Style](https://github.com/user-attachments/assets/897452c6-52e3-4e58-828c-4f7366b3ba90){ width="300" }
-</figure>
+[//]: # ()
+[//]: # (<figure markdown="span">)
+
+[//]: # (  ![Map Snapshotter with Local Style]&#40;https://github.com/user-attachments/assets/897452c6-52e3-4e58-828c-4f7366b3ba90&#41;{ width="300" })
+
+[//]: # (</figure>)
 
 Add the [source code of the Demotiles style](https://github.com/maplibre/demotiles/blob/gh-pages/style.json) as `demotiles.json` to the `res/raw` directory of our app[^1]. First we will read this style:
 

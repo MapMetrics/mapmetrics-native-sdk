@@ -73,7 +73,7 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
             val key = ApiKeyUtils.getApiKey(applicationContext)
             if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
                 it.setStyle(
-                    Style.Builder().fromUri("https://gateway.mapmetrics.org/styles/?fileName=facc61a1-d7f6-4ad5-9b80-580949f35509/jim.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYWNjNjFhMS1kN2Y2LTRhZDUtOWI4MC01ODA5NDlmMzU1MDkiLCJzY29wZSI6WyJtYXBzIiwic2VhcmNoIl0sImlhdCI6MTc0NDc5MDQzOX0.kIuOVdSqr6ifYnNkrt6b2I11ySlW96H9Gg_E1UpQ_ck")
+                    Style.Builder().fromUri(fileName)
                 )
             } else {
                 val styles = Style.getPredefinedStyles()

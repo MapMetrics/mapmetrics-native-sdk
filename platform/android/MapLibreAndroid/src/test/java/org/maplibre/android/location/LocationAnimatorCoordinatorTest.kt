@@ -583,7 +583,7 @@ class LocationAnimatorCoordinatorTest {
         assertFalse(locationAnimatorCoordinator.animatorArray[ANIMATOR_CAMERA_LATLNG].isStarted)
     }
 
-    // regression test for crash https://github.com/maplibre/maplibre-native/issues/3294
+    // regression test for crash https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3294
     @Test
     fun resetAllCameraAnimations_null_target() {
         locationAnimatorCoordinator.feedNewLocation(Location(""), CameraPosition.DEFAULT, true)

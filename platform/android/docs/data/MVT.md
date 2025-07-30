@@ -10,7 +10,11 @@ MapLibre has [a repo](https://github.com/maplibre/demotiles/tree/gh-pages/tiles-
 --8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/sources/VectorTileActivity.kt:addTileSet"
 ```
 
-<figure markdown="span">
-  ![Screenshot of road overlay from vector tile source]({{ s3_url("vectortilesource.png") }}){ width="400" }
-  {{ openmaptiles_caption() }}
-</figure>
+[//]: # ()
+[//]: # (<figure markdown="span">)
+
+[//]: # (  ![Screenshot of road overlay from vector tile source]&#40;{{ s3_url&#40;"vectortilesource.png"&#41; }}&#41;{ width="400" })
+
+[//]: # (  {{ openmaptiles_caption&#40;&#41; }})
+
+[//]: # (</figure>)

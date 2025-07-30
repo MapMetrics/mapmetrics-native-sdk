@@ -276,7 +276,7 @@ License: [The Apache Software License, Version 2.0](http://www.apache.org/licens
 
 ===========================================================================
 
-### [Maplibre Native](https://github.com/maplibre/maplibre-native/)
+### [Maplibre Native](https://github.com/MapMetrics/mapmetrics-native-sdk/)
 
 ```
 BSD 2-Clause License

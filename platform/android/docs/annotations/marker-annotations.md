@@ -63,11 +63,14 @@ Then add markers to the map with GeoJSON:
   --8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/annotation/JsonApiActivity.kt:addMarkers"
   ```
 
-7. Here is the final result. For the full contents of `JsonApiActivity`, please visit source code of our [Test App].
+[//]: # (7. Here is the final result. For the full contents of `JsonApiActivity`, please visit source code of our [Test App].)
 
-<div style="align: center">
-  <img src="https://github.com/maplibre/maplibre-native/assets/19887090/00446249-9b19-4a48-8a46-00d4c5a2f981" alt="Screenshot with the map in demotile style">
-</div>
+[//]: # ()
+[//]: # (<div style="align: center">)
+
+[//]: # (  <img src="https://github.com/maplibre/maplibre-native/assets/19887090/00446249-9b19-4a48-8a46-00d4c5a2f981" alt="Screenshot with the map in demotile style">)
+
+[//]: # (</div>)
 
 [Marker]: https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.annotations/-marker/index.html
 [provided image]: https://github.com/maplibre/maplibre-native/blob/main/platform/android/MapLibreAndroid/src/main/res/drawable-xxxhdpi/maplibre_marker_icon_default.png

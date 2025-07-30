@@ -320,7 +320,7 @@ final class SymbolLocationLayerRenderer implements LocationLayerRenderer {
 
   private void refreshSource() {
     // prevents exception when other style has been set with an update in flight
-    // https://github.com/maplibre/maplibre-native/issues/3348
+    // https://github.com/MapMetrics/mapmetrics-native-sdk/issues/3348
     if (!style.isFullyLoaded()) {
       return;
     }
