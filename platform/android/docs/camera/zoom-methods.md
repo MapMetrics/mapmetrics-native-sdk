@@ -20,29 +20,35 @@ Each method uses `MapLibreMap.animateCamera`, but with a different `CameraUpdate
 #### Zooming In
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/ManualZoomActivity.kt:zoomIn"
+maplibreMap.animateCamera(CameraUpdateFactory.zoomIn())
 ```
 
 #### Zooming Out
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/ManualZoomActivity.kt:zoomOut"
+maplibreMap.animateCamera(CameraUpdateFactory.zoomOut())
 ```
 
 #### Zoom By Some Amount of Zoom Levels
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/ManualZoomActivity.kt:zoomBy"
+maplibreMap.animateCamera(CameraUpdateFactory.zoomBy(2.0))
 ```
 
 #### Zoom to a Zoom Level
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/ManualZoomActivity.kt:zoomTo"
+maplibreMap.animateCamera(CameraUpdateFactory.zoomTo(2.0))
 ```
 
 #### Zoom to a Point
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/ManualZoomActivity.kt:zoomToPoint"
+val view = window.decorView
+maplibreMap.animateCamera(
+    CameraUpdateFactory.zoomBy(
+        1.0,
+        Point(view.measuredWidth / 4, view.measuredHeight / 4)
+    )
+)
 ```

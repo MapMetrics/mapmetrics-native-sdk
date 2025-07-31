@@ -19,11 +19,26 @@
 Here you can see how the feature collection is loaded and how `MapLibreMap.getCameraForLatLngBounds` is used to set the bounds during map initialization:
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/LatLngBoundsActivity.kt:featureCollection"
+val featureCollection: FeatureCollection =
+    fromJson(GeoParseUtil.loadStringFromAssets(this, "points-sf.geojson"))
+bounds = createBounds(featureCollection)
+
+map.getCameraForLatLngBounds(bounds, createPadding(peekHeight))?.let {
+    map.cameraPosition = it
+}
 ```
 
 The `createBounds` function uses the `LatLngBounds` API to include all points within the bounds:
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/LatLngBoundsActivity.kt:createBounds"
+private fun createBounds(featureCollection: FeatureCollection): LatLngBounds {
+    val boundsBuilder = LatLngBounds.Builder()
+    featureCollection.features()?.let {
+        for (feature in it) {
+            val point = feature.geometry() as Point
+            boundsBuilder.include(LatLng(point.latitude(), point.longitude()))
+        }
+    }
+    return boundsBuilder.build()
+}
 ```
