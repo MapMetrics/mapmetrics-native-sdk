@@ -1,6 +1,6 @@
 # Vector Tiles
 
-{{ activity_source_note("VectorTileActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"VectorTileActivity.kt"&#41; }})
 
 You can specify where to load MVTs (which sometimes have `.pbf` extension) by creating a `TileSet` object with template parameters (for example `{z}` which will be replaced with the zoom level).
 

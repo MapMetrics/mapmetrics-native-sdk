@@ -23,13 +23,65 @@ Create a new activity named `BasicLocationPulsingCircleActivity`:
 - At the end of the `onCreate()` method, call `checkPermissions()` to ensure that the application can access the user's location.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt:top"
+/**
+ * This activity shows a basic usage of the LocationComponent's pulsing circle. There's no
+ * customization of the pulsing circle's color, radius, speed, etc.
+ */
+class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallback {
+    private var lastLocation: Location? = null
+    private lateinit var mapView: MapView
+    private var permissionsManager: PermissionsManager? = null
+    private var locationComponent: LocationComponent? = null
+    private lateinit var maplibreMap: MapLibreMap
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_location_layer_basic_pulsing_circle)
+        mapView = findViewById(R.id.mapView)
+        if (savedInstanceState != null) {
+            lastLocation = savedInstanceState.getParcelable(SAVED_STATE_LOCATION, Location::class.java)
+        }
+        mapView.onCreate(savedInstanceState)
+        checkPermissions()
+    }}
 ```
 
 In the `checkPermissions()` method, the [PermissionManager] is used to request location permissions at runtime and handle the callbacks for permission granting or rejection.Additionally, you should pass the results of `Activity.onRequestPermissionResult()` to it. If the permissions are granted, call `mapView.getMapAsync(this)` to register the activity as a listener for onMapReady event.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt:permission"
+private fun checkPermissions() {
+      if (PermissionsManager.areLocationPermissionsGranted(this)) {
+            mapView.getMapAsync(this)
+      } else {
+            permissionsManager = PermissionsManager(object : PermissionsListener {
+                  override fun onExplanationNeeded(permissionsToExplain: List<String>) {
+                        Toast.makeText(
+                              this@BasicLocationPulsingCircleActivity,
+                              "You need to accept location permissions.",
+                              Toast.LENGTH_SHORT
+                        ).show()
+                  }
+
+                  override fun onPermissionResult(granted: Boolean) {
+                        if (granted) {
+                              mapView.getMapAsync(this@BasicLocationPulsingCircleActivity)
+                        } else {
+                              finish()
+                        }
+                  }
+            })
+            permissionsManager!!.requestLocationPermissions(this)
+      }
+}
+
+override fun onRequestPermissionsResult(
+      requestCode: Int,
+      permissions: Array<String>,
+      grantResults: IntArray
+) {
+      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+      permissionsManager!!.onRequestPermissionsResult(requestCode, permissions, grantResults)
+}
 
 ```
 
@@ -50,7 +102,23 @@ In this method:
 - `locationComponent!!.forceLocationUpdate(lastLocation)` updates the the user's last known location.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt:onMapReady"
+@SuppressLint("MissingPermission")
+override fun onMapReady(maplibreMap: MapLibreMap) {
+      this.maplibreMap = maplibreMap
+      maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style ->
+            locationComponent = maplibreMap.locationComponent
+            val locationComponentOptions =
+                  LocationComponentOptions.builder(this@BasicLocationPulsingCircleActivity)
+                        .pulseEnabled(true)
+                        .build()
+            val locationComponentActivationOptions =
+                  buildLocationComponentActivationOptions(style, locationComponentOptions)
+            locationComponent!!.activateLocationComponent(locationComponentActivationOptions)
+            locationComponent!!.isLocationComponentEnabled = true
+            locationComponent!!.cameraMode = CameraMode.TRACKING
+            locationComponent!!.forceLocationUpdate(lastLocation)
+      }
+}
 ```
 
 [LocationComponentActivationOptions] is used to hold the style, [LocationComponentOptions] and other locating behaviors.
@@ -60,7 +128,22 @@ In this method:
 - For more information, please visit the [documentation page][LocationComponentActivationOptions].
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/location/BasicLocationPulsingCircleActivity.kt:LocationComponentActivationOptions"
+private fun buildLocationComponentActivationOptions(
+      style: Style,
+      locationComponentOptions: LocationComponentOptions
+): LocationComponentActivationOptions {
+      return LocationComponentActivationOptions
+            .builder(this, style)
+            .locationComponentOptions(locationComponentOptions)
+            .useDefaultLocationEngine(true)
+            .locationEngineRequest(
+                  LocationEngineRequest.Builder(750)
+                        .setFastestInterval(750)
+                        .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                        .build()
+            )
+            .build()
+}
 ```
 
 For further customization, you can also utilize the `foregroundTintColor()` and `pulseColor()` methods on the [LocationComponentOptions] builder:

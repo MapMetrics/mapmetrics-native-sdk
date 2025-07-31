@@ -1,6 +1,6 @@
 # Max/Min Zoom
 
-{{ activity_source_note("MaxMinZoomActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"MaxMinZoomActivity.kt"&#41; }})
 
 This example shows how to configure a maximum and a minimum zoom level.
 

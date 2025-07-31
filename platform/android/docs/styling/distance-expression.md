@@ -1,6 +1,6 @@
 # Distance Expression
 
-{{ activity_source_note("DistanceExpressionActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"DistanceExpressionActivity.kt"&#41; }})
 
 This example shows how you can modify a style to only show certain features within a certain distance to a point. For this the [distance expression](https://maplibre.org/maplibre-style-spec/expressions/#within) is used.
 
@@ -15,11 +15,45 @@ This example shows how you can modify a style to only show certain features with
 First we add a [fill layer](https://maplibre.org/maplibre-style-spec/layers/#fill) and a GeoJSON source.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/style/DistanceExpressionActivity.kt:FillLayer"
+val center = Point.fromLngLat(lon, lat)
+val circle = TurfTransformation.circle(center, 150.0, TurfConstants.UNIT_METRES)
+maplibreMap.setStyle(
+    Style.Builder()
+        .fromUri(TestStyles.OPENFREEMAP_BRIGHT)
+        .withSources(
+            GeoJsonSource(
+                POINT_ID,
+                Point.fromLngLat(lon, lat)
+            ),
+            GeoJsonSource(CIRCLE_ID, circle)
+        )
+        .withLayerBelow(
+            FillLayer(CIRCLE_ID, CIRCLE_ID)
+                .withProperties(
+                    fillOpacity(0.5f),
+                    fillColor(Color.parseColor("#3bb2d0"))
+                ),
+            "poi"
+        )
+
+)
 ```
 
 Next, we only show features from symbol layers that are less than a certain distance from the point. All symbol layers whose identifier does not start with `poi` are completely hidden.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/style/DistanceExpressionActivity.kt:distanceExpression"
+for (layer in style.layers) {
+    if (layer is SymbolLayer) {
+        if (layer.id.startsWith("poi")) {
+            layer.setFilter(lt(
+                distance(
+                    Point.fromLngLat(lon, lat)
+                ),
+                150
+            ))
+        } else {
+            layer.setProperties(visibility(NONE))
+        }
+    }
+}
 ```

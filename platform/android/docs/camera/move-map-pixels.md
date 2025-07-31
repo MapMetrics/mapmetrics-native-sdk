@@ -1,6 +1,6 @@
 # Scroll by Method
 
-{{ activity_source_note("ScrollByActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"ScrollByActivity.kt"&#41; }})
 
 This example shows how you can move the map by x/y pixels.
 

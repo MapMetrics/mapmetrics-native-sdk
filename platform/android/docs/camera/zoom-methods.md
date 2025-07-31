@@ -1,6 +1,6 @@
 # Zoom Methods
 
-{{ activity_source_note("ManualZoomActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"ManualZoomActivity.kt"&#41; }})
 
 [//]: # (This example shows different methods of zooming in.)
 

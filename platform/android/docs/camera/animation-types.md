@@ -1,6 +1,6 @@
 # Animation Types
 
-{{ activity_source_note("CameraAnimationTypeActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"CameraAnimationTypeActivity.kt"&#41; }})
 
 This example showcases the different animation types.
 

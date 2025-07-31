@@ -1,6 +1,6 @@
 # CameraPosition Capabilities
 
-{{ activity_source_note("CameraPositionActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"CameraPositionActivity.kt"&#41; }})
 
 [//]: # (This example showcases how to listen to camera change events.)
 

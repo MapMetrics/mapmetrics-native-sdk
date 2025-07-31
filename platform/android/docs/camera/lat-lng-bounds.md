@@ -1,6 +1,6 @@
 # LatLngBounds API
 
-{{ activity_source_note("LatLngBoundsActivity.kt") }}
+[//]: # ({{ activity_source_note&#40;"LatLngBoundsActivity.kt"&#41; }})
 
 [//]: # (This example demonstrates setting the camera to some bounds defined by some features. It sets these bounds when the map is initialized and when the [bottom sheet]&#40;https://m2.material.io/components/sheets-bottom&#41; is opened or closed.)
 
