@@ -13,7 +13,14 @@ This example showcases the different animation types.
 The `MapLibreMap.moveCamera` method jumps to the camera position provided.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/CameraAnimationTypeActivity.kt:moveCamera"
+val cameraPosition =
+    CameraPosition.Builder()
+        .target(nextLatLng)
+        .zoom(14.0)
+        .tilt(30.0)
+        .tilt(0.0)
+        .build()
+maplibreMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
 ```
 
 [//]: # (<figure markdown="span">)
@@ -31,7 +38,18 @@ The `MapLibreMap.moveCamera` method jumps to the camera position provided.
 The `MapLibreMap.moveCamera` eases to the camera position provided (with constant ground speed).
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/CameraAnimationTypeActivity.kt:easeCamera"
+val cameraPosition =
+    CameraPosition.Builder()
+        .target(nextLatLng)
+        .zoom(15.0)
+        .bearing(180.0)
+        .tilt(30.0)
+        .build()
+maplibreMap.easeCamera(
+    CameraUpdateFactory.newCameraPosition(cameraPosition),
+    7500,
+    callback
+)
 ```
 
 [//]: # (<figure markdown="span">)
@@ -52,7 +70,13 @@ The `MapLibreMap.animateCamera` uses a powered flight animation move to the came
 [^1]: The implementation is based on  Van Wijk, Jarke J.; Nuij, Wim A. A. “Smooth and efficient zooming and panning.” INFOVIS ’03. pp. 15–22. [https://www.win.tue.nl/~vanwijk/zoompan.pdf#page=5](https://www.win.tue.nl/~vanwijk/zoompan.pdf#page=5)
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/CameraAnimationTypeActivity.kt:animateCamera"
+val cameraPosition =
+    CameraPosition.Builder().target(nextLatLng).bearing(270.0).tilt(20.0).build()
+maplibreMap.animateCamera(
+    CameraUpdateFactory.newCameraPosition(cameraPosition),
+    7500,
+    callback
+)
 ```
 
 [//]: # (<figure markdown="span">)
@@ -70,5 +94,26 @@ The `MapLibreMap.animateCamera` uses a powered flight animation move to the came
 In the previous section a `CancellableCallback` was passed to the last two animation methods. This callback shows a toast message when the animation is cancelled or when it is finished.
 
 ```kotlin
---8<-- "MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/activity/camera/CameraAnimationTypeActivity.kt:callback"
+private val callback: CancelableCallback =
+    object : CancelableCallback {
+        override fun onCancel() {
+            Timber.i("Duration onCancel Callback called.")
+            Toast.makeText(
+                applicationContext,
+                "Ease onCancel Callback called.",
+                Toast.LENGTH_LONG
+            )
+                .show()
+        }
+
+        override fun onFinish() {
+            Timber.i("Duration onFinish Callback called.")
+            Toast.makeText(
+                applicationContext,
+                "Ease onFinish Callback called.",
+                Toast.LENGTH_LONG
+            )
+                .show()
+        }
+    }
 ```
