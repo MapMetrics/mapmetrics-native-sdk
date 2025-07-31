@@ -15,7 +15,7 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
 
    A newly-created app will likely already have `mavenCentral()` in a top-level `settings.gradle` file, and you won't need to add it.
 
-2. Add the library as a dependency into your module Gradle file (usually `<project>/<app-module>/build.gradle`). Replace `<version>` with the [latest MapLibre Android version](https://github.com/maplibre/maplibre-native/releases?q=android-v11&expanded=true) (e.g.: `org.maplibre.gl:android-sdk:11.8.0`):
+2. Add the library as a dependency into your module Gradle file (usually `<project>/<app-module>/build.gradle`). Replace `<version>` with the [latest MapLibre Android version](https://github.com/Mapmetrics/mapmetrics-native-sdk/releases?q=android-v11&expanded=true) (e.g.: `org.mapmetrics.android-sdk:1.0.2`):
 
     ```gradle
     dependencies {
@@ -121,8 +121,4 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
     }
     ```
 
-6. Build and run the app. If you run the app successfully, a map will be displayed as seen in the screenshot below.
-
-<div style="text-align: center;">
-<img src="https://user-images.githubusercontent.com/32692818/228113379-475e86f5-e3fa-4a36-8b4b-1fcba0f1eb3b.png" alt="Screenshot with the map in demotile style" width="50%" height="50%">
-</div>
+6. Build and run the app. If you run the app successfully, a map will be displayed.
