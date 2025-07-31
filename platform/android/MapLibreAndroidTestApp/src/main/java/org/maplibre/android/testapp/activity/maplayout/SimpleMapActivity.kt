@@ -8,6 +8,7 @@ import org.maplibre.android.maps.*
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.NavUtils
+import timber.log.Timber
 
 /**
  * Test activity showcasing a simple MapView without any MapLibreMap interaction.
@@ -26,18 +27,18 @@ class SimpleMapActivity : AppCompatActivity() {
         setContentView(R.layout.activity_map_simple)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync {
-            val key = ApiKeyUtils.getApiKey(applicationContext)
-            if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
-                it.setStyle(
-                    Style.Builder().fromUri("https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZDUwODgyMi05NTAyLTRhYjUtYmZlMi01ZTZlZDU4MDljMmQiLCJzY29wZSI6WyJtYXBzIl0sImlhdCI6MTc1MzQ0MjMzOH0.TogFJJb58kA7QP2664xA3g5tIEZGcX8mNHVkRBlHLBM")
+        mapView.getMapAsync { map ->
+            // Use the globally configured predefined styles
+            // Your custom style is already set as the default in MapLibreApplication
+            val styles = Style.getPredefinedStyles()
+            if (styles != null && styles.isNotEmpty()) {
+                // Use the first style (your custom style is set as first/default)
+                map.setStyle(
+                    Style.Builder().fromUri(styles[0].url)
                 )
             } else {
-                val styles = Style.getPredefinedStyles()
-                if (styles.isNotEmpty()) {
-                    val styleUrl = styles[0].url
-                    it.setStyle(Style.Builder().fromUri(styleUrl))
-                }
+                // Fallback if no styles are available
+                Timber.e("No predefined styles available")
             }
         }
     }

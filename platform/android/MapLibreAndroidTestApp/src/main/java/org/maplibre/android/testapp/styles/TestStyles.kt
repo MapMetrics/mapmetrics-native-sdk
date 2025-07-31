@@ -3,6 +3,9 @@ package org.maplibre.android.testapp.styles
 import org.maplibre.android.maps.Style
 
 object TestStyles {
+
+    const val MAPATLAS = "https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token="
+
     const val DEMOTILES = "https://demotiles.maplibre.org/style.json"
 
     const val VERSATILES = "https://tiles.versatiles.org/assets/styles/colorful.json"

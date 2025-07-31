@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -63,12 +64,18 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_camera_animation_types)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
+        MapLibre.initializeSessionWithToken(applicationContext , "") {
+            mapView.getMapAsync(this)
+        }
     }
-
+//https://tiles.versatiles.org/assets/styles/colorful.json
     override fun onMapReady(map: MapLibreMap) {
         maplibreMap = map
-        maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.getPredefinedStyleWithFallback("Streets")))
+
+        val uri = TestStyles.getPredefinedStyleWithFallback("Streets");
+        maplibreMap.setStyle(Style.Builder().fromUri(uri))
+
+        // maplibreMap.setStyle(Style.Builder().fromUri("https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZDUwODgyMi05NTAyLTRhYjUtYmZlMi01ZTZlZDU4MDljMmQiLCJzY29wZSI6WyJtYXBzIl0sImlhdCI6MTc1MzQ0MjMzOH0.TogFJJb58kA7QP2664xA3g5tIEZGcX8mNHVkRBlHLBM"))
         maplibreMap.uiSettings.isAttributionEnabled = false
         maplibreMap.uiSettings.isLogoEnabled = false
         maplibreMap.addOnCameraIdleListener(cameraIdleListener)
