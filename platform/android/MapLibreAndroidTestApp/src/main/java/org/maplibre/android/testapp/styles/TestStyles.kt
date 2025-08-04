@@ -1,10 +1,13 @@
 package org.maplibre.android.testapp.styles
 
 import org.maplibre.android.maps.Style
+import org.maplibre.android.testapp.utils.MapMetricsConfig
 
 object TestStyles {
 
-    const val MAPATLAS = "https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token="
+    // Your custom MapMetrics style - Uses global configuration
+    val MAPATLAS: String
+        get() = MapMetricsConfig.getStyleUrl()
 
     const val DEMOTILES = "https://demotiles.maplibre.org/style.json"
 
@@ -31,12 +34,31 @@ object TestStyles {
 
     val PROTOMAPS_BLACK = protomaps("black")
 
+    /**
+     * Get your custom MapMetrics style with the provided token
+     * @param token Your authentication token
+     * @return Complete style URL with token
+     */
+    fun getMapMetricsStyle(token: String): String {
+        val baseUrl = MapMetricsConfig.getBaseUrl()
+        val filename = MapMetricsConfig.getStyleFilename()
+        return "$baseUrl?fileName=$filename&token=$token"
+    }
+    
+    /**
+     * Get your custom MapMetrics style with token from global configuration
+     * @return Complete style URL with configured token
+     */
+    fun getMapMetricsStyle(): String {
+        return MapMetricsConfig.getStyleUrl()
+    }
+
     fun getPredefinedStyleWithFallback(name: String): String {
         try {
             val style = Style.getPredefinedStyle(name)
             return style
         } catch (e: Exception) {
-            return VERSATILES
+            return getMapMetricsStyle()
         }
     }
 }

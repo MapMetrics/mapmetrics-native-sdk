@@ -986,6 +986,7 @@ public final class MapLibreMap {
     } else if (!TextUtils.isEmpty(builder.getJson())) {
       nativeMapView.setStyleJson(builder.getJson());
     } else {
+      
       // user didn't provide a `from` component, load a blank style instead
       nativeMapView.setStyleJson(Style.EMPTY_JSON);
     }

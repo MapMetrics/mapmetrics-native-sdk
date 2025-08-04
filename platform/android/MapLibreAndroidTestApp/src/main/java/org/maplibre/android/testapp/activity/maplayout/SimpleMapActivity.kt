@@ -4,11 +4,12 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.*
 import org.maplibre.android.testapp.R
+import org.maplibre.android.testapp.styles.TestStyles
 import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.NavUtils
-import timber.log.Timber
 
 /**
  * Test activity showcasing a simple MapView without any MapLibreMap interaction.
@@ -27,19 +28,32 @@ class SimpleMapActivity : AppCompatActivity() {
         setContentView(R.layout.activity_map_simple)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { map ->
-            // Use the globally configured predefined styles
-            // Your custom style is already set as the default in MapLibreApplication
-            val styles = Style.getPredefinedStyles()
-            if (styles != null && styles.isNotEmpty()) {
-                // Use the first style (your custom style is set as first/default)
-                map.setStyle(
-                    Style.Builder().fromUri(styles[0].url)
-                )
-            } else {
-                // Fallback if no styles are available
-                Timber.e("No predefined styles available")
-            }
+
+        // Using just the token for initialization
+        val token = ""
+        MapLibre.initializeSessionWithToken(applicationContext, token) {
+            // Only get the map after cookie is initialized
+            initializeMap()
+        }
+    }
+
+    private fun initializeMap() {
+        mapView.getMapAsync {
+            it.setStyle(
+                Style.Builder().fromUri(TestStyles.getMapMetricsStyle())
+            )
+//            val key = ApiKeyUtils.getApiKey(applicationContext)
+//            if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
+//                it.setStyle(
+//                    Style.Builder().fromUri("https://gateway.mapmetrics.org/styles/?fileName=82494cc7-8a53-404e-83e9-af099f50a4cb/testMap.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4MjQ5NGNjNy04YTUzLTQwNGUtODNlOS1hZjA5OWY1MGE0Y2IiLCJzY29wZSI6WyJtYXBzIiwic2VhcmNoIl0sImlhdCI6MTc0NDY5NTgxOH0.3oDQzbcD72gIvtd4lkKi96aMFF3-d-i7UnIdc9iADeA")
+//                )
+//            } else {
+//                val styles = Style.getPredefinedStyles()
+//                if (styles.isNotEmpty()) {
+//                    val styleUrl = styles[0].url
+//                    it.setStyle(Style.Builder().fromUri(styleUrl))
+//                }
+//            }
         }
     }
 

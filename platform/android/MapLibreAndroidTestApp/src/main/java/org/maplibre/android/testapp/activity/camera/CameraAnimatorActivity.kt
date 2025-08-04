@@ -16,6 +16,7 @@ import androidx.collection.LongSparseArray
 import androidx.core.view.animation.PathInterpolatorCompat
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -35,13 +36,16 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView = findViewById<View>(R.id.mapView) as MapView
         if (::mapView.isInitialized) {
             mapView.onCreate(savedInstanceState)
-            mapView.getMapAsync(this)
+            MapLibre.initializeSessionWithToken(applicationContext, "") {
+                mapView.getMapAsync(this)
+            }
+
         }
     }
 
     override fun onMapReady(map: MapLibreMap) {
         maplibreMap = map
-        map.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
+        map.setStyle(TestStyles.getMapMetricsStyle())
         initFab()
     }
 
