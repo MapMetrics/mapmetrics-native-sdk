@@ -1,4 +1,4 @@
-package org.maplibre.android.testapp.utils
+package org.maplibre.android
 
 import android.content.Context
 import android.content.SharedPreferences
