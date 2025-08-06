@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(MockitoJUnitRunner::class)
-class MapLibreFusedLocationEngineImplTest {
+class MapMetricsFusedLocationEngineImplTest {
     @Mock
     private val locationManagerMock: LocationManager? = null
     private var engine: LocationEngine? = null

@@ -33,7 +33,7 @@ import org.maplibre.android.testapp.activity.EspressoTest
  * with the application UI-thread.
  *
  */
-class MapLibreMapTest : EspressoTest() {
+class MapMetricsMapTest : EspressoTest() {
     //
     // InfoWindow
     //

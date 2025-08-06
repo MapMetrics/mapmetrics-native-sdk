@@ -7,7 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.log.Logger
 import org.maplibre.android.maps.Style
 import org.maplibre.android.offline.OfflineManager
@@ -77,7 +77,7 @@ class MergeOfflineRegionsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // forcing offline state
-        MapLibre.setConnected(false)
+        MapMetrics.setConnected(false)
 
         binding.mapView.onCreate(savedInstanceState)
         binding.loadRegionBtn.setOnClickListener {
@@ -154,7 +154,7 @@ class MergeOfflineRegionsActivity : AppCompatActivity() {
         binding.mapView.onDestroy()
 
         // restoring connectivity state
-        MapLibre.setConnected(null)
+        MapMetrics.setConnected(null)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

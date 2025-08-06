@@ -46,7 +46,7 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
     import androidx.appcompat.app.AppCompatActivity
     import android.os.Bundle
     import android.view.LayoutInflater
-    import org.maplibre.android.MapLibre
+    import org.maplibre.android.MapMetrics
     import org.maplibre.android.camera.CameraPosition
     import org.maplibre.android.geometry.LatLng
     import org.maplibre.android.maps.MapView

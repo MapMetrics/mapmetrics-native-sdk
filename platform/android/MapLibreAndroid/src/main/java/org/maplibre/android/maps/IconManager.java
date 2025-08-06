@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 
 import androidx.annotation.NonNull;
 
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.annotations.Icon;
 import org.maplibre.android.annotations.IconFactory;
 import org.maplibre.android.annotations.Marker;
@@ -60,7 +60,7 @@ class IconManager {
   }
 
   private Icon loadDefaultIconForMarker(Marker marker) {
-    Icon icon = IconFactory.getInstance(MapLibre.getApplicationContext()).defaultMarker();
+    Icon icon = IconFactory.getInstance(MapMetrics.getApplicationContext()).defaultMarker();
     Bitmap bitmap = icon.getBitmap();
     updateHighestIconSize(bitmap.getWidth(), bitmap.getHeight() / 2);
     marker.setIcon(icon);

@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.ModuleProvider
 import org.maplibre.android.ModuleProviderImpl
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
@@ -24,7 +24,7 @@ class CustomHttpRequestImplActivity : AppCompatActivity() {
         setContentView(R.layout.activity_data_driven_style)
 
         // Set a custom module provider that provides our custom HTTPRequestImpl
-        MapLibre.setModuleProvider(ExampleCustomModuleProviderImpl() as ModuleProvider)
+        MapMetrics.setModuleProvider(ExampleCustomModuleProviderImpl() as ModuleProvider)
 
         // Initialize map with a style
         mapView = findViewById<View>(R.id.mapView) as MapView
@@ -65,7 +65,7 @@ class CustomHttpRequestImplActivity : AppCompatActivity() {
         super.onDestroy()
 
         // Example of how to reset the module provider
-        MapLibre.setModuleProvider(ModuleProviderImpl())
+        MapMetrics.setModuleProvider(ModuleProviderImpl())
         mapView.onDestroy()
     }
 

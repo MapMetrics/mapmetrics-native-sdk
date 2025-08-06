@@ -1,6 +1,6 @@
 package org.maplibre.android.exceptions;
 
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.WellKnownTileServer;
 
 import android.content.Context;
@@ -10,11 +10,11 @@ import androidx.annotation.NonNull;
 /**
  * A MapboxConfigurationException is thrown by MapLibreMap when the SDK hasn't been properly initialised.
  * <p>
- * This occurs either when {@link MapLibre} is not correctly initialised or the provided apiKey
- * through {@link MapLibre#getInstance(Context, String, WellKnownTileServer)} isn't valid.
+ * This occurs either when {@link MapMetrics} is not correctly initialised or the provided apiKey
+ * through {@link MapMetrics#getInstance(Context, String, WellKnownTileServer)} isn't valid.
  * </p>
  *
- * @see MapLibre#getInstance(Context, String,  WellKnownTileServer)
+ * @see MapMetrics#getInstance(Context, String,  WellKnownTileServer)
  */
 public class MapLibreConfigurationException extends RuntimeException {
 

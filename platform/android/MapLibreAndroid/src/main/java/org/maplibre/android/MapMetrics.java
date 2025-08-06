@@ -30,11 +30,11 @@ import org.maplibre.android.utils.ThreadUtils;
 @UiThread
 @SuppressLint("StaticFieldLeak")
 @Keep
-public final class MapLibre {
+public final class MapMetrics {
 
     private static final String TAG = "Mbgl-MapLibre";
     private static ModuleProvider moduleProvider;
-    private static MapLibre INSTANCE;
+    private static MapMetrics INSTANCE;
 
     private Context context;
     @Nullable
@@ -53,13 +53,13 @@ public final class MapLibre {
      */
     @UiThread
     @NonNull
-    public static synchronized MapLibre getInstance(@NonNull Context context) {
+    public static synchronized MapMetrics getInstance(@NonNull Context context) {
         ThreadUtils.init(context);
         ThreadUtils.checkThread(TAG);
         if (INSTANCE == null) {
             Context appContext = context.getApplicationContext();
             FileSource.initializeFileDirsPaths(appContext);
-            INSTANCE = new MapLibre(appContext, null);
+            INSTANCE = new MapMetrics(appContext, null);
             ConnectivityReceiver.instance(appContext);
         }
 
@@ -89,15 +89,15 @@ public final class MapLibre {
      */
     @UiThread
     @NonNull
-    public static synchronized MapLibre getInstance(@NonNull Context context, @Nullable String apiKey,
-                                                    WellKnownTileServer tileServer) {
+    public static synchronized MapMetrics getInstance(@NonNull Context context, @Nullable String apiKey,
+                                                      WellKnownTileServer tileServer) {
         ThreadUtils.init(context);
         ThreadUtils.checkThread(TAG);
         if (INSTANCE == null) {
             Timber.plant();
             Context appContext = context.getApplicationContext();
             FileSource.initializeFileDirsPaths(appContext);
-            INSTANCE = new MapLibre(appContext, apiKey);
+            INSTANCE = new MapMetrics(appContext, apiKey);
             ConnectivityReceiver.instance(appContext);
         } else {
             INSTANCE.apiKey = apiKey;
@@ -111,12 +111,12 @@ public final class MapLibre {
         return INSTANCE;
     }
 
-    MapLibre(@NonNull Context context, @Nullable String apiKey) {
+    MapMetrics(@NonNull Context context, @Nullable String apiKey) {
         this.context = context;
         this.apiKey = apiKey;
     }
 
-    MapLibre(@NonNull Context context, @Nullable String apiKey, @NonNull TileServerOptions options) {
+    MapMetrics(@NonNull Context context, @Nullable String apiKey, @NonNull TileServerOptions options) {
         this.context = context;
         this.apiKey = apiKey;
         this.tileServerOptions = options;
@@ -276,7 +276,7 @@ public final class MapLibre {
 
 
     /**
-     * Internal use. Check if the {@link MapLibre#INSTANCE} is present.
+     * Internal use. Check if the {@link MapMetrics#INSTANCE} is present.
      */
     public static boolean hasInstance() {
         return INSTANCE != null;

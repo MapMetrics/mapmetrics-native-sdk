@@ -5,15 +5,18 @@
 #include <jni/jni.hpp>
 
 namespace mbgl {
-namespace android {
+    namespace android {
 
-class MapLibre {
-public:
-    static constexpr auto Name() { return "org/maplibre/android/MapLibre"; };
-    static jboolean hasInstance(jni::JNIEnv&);
-    static jni::Local<jni::Object<AssetManager>> getAssetManager(jni::JNIEnv&);
-    static void registerNative(jni::JNIEnv&);
-};
+        class MapLibre {
+        public:
+            static constexpr auto Name() { return "org/maplibre/android/MapMetrics"; };
 
-} // namespace android
+            static jboolean hasInstance(jni::JNIEnv &);
+
+            static jni::Local<jni::Object<AssetManager>> getAssetManager(jni::JNIEnv &);
+
+            static void registerNative(jni::JNIEnv &);
+        };
+
+    } // namespace android
 } // namespace mbgl

@@ -14,8 +14,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.MapStrictMode;
-import org.maplibre.android.MapLibre;
 import org.maplibre.android.R;
 import org.maplibre.android.attribution.Attribution;
 import org.maplibre.android.attribution.AttributionParser;
@@ -108,7 +108,7 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
     Attribution[] attributions = attributionSet.toArray(new Attribution[attributionSet.size()]);
     String url = attributions[which].getUrl();
     if (url.contains(MAP_FEEDBACK_URL_OLD) || url.contains(MAP_FEEDBACK_URL)) {
-      url = buildMapFeedbackMapUrl(MapLibre.getApiKey());
+      url = buildMapFeedbackMapUrl(MapMetrics.getApiKey());
     }
     showWebPage(url);
   }

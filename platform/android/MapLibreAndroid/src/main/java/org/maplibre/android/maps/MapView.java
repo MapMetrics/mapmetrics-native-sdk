@@ -19,9 +19,9 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import timber.log.Timber;
 
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.gestures.AndroidGesturesManager;
 import org.maplibre.android.MapStrictMode;
-import org.maplibre.android.MapLibre;
 import org.maplibre.android.R;
 import org.maplibre.android.WellKnownTileServer;
 import org.maplibre.android.annotations.Annotation;
@@ -128,7 +128,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
       return;
     }
 
-    if (!MapLibre.hasInstance()) {
+    if (!MapMetrics.hasInstance()) {
       throw new MapLibreConfigurationException();
     }
 
@@ -185,7 +185,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     requestDisallowInterceptTouchEvent(true);
 
     // notify Map object about current connectivity state
-    nativeMapView.setReachability(MapLibre.isConnected());
+    nativeMapView.setReachability(MapMetrics.isConnected());
 
     // initialise MapLibreMap
     if (savedInstanceState == null) {
@@ -293,11 +293,11 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
    * Fragment#onViewCreated(View, Bundle).
    * </p>
    * You must set a valid access token with
-   * {@link MapLibre#getInstance(Context, String, WellKnownTileServer)}
+   * {@link MapMetrics#getInstance(Context, String, WellKnownTileServer)}
    * before you call this method or an exception will be thrown.
    *
    * @param savedInstanceState Pass in the parent's savedInstanceState.
-   * @see MapLibre#getInstance(Context, String, WellKnownTileServer)
+   * @see MapMetrics#getInstance(Context, String, WellKnownTileServer)
    */
   @UiThread
   public void onCreate(@Nullable Bundle savedInstanceState) {

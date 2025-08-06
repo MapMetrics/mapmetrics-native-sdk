@@ -14,7 +14,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.annotations.IconFactory
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
@@ -40,7 +40,7 @@ class JsonApiActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Init MapLibre
-        MapLibre.getInstance(this)
+        MapMetrics.getInstance(this)
 
         // Init layout view
         setContentView(R.layout.activity_json_api)

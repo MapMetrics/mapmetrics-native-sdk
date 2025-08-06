@@ -8,7 +8,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 
 import org.maplibre.android.AppCenter;
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.testapp.R;
@@ -68,7 +68,7 @@ public abstract class BaseTest extends AppCenter {
   }
 
   protected void validateTestSetup() {
-    if (!MapLibre.isConnected()) {
+    if (!MapMetrics.isConnected()) {
       Timber.e("Not connected to the internet while running test");
     }
     assertNotNull("MapView isn't initialized", mapView);

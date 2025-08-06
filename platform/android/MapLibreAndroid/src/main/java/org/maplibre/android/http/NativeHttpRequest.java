@@ -3,14 +3,14 @@ package org.maplibre.android.http;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 
 import java.util.concurrent.locks.ReentrantLock;
 
 @Keep
 public class NativeHttpRequest implements HttpResponder {
 
-  private final HttpRequest httpRequest = MapLibre.getModuleProvider().createHttpRequest();
+  private final HttpRequest httpRequest = MapMetrics.getModuleProvider().createHttpRequest();
 
   // Reentrancy is not needed, but "Lock" is an abstract class.
   private final ReentrantLock lock = new ReentrantLock();

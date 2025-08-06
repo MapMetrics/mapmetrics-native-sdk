@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -63,7 +63,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_camera_animation_types)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        MapLibre.initializeSessionWithToken(applicationContext , "") {
+        MapMetrics.initializeSessionWithToken(applicationContext , "") {
             mapView.getMapAsync(this)
         }
     }

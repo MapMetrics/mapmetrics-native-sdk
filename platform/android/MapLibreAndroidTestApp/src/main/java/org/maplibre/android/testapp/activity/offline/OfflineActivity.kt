@@ -5,7 +5,7 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -61,7 +61,7 @@ class OfflineActivity : AppCompatActivity(), DownloadRegionDialogListener {
         // You can use MapLibre.setConnected(Boolean) to manually set the connectivity
         // state of your app. This will override any checks performed via the ConnectivityManager.
         // MapLibre.getInstance().setConnected(false);
-        val connected = MapLibre.isConnected()
+        val connected = MapMetrics.isConnected()
         Timber.d("MapLibre is connected: %s", connected)
 
         // Set up map

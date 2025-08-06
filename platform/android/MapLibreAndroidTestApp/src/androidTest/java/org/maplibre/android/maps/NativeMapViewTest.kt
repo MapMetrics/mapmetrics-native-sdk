@@ -7,7 +7,7 @@ import androidx.test.annotation.UiThreadTest
 import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner
 import androidx.test.platform.app.InstrumentationRegistry
 import org.maplibre.android.AppCenter
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.WellKnownTileServer
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
@@ -45,8 +45,8 @@ class NativeMapViewTest : AppCenter() {
     @UiThreadTest
     fun before() {
         val context = InstrumentationRegistry.getInstrumentation().context
-        val apiKey = MapLibre.getApiKey()
-        MapLibre.getInstance(context, apiKey, WellKnownTileServer.MapTiler)
+        val apiKey = MapMetrics.getApiKey()
+        MapMetrics.getInstance(context, apiKey, WellKnownTileServer.MapTiler)
         nativeMapView = NativeMapView(context, 2.0f, false, null, null, DummyRenderer(context))
         nativeMapView.resizeView(WIDTH, HEIGHT)
     }
@@ -55,8 +55,8 @@ class NativeMapViewTest : AppCenter() {
     @UiThreadTest
     fun after() {
         val context = InstrumentationRegistry.getInstrumentation().context
-        val apiKey = MapLibre.getApiKey()
-        MapLibre.getInstance(context)
+        val apiKey = MapMetrics.getApiKey()
+        MapMetrics.getInstance(context)
         nativeMapView.destroy()
     }
 

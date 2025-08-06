@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class MapLibreAnimatorTest {
+class MapMetricsAnimatorTest {
 
     @Test
     fun fps_unlimited() {

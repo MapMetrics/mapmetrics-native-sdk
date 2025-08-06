@@ -8,40 +8,40 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.maplibre.android.AppCenter
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.exceptions.MapLibreConfigurationException
 
 @RunWith(AndroidJUnit4ClassRunner::class)
-class MapLibreTest : AppCenter() {
+class MapMetricsTest : AppCenter() {
     private var realToken: String? = null
     @Before
     fun setup() {
-        realToken = MapLibre.getApiKey()
+        realToken = MapMetrics.getApiKey()
     }
 
     @Test
     @UiThreadTest
     fun testConnected() {
-        Assert.assertTrue(MapLibre.isConnected())
+        Assert.assertTrue(MapMetrics.isConnected())
 
         // test manual connectivity
-        MapLibre.setConnected(true)
-        Assert.assertTrue(MapLibre.isConnected())
-        MapLibre.setConnected(false)
-        Assert.assertFalse(MapLibre.isConnected())
+        MapMetrics.setConnected(true)
+        Assert.assertTrue(MapMetrics.isConnected())
+        MapMetrics.setConnected(false)
+        Assert.assertFalse(MapMetrics.isConnected())
 
         // reset to Android connectivity
-        MapLibre.setConnected(null)
-        Assert.assertTrue(MapLibre.isConnected())
+        MapMetrics.setConnected(null)
+        Assert.assertTrue(MapMetrics.isConnected())
     }
 
     @Test
     @UiThreadTest
     fun setApiKey() {
-        MapLibre.setApiKey(API_KEY)
-        Assert.assertSame(API_KEY, MapLibre.getApiKey())
-        MapLibre.setApiKey(API_KEY_2)
-        Assert.assertSame(API_KEY_2, MapLibre.getApiKey())
+        MapMetrics.setApiKey(API_KEY)
+        Assert.assertSame(API_KEY, MapMetrics.getApiKey())
+        MapMetrics.setApiKey(API_KEY_2)
+        Assert.assertSame(API_KEY_2, MapMetrics.getApiKey())
     }
 
     @Test
@@ -49,13 +49,13 @@ class MapLibreTest : AppCenter() {
     fun setNullApiKey() {
         Assert.assertThrows(
             MapLibreConfigurationException::class.java
-        ) { MapLibre.setApiKey(null) }
+        ) { MapMetrics.setApiKey(null) }
     }
 
     @After
     fun tearDown() {
         if (realToken?.isNotEmpty() == true) {
-            MapLibre.setApiKey(realToken)
+            MapMetrics.setApiKey(realToken)
         }
 
     }

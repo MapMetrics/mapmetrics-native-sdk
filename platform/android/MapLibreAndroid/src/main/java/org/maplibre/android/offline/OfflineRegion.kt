@@ -6,7 +6,7 @@ import android.os.Looper
 import androidx.annotation.IntDef
 import androidx.annotation.Keep
 import org.maplibre.android.LibraryLoader
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.net.ConnectivityReceiver
 import org.maplibre.android.storage.FileSource
 
@@ -229,7 +229,7 @@ class OfflineRegion @Keep private constructor(offlineRegionPtr: Long, fileSource
      * [com.mapbox.mapboxsdk.offline.OfflineManager.createOfflineRegion] instead.
      */
     init {
-        context = MapLibre.getApplicationContext()
+        context = MapMetrics.getApplicationContext()
         this.fileSource = fileSource
         this.id = idParam
         this.definition = definition

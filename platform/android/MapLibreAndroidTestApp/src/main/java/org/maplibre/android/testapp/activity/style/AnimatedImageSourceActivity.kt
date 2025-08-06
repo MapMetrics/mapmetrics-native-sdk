@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngQuad
 import org.maplibre.android.maps.MapView
@@ -103,7 +103,7 @@ class AnimatedImageSourceActivity : AppCompatActivity(), OnMapReadyCallback {
         private val drawables: Array<Bitmap?>
         private var drawableIndex: Int
         fun getBitmap(resourceId: Int): Bitmap? {
-            val context = MapLibre.getApplicationContext()
+            val context = MapMetrics.getApplicationContext()
             val drawable = BitmapUtils.getDrawableFromRes(context, resourceId)
             if (drawable is BitmapDrawable) {
                 return drawable.bitmap

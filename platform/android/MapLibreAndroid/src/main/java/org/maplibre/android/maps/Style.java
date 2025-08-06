@@ -10,7 +10,7 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.constants.MapLibreConstants;
 import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.TransitionOptions;
@@ -1413,7 +1413,7 @@ public class Style {
    *  @return The list of predefined styles
    */
   public static DefaultStyle[] getPredefinedStyles() {
-    return MapLibre.getPredefinedStyles();
+    return MapMetrics.getPredefinedStyles();
   }
 
   /**
@@ -1423,7 +1423,7 @@ public class Style {
    */
   @NonNull
   public static String getPredefinedStyle(String name) {
-    DefaultStyle style = MapLibre.getPredefinedStyle(name);
+    DefaultStyle style = MapMetrics.getPredefinedStyle(name);
     if (style != null) {
       return style.getUrl();
     }

@@ -19,7 +19,7 @@ import org.maplibre.android.utils.ConfigUtils.Companion.getMockedOptions
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 
-class MapLibreTest {
+class MapMetricsTest {
     private var context: Context? = null
     private var appContext: Context? = null
 
@@ -38,30 +38,30 @@ class MapLibreTest {
     fun testGetApiKey() {
         val apiKey = "pk.0000000001"
         inject(context!!, apiKey, getMockedOptions())
-        Assert.assertSame(apiKey, MapLibre.getApiKey())
+        Assert.assertSame(apiKey, MapMetrics.getApiKey())
     }
 
     @Test
     fun testApplicationContext() {
         inject(context!!, "pk.0000000001", getMockedOptions())
-        Assert.assertNotNull(MapLibre.getApplicationContext())
+        Assert.assertNotNull(MapMetrics.getApplicationContext())
         Assert.assertNotEquals(context, appContext)
         Assert.assertEquals(appContext, appContext)
     }
 
     @Test
     fun testPlainTokenValid() {
-        Assert.assertTrue(MapLibre.isApiKeyValid("apiKey"))
+        Assert.assertTrue(MapMetrics.isApiKeyValid("apiKey"))
     }
 
     @Test
     fun testEmptyToken() {
-        Assert.assertFalse(MapLibre.isApiKeyValid(""))
+        Assert.assertFalse(MapMetrics.isApiKeyValid(""))
     }
 
     @Test
     fun testNullToken() {
-        Assert.assertFalse(MapLibre.isApiKeyValid(null))
+        Assert.assertFalse(MapMetrics.isApiKeyValid(null))
     }
 
     @Test

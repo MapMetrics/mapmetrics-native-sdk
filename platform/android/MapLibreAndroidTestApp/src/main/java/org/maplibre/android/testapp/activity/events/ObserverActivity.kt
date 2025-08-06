@@ -1,23 +1,16 @@
 package org.maplibre.android.testapp.activity.events
 
-import android.app.ActivityManager
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.tile.TileOperation
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
-import timber.log.Timber
 import java.util.*
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
-import kotlin.time.TimeSource.Monotonic
 import org.maplibre.android.log.Logger
-import org.maplibre.android.log.Logger.INFO
 
 /**
  * Test activity showcasing logging observer actions from the core

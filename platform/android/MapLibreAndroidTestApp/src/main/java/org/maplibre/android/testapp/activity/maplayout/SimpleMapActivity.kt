@@ -4,11 +4,10 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.MapLibre
+import org.maplibre.android.MapMetrics
 import org.maplibre.android.maps.*
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
-import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.NavUtils
 
 /**
@@ -31,7 +30,7 @@ class SimpleMapActivity : AppCompatActivity() {
 
         // Using just the token for initialization
         val token = ""
-        MapLibre.initializeSessionWithToken(applicationContext, token) {
+        MapMetrics.initializeSessionWithToken(applicationContext, token) {
             // Only get the map after cookie is initialized
             initializeMap()
         }

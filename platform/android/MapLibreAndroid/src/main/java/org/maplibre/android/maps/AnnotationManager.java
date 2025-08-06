@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
-import org.maplibre.android.MapLibre;
+import org.maplibre.android.MapMetrics;
 import org.maplibre.android.R;
 import org.maplibre.android.annotations.Annotation;
 import org.maplibre.android.annotations.BaseMarkerOptions;
@@ -346,7 +346,7 @@ class AnnotationManager {
   }
 
   private ShapeAnnotationHit getShapeAnnotationHitFromTap(PointF tapPoint) {
-    float touchTargetSide = MapLibre.getApplicationContext().getResources().getDimension(R.dimen.maplibre_eight_dp);
+    float touchTargetSide = MapMetrics.getApplicationContext().getResources().getDimension(R.dimen.maplibre_eight_dp);
     RectF tapRect = new RectF(
       tapPoint.x - touchTargetSide,
       tapPoint.y - touchTargetSide,
@@ -443,7 +443,7 @@ class AnnotationManager {
 
     MarkerHitResolver(@NonNull MapMetricsMap maplibreMap) {
       this.projection = maplibreMap.getProjection();
-      this.minimalTouchSize = (int) (32 * MapLibre.getApplicationContext().getResources().getDisplayMetrics().density);
+      this.minimalTouchSize = (int) (32 * MapMetrics.getApplicationContext().getResources().getDisplayMetrics().density);
     }
 
     public long execute(@NonNull MarkerHit markerHit) {
