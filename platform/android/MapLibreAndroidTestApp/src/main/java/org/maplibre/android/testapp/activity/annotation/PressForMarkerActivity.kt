@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 import java.text.DecimalFormat
@@ -23,7 +23,7 @@ import java.util.ArrayList
  */
 class PressForMarkerActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var markerList: ArrayList<MarkerOptions>? = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +31,7 @@ class PressForMarkerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_press_for_marker)
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { map: MapLibreMap? ->
+        mapView.getMapAsync { map: MapMetricsMap? ->
             if (map != null) {
                 maplibreMap = map
             }

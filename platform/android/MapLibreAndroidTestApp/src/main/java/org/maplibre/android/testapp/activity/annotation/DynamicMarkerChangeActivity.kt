@@ -9,7 +9,7 @@ import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -20,7 +20,7 @@ import org.maplibre.android.testapp.utils.IconUtils
  */
 class DynamicMarkerChangeActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var marker: Marker? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +29,7 @@ class DynamicMarkerChangeActivity : AppCompatActivity() {
         mapView.setTag(false)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
-            OnMapReadyCallback { map: MapLibreMap ->
+            OnMapReadyCallback { map: MapMetricsMap ->
                 map.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
                 maplibreMap = map
                 // Create marker

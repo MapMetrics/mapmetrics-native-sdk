@@ -6,7 +6,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
 import org.maplibre.android.geometry.LatLng;
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +103,7 @@ public final class Polygon extends BasePointCollection {
 
   @Override
   void update() {
-    MapLibreMap maplibreMap = getMapLibreMap();
+    MapMetricsMap maplibreMap = getMapLibreMap();
     if (maplibreMap != null) {
       maplibreMap.updatePolygon(this);
     }

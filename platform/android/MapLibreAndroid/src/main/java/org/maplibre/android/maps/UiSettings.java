@@ -105,7 +105,7 @@ public final class UiSettings {
     this.mapView = mapView;
   }
 
-  void initialise(@NonNull Context context, @NonNull MapLibreMapOptions options) {
+  void initialise(@NonNull Context context, @NonNull MapMetricsMapOptions options) {
     Resources resources = context.getResources();
     initialiseGestures(options);
     if (options.getCompassEnabled()) {
@@ -137,7 +137,7 @@ public final class UiSettings {
     restoreFocalPoint(savedInstanceState);
   }
 
-  private void initialiseGestures(MapLibreMapOptions options) {
+  private void initialiseGestures(MapMetricsMapOptions options) {
     setZoomGesturesEnabled(options.getZoomGesturesEnabled());
     setScrollGesturesEnabled(options.getScrollGesturesEnabled());
     setHorizontalScrollGesturesEnabled(options.getHorizontalScrollGesturesEnabled());
@@ -183,7 +183,7 @@ public final class UiSettings {
     setZoomRate(savedInstanceState.getFloat(MapLibreConstants.STATE_ZOOM_RATE, 1.0f));
   }
 
-  private void initialiseCompass(MapLibreMapOptions options, @NonNull Resources resources) {
+  private void initialiseCompass(MapMetricsMapOptions options, @NonNull Resources resources) {
     isCompassInitialized = true;
     compassView = mapView.initialiseCompassView();
     setCompassEnabled(options.getCompassEnabled());
@@ -231,7 +231,7 @@ public final class UiSettings {
       mapView.getContext(), savedInstanceState.getByteArray(MapLibreConstants.STATE_COMPASS_IMAGE_BITMAP)));
   }
 
-  private void initialiseLogo(MapLibreMapOptions options, @NonNull Resources resources) {
+  private void initialiseLogo(MapMetricsMapOptions options, @NonNull Resources resources) {
     isLogoInitialized = true;
     logoView = mapView.initialiseLogoView();
     setLogoEnabled(options.getLogoEnabled());
@@ -272,7 +272,7 @@ public final class UiSettings {
       savedInstanceState.getInt(MapLibreConstants.STATE_LOGO_MARGIN_BOTTOM));
   }
 
-  private void initialiseAttribution(@NonNull Context context, MapLibreMapOptions options) {
+  private void initialiseAttribution(@NonNull Context context, MapMetricsMapOptions options) {
     isAttributionInitialized = true;
     attributionsView = mapView.initialiseAttributionView();
     setAttributionEnabled(options.getAttributionEnabled());

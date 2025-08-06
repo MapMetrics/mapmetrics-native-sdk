@@ -26,12 +26,12 @@ import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.CancelableCallback
-import org.maplibre.android.maps.MapLibreMap.OnMoveListener
-import org.maplibre.android.maps.MapLibreMap.OnRotateListener
-import org.maplibre.android.maps.MapLibreMap.OnScaleListener
-import org.maplibre.android.maps.MapLibreMap.OnShoveListener
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.CancelableCallback
+import org.maplibre.android.maps.MapMetricsMap.OnMoveListener
+import org.maplibre.android.maps.MapMetricsMap.OnRotateListener
+import org.maplibre.android.maps.MapMetricsMap.OnScaleListener
+import org.maplibre.android.maps.MapMetricsMap.OnShoveListener
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -41,7 +41,7 @@ import org.maplibre.android.testapp.utils.ResourceUtils
 /** Test activity showcasing APIs around gestures implementation. */
 class GestureDetectorActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var recyclerView: RecyclerView
     private var gestureAlertsAdapter: GestureAlertsAdapter? = null
     private var gesturesManager: AndroidGesturesManager? = null
@@ -52,7 +52,7 @@ class GestureDetectorActivity : AppCompatActivity() {
         setContentView(R.layout.activity_gesture_detector)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { map: MapLibreMap ->
+        mapView.getMapAsync { map: MapMetricsMap ->
             maplibreMap = map
             maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
             initializeMap()

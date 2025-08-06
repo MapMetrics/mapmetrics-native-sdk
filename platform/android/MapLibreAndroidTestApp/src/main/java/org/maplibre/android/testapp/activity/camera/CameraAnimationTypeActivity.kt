@@ -9,11 +9,10 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.CancelableCallback
-import org.maplibre.android.maps.MapLibreMap.OnCameraIdleListener
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.CancelableCallback
+import org.maplibre.android.maps.MapMetricsMap.OnCameraIdleListener
 import org.maplibre.android.maps.OnMapReadyCallback
-import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 import timber.log.Timber
@@ -50,7 +49,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     // # --8<-- [end:callback]
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var cameraState = false
     private val cameraIdleListener = OnCameraIdleListener {
@@ -69,7 +68,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
 
         maplibreMap.setStyle(TestStyles.getMapMetricsStyle())

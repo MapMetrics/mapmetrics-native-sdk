@@ -10,7 +10,7 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.offline.OfflineManager
 import org.maplibre.android.offline.OfflineManager.CreateOfflineRegionCallback
@@ -41,7 +41,7 @@ class OfflineActivity : AppCompatActivity(), DownloadRegionDialogListener {
    * UI elements
    */
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var progressBar: ProgressBar? = null
     private var downloadRegion: Button? = null
     private var listRegions: Button? = null
@@ -67,7 +67,7 @@ class OfflineActivity : AppCompatActivity(), DownloadRegionDialogListener {
         // Set up map
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             Timber.d("Map is ready")
             this@OfflineActivity.maplibreMap = maplibreMap
             maplibreMap.setStyle(Style.Builder().fromUri(STYLE_URL))

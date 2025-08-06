@@ -17,7 +17,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.PropertyFactory
@@ -34,7 +34,7 @@ import java.util.*
 class AnimatedSymbolLayerActivity : AppCompatActivity() {
     private val random = Random()
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private val randomCars: MutableList<Car> = ArrayList()
     private var randomCarSource: GeoJsonSource? = null
     private var taxi: Car? = null

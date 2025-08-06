@@ -10,7 +10,7 @@ import androidx.test.rule.GrantPermissionRule;
 import org.maplibre.android.AppCenter;
 import org.maplibre.android.MapLibre;
 import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.testapp.R;
 
 import org.junit.After;
@@ -43,7 +43,7 @@ public abstract class BaseTest extends AppCenter {
   public GrantPermissionRule grantLocationPermissionRule = GrantPermissionRule
           .grant(android.Manifest.permission.ACCESS_FINE_LOCATION);
 
-  protected MapLibreMap maplibreMap;
+  protected MapMetricsMap maplibreMap;
   protected MapView mapView;
   private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -62,7 +62,7 @@ public abstract class BaseTest extends AppCenter {
 
   @UiThread
   @CallSuper
-  protected void initMap(MapLibreMap maplibreMap) {
+  protected void initMap(MapMetricsMap maplibreMap) {
     this.maplibreMap = maplibreMap;
     maplibreMap.getStyle(style -> latch.countDown());
   }

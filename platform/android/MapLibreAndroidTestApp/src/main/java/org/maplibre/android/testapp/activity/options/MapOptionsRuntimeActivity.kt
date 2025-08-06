@@ -6,27 +6,25 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMapOptions
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
-import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
-import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  *  TestActivity demonstrating configuring MapView with MapOptions
  */
 class MapOptionsRuntimeActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map_options_runtime)
 
         // Create map configuration
-        val maplibreMapOptions = MapLibreMapOptions.createFromAttributes(this)
+        val maplibreMapOptions = MapMetricsMapOptions.createFromAttributes(this)
         maplibreMapOptions.apply {
             apiBaseUri("https://api.maplibre.org")
             camera(
@@ -57,7 +55,7 @@ class MapOptionsRuntimeActivity : AppCompatActivity(), OnMapReadyCallback {
         (findViewById<View>(R.id.container) as ViewGroup).addView(mapView)
     }
 
-    override fun onMapReady(maplibreMap: MapLibreMap) {
+    override fun onMapReady(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         this.maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
     }

@@ -118,7 +118,7 @@ class BottomSheetActivity : AppCompatActivity() {
             map!!.getMapAsync(this)
         }
 
-        override fun onMapReady(maplibreMap: MapLibreMap) {
+        override fun onMapReady(maplibreMap: MapMetricsMap) {
             maplibreMap.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(
                     LatLng(37.760545, -122.436055),
@@ -187,7 +187,7 @@ class BottomSheetActivity : AppCompatActivity() {
                 val bundle = Bundle()
                 bundle.putInt("mapcounter", mapCounter)
                 mapFragment.arguments = bundle
-                val maplibreMapOptions = MapLibreMapOptions.createFromAttributes(context!!)
+                val maplibreMapOptions = MapMetricsMapOptions.createFromAttributes(context!!)
                 mapFragment.arguments = MapFragmentUtils.createFragmentArgs(maplibreMapOptions)
                 return mapFragment
             }
@@ -214,7 +214,7 @@ class BottomSheetActivity : AppCompatActivity() {
             map!!.getMapAsync(this)
         }
 
-        override fun onMapReady(maplibreMap: MapLibreMap) {
+        override fun onMapReady(maplibreMap: MapMetricsMap) {
             maplibreMap.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(
                     LatLng(37.760545, -122.436055),
@@ -262,7 +262,7 @@ class BottomSheetActivity : AppCompatActivity() {
         companion object {
             fun newInstance(context: Context?): BottomSheetFragment {
                 val mapFragment = BottomSheetFragment()
-                val maplibreMapOptions = MapLibreMapOptions.createFromAttributes(context!!)
+                val maplibreMapOptions = MapMetricsMapOptions.createFromAttributes(context!!)
                 maplibreMapOptions.renderSurfaceOnTop(true)
                 mapFragment.arguments = MapFragmentUtils.createFragmentArgs(maplibreMapOptions)
                 return mapFragment

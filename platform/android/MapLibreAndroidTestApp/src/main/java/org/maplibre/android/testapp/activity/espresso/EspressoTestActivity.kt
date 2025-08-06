@@ -3,7 +3,7 @@ package org.maplibre.android.testapp.activity.espresso
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.testapp.R
 
 /**
@@ -11,7 +11,7 @@ import org.maplibre.android.testapp.R
  */
 class EspressoTestActivity : AppCompatActivity() {
     lateinit var mapView: MapView
-    protected lateinit var maplibreMap: MapLibreMap
+    protected lateinit var maplibreMap: MapMetricsMap
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_espresso_test)

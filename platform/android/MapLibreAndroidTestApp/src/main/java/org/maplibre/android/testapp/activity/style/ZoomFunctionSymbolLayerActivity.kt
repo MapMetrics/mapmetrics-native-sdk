@@ -9,8 +9,8 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.OnMapClickListener
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.OnMapClickListener
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.Property
@@ -26,7 +26,7 @@ import timber.log.Timber
  */
 class ZoomFunctionSymbolLayerActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var source: GeoJsonSource? = null
     private var layer: SymbolLayer? = null
     private var isInitialPosition = true
@@ -51,7 +51,7 @@ class ZoomFunctionSymbolLayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_zoom_symbol_layer)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { map: MapLibreMap ->
+        mapView.getMapAsync { map: MapMetricsMap ->
             maplibreMap = map
             map.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style ->
                 updateSource(style)

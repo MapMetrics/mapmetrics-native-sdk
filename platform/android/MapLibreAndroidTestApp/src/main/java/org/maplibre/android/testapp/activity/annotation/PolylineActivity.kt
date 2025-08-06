@@ -11,7 +11,7 @@ import org.maplibre.android.annotations.Polyline
 import org.maplibre.android.annotations.PolylineOptions
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 import java.util.*
@@ -27,7 +27,7 @@ class PolylineActivity : AppCompatActivity() {
     private var polylines: MutableList<Polyline>? = null
     private var polylineOptions: ArrayList<PolylineOptions?>? = ArrayList()
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var fullAlpha = true
     private var showPolylines = true
     private var width = true

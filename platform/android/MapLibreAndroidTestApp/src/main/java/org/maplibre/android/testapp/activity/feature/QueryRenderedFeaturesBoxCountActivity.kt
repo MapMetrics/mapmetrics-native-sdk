@@ -10,7 +10,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.geojson.Feature
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -22,7 +22,7 @@ import timber.log.Timber
  */
 class QueryRenderedFeaturesBoxCountActivity : AppCompatActivity() {
     lateinit var mapView: MapView
-    lateinit var maplibreMap: MapLibreMap
+    lateinit var maplibreMap: MapMetricsMap
         private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +40,7 @@ class QueryRenderedFeaturesBoxCountActivity : AppCompatActivity() {
         // Initialize map as normal
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             this@QueryRenderedFeaturesBoxCountActivity.maplibreMap = maplibreMap
             maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.AMERICANA))
             selectionBox.setOnClickListener { _: View? ->

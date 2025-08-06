@@ -13,7 +13,7 @@ import androidx.annotation.Size;
 import androidx.annotation.VisibleForTesting;
 
 import org.maplibre.android.log.Logger;
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.maps.Projection;
 
 import java.util.ArrayList;
@@ -213,19 +213,19 @@ final class LocationAnimatorCoordinator {
   }
 
   void feedNewZoomLevel(double targetZoomLevel, @NonNull CameraPosition currentCameraPosition, long animationDuration,
-                        @Nullable MapLibreMap.CancelableCallback callback) {
+                        @Nullable MapMetricsMap.CancelableCallback callback) {
     updateZoomAnimator((float) targetZoomLevel, (float) currentCameraPosition.zoom, callback);
     playAnimators(animationDuration, ANIMATOR_ZOOM);
   }
 
   void feedNewPadding(double[] padding, @NonNull CameraPosition currentCameraPosition, long animationDuration,
-                      @Nullable MapLibreMap.CancelableCallback callback) {
+                      @Nullable MapMetricsMap.CancelableCallback callback) {
     updatePaddingAnimator(padding, currentCameraPosition.padding, callback);
     playAnimators(animationDuration, ANIMATOR_PADDING);
   }
 
   void feedNewTilt(double targetTilt, @NonNull CameraPosition currentCameraPosition, long animationDuration,
-                   @Nullable MapLibreMap.CancelableCallback callback) {
+                   @Nullable MapMetricsMap.CancelableCallback callback) {
     updateTiltAnimator((float) targetTilt, (float) currentCameraPosition.tilt, callback);
     playAnimators(animationDuration, ANIMATOR_TILT);
   }
@@ -320,17 +320,17 @@ final class LocationAnimatorCoordinator {
   }
 
   private void updateZoomAnimator(float targetZoomLevel, float previousZoomLevel,
-                                  @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                  @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     createNewCameraAdapterAnimator(ANIMATOR_ZOOM, new Float[] {previousZoomLevel, targetZoomLevel}, cancelableCallback);
   }
 
   private void updatePaddingAnimator(double[] targetPadding, double[] previousPadding,
-                                     @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                     @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     createNewPaddingAnimator(ANIMATOR_PADDING, new double[][] {previousPadding, targetPadding}, cancelableCallback);
   }
 
   private void updateTiltAnimator(float targetTilt, float previousTiltLevel,
-                                  @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                  @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     createNewCameraAdapterAnimator(ANIMATOR_TILT, new Float[] {previousTiltLevel, targetTilt}, cancelableCallback);
   }
 
@@ -361,7 +361,7 @@ final class LocationAnimatorCoordinator {
 
   private void createNewCameraAdapterAnimator(@MapLibreAnimator.Type int animatorType,
                                               @NonNull @Size(min = 2) Float[] values,
-                                              @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                              @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     cancelAnimator(animatorType);
     MapLibreAnimator.AnimationsValueChangeListener listener = listeners.get(animatorType);
     if (listener != null) {
@@ -371,7 +371,7 @@ final class LocationAnimatorCoordinator {
 
   private void createNewPaddingAnimator(@MapLibreAnimator.Type int animatorType,
                                         @NonNull @Size(min = 2) double[][] values,
-                                        @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                        @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     cancelAnimator(animatorType);
     MapLibreAnimator.AnimationsValueChangeListener listener = listeners.get(animatorType);
     if (listener != null) {

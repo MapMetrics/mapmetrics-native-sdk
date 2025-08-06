@@ -10,7 +10,7 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngQuad
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.RasterLayer
@@ -39,7 +39,7 @@ class AnimatedImageSourceActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         // --8<-- [start:onMapReady]
         val quad = LatLngQuad(
             LatLng(46.437, -80.425),

@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -26,7 +26,7 @@ import java.io.FileWriter
  * Test activity showcasing how to use a file:// resource for the style.json and how to use MapLibreMap#setStyleJson.
  */
 class StyleFileActivity : AppCompatActivity() {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -8,7 +8,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -19,14 +19,14 @@ import org.maplibre.android.testapp.styles.TestStyles
  * This includes zoomIn, zoomOut, zoomTo, zoomBy (center and custom focal point).
  */
 class ManualZoomActivity : AppCompatActivity() {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_manual_zoom)
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             this@ManualZoomActivity.maplibreMap = maplibreMap
             maplibreMap.setStyle(
                 Style.Builder().fromUri(TestStyles.getPredefinedStyleWithFallback("Satellite Hybrid"))

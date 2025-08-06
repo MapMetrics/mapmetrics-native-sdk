@@ -7,7 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
@@ -25,7 +25,7 @@ import org.maplibre.android.utils.ColorUtils
  */
 class BuildingFillExtrusionActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var light: Light? = null
     private var isMapAnchorLight = false
     private var isLowIntensityLight = false
@@ -37,7 +37,7 @@ class BuildingFillExtrusionActivity : AppCompatActivity() {
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
-            OnMapReadyCallback { map: MapLibreMap? ->
+            OnMapReadyCallback { map: MapMetricsMap? ->
                 if (map != null) {
                     maplibreMap = map
                 }

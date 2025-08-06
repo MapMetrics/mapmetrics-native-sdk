@@ -47,11 +47,11 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
   @NonNull
   private final Context context;
   @NonNull
-  private final MapLibreMap maplibreMap;
+  private final MapMetricsMap maplibreMap;
   private Set<Attribution> attributionSet;
   private AlertDialog dialog;
 
-  public AttributionDialogManager(@NonNull Context context, @NonNull MapLibreMap maplibreMap) {
+  public AttributionDialogManager(@NonNull Context context, @NonNull MapMetricsMap maplibreMap) {
     this.context = context;
     this.maplibreMap = maplibreMap;
   }
@@ -169,11 +169,11 @@ public class AttributionDialogManager implements View.OnClickListener, DialogInt
 
   private static class AttributionBuilder {
 
-    private final MapLibreMap maplibreMap;
+    private final MapMetricsMap maplibreMap;
     @NonNull
     private final WeakReference<Context> context;
 
-    AttributionBuilder(MapLibreMap maplibreMap, Context context) {
+    AttributionBuilder(MapMetricsMap maplibreMap, Context context) {
       this.maplibreMap = maplibreMap;
       this.context = new WeakReference<>(context);
     }

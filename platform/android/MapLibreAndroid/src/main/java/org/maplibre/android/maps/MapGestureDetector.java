@@ -40,7 +40,7 @@ import static org.maplibre.android.constants.MapLibreConstants.ROTATE_VELOCITY_R
 import static org.maplibre.android.constants.MapLibreConstants.SCALE_VELOCITY_ANIMATION_DURATION_MULTIPLIER;
 import static org.maplibre.android.constants.MapLibreConstants.SCALE_VELOCITY_RATIO_THRESHOLD;
 import static org.maplibre.android.constants.MapLibreConstants.ZOOM_RATE;
-import static org.maplibre.android.maps.MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraMoveStartedListener.REASON_API_GESTURE;
 import static org.maplibre.android.utils.MathUtils.normalize;
 
 /**
@@ -56,25 +56,25 @@ final class MapGestureDetector {
   private final CameraChangeDispatcher cameraChangeDispatcher;
 
   // new map touch API
-  private final CopyOnWriteArrayList<MapLibreMap.OnMapClickListener> onMapClickListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnMapClickListener> onMapClickListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnMapLongClickListener> onMapLongClickListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnMapLongClickListener> onMapLongClickListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnFlingListener> onFlingListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnFlingListener> onFlingListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnMoveListener> onMoveListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnMoveListener> onMoveListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnRotateListener> onRotateListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnRotateListener> onRotateListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnScaleListener> onScaleListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnScaleListener> onScaleListenerList
     = new CopyOnWriteArrayList<>();
 
-  private final CopyOnWriteArrayList<MapLibreMap.OnShoveListener> onShoveListenerList
+  private final CopyOnWriteArrayList<MapMetricsMap.OnShoveListener> onShoveListenerList
     = new CopyOnWriteArrayList<>();
 
   /**
@@ -1002,7 +1002,7 @@ final class MapGestureDetector {
   }
 
   void notifyOnMapClickListeners(@NonNull PointF tapPoint) {
-    for (MapLibreMap.OnMapClickListener listener : onMapClickListenerList) {
+    for (MapMetricsMap.OnMapClickListener listener : onMapClickListenerList) {
       if (listener.onMapClick(projection.fromScreenLocation(tapPoint))) {
         return;
       }
@@ -1010,7 +1010,7 @@ final class MapGestureDetector {
   }
 
   void notifyOnMapLongClickListeners(@NonNull PointF longClickPoint) {
-    for (MapLibreMap.OnMapLongClickListener listener : onMapLongClickListenerList) {
+    for (MapMetricsMap.OnMapLongClickListener listener : onMapLongClickListenerList) {
       if (listener.onMapLongClick(projection.fromScreenLocation(longClickPoint))) {
         return;
       }
@@ -1018,136 +1018,136 @@ final class MapGestureDetector {
   }
 
   void notifyOnFlingListeners() {
-    for (MapLibreMap.OnFlingListener listener : onFlingListenerList) {
+    for (MapMetricsMap.OnFlingListener listener : onFlingListenerList) {
       listener.onFling();
     }
   }
 
   void notifyOnMoveBeginListeners(@NonNull MoveGestureDetector detector) {
-    for (MapLibreMap.OnMoveListener listener : onMoveListenerList) {
+    for (MapMetricsMap.OnMoveListener listener : onMoveListenerList) {
       listener.onMoveBegin(detector);
     }
   }
 
   void notifyOnMoveListeners(@NonNull MoveGestureDetector detector) {
-    for (MapLibreMap.OnMoveListener listener : onMoveListenerList) {
+    for (MapMetricsMap.OnMoveListener listener : onMoveListenerList) {
       listener.onMove(detector);
     }
   }
 
   void notifyOnMoveEndListeners(@NonNull MoveGestureDetector detector) {
-    for (MapLibreMap.OnMoveListener listener : onMoveListenerList) {
+    for (MapMetricsMap.OnMoveListener listener : onMoveListenerList) {
       listener.onMoveEnd(detector);
     }
   }
 
   void notifyOnRotateBeginListeners(@NonNull RotateGestureDetector detector) {
-    for (MapLibreMap.OnRotateListener listener : onRotateListenerList) {
+    for (MapMetricsMap.OnRotateListener listener : onRotateListenerList) {
       listener.onRotateBegin(detector);
     }
   }
 
   void notifyOnRotateListeners(@NonNull RotateGestureDetector detector) {
-    for (MapLibreMap.OnRotateListener listener : onRotateListenerList) {
+    for (MapMetricsMap.OnRotateListener listener : onRotateListenerList) {
       listener.onRotate(detector);
     }
   }
 
   void notifyOnRotateEndListeners(@NonNull RotateGestureDetector detector) {
-    for (MapLibreMap.OnRotateListener listener : onRotateListenerList) {
+    for (MapMetricsMap.OnRotateListener listener : onRotateListenerList) {
       listener.onRotateEnd(detector);
     }
   }
 
   void notifyOnScaleBeginListeners(@NonNull StandardScaleGestureDetector detector) {
-    for (MapLibreMap.OnScaleListener listener : onScaleListenerList) {
+    for (MapMetricsMap.OnScaleListener listener : onScaleListenerList) {
       listener.onScaleBegin(detector);
     }
   }
 
   void notifyOnScaleListeners(@NonNull StandardScaleGestureDetector detector) {
-    for (MapLibreMap.OnScaleListener listener : onScaleListenerList) {
+    for (MapMetricsMap.OnScaleListener listener : onScaleListenerList) {
       listener.onScale(detector);
     }
   }
 
   void notifyOnScaleEndListeners(@NonNull StandardScaleGestureDetector detector) {
-    for (MapLibreMap.OnScaleListener listener : onScaleListenerList) {
+    for (MapMetricsMap.OnScaleListener listener : onScaleListenerList) {
       listener.onScaleEnd(detector);
     }
   }
 
   void notifyOnShoveBeginListeners(@NonNull ShoveGestureDetector detector) {
-    for (MapLibreMap.OnShoveListener listener : onShoveListenerList) {
+    for (MapMetricsMap.OnShoveListener listener : onShoveListenerList) {
       listener.onShoveBegin(detector);
     }
   }
 
   void notifyOnShoveListeners(@NonNull ShoveGestureDetector detector) {
-    for (MapLibreMap.OnShoveListener listener : onShoveListenerList) {
+    for (MapMetricsMap.OnShoveListener listener : onShoveListenerList) {
       listener.onShove(detector);
     }
   }
 
   void notifyOnShoveEndListeners(@NonNull ShoveGestureDetector detector) {
-    for (MapLibreMap.OnShoveListener listener : onShoveListenerList) {
+    for (MapMetricsMap.OnShoveListener listener : onShoveListenerList) {
       listener.onShoveEnd(detector);
     }
   }
 
-  void addOnMapClickListener(MapLibreMap.OnMapClickListener onMapClickListener) {
+  void addOnMapClickListener(MapMetricsMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.add(onMapClickListener);
   }
 
-  void removeOnMapClickListener(MapLibreMap.OnMapClickListener onMapClickListener) {
+  void removeOnMapClickListener(MapMetricsMap.OnMapClickListener onMapClickListener) {
     onMapClickListenerList.remove(onMapClickListener);
   }
 
-  void addOnMapLongClickListener(MapLibreMap.OnMapLongClickListener onMapLongClickListener) {
+  void addOnMapLongClickListener(MapMetricsMap.OnMapLongClickListener onMapLongClickListener) {
     onMapLongClickListenerList.add(onMapLongClickListener);
   }
 
-  void removeOnMapLongClickListener(MapLibreMap.OnMapLongClickListener onMapLongClickListener) {
+  void removeOnMapLongClickListener(MapMetricsMap.OnMapLongClickListener onMapLongClickListener) {
     onMapLongClickListenerList.remove(onMapLongClickListener);
   }
 
-  void addOnFlingListener(MapLibreMap.OnFlingListener onFlingListener) {
+  void addOnFlingListener(MapMetricsMap.OnFlingListener onFlingListener) {
     onFlingListenerList.add(onFlingListener);
   }
 
-  void removeOnFlingListener(MapLibreMap.OnFlingListener onFlingListener) {
+  void removeOnFlingListener(MapMetricsMap.OnFlingListener onFlingListener) {
     onFlingListenerList.remove(onFlingListener);
   }
 
-  void addOnMoveListener(MapLibreMap.OnMoveListener listener) {
+  void addOnMoveListener(MapMetricsMap.OnMoveListener listener) {
     onMoveListenerList.add(listener);
   }
 
-  void removeOnMoveListener(MapLibreMap.OnMoveListener listener) {
+  void removeOnMoveListener(MapMetricsMap.OnMoveListener listener) {
     onMoveListenerList.remove(listener);
   }
 
-  void addOnRotateListener(MapLibreMap.OnRotateListener listener) {
+  void addOnRotateListener(MapMetricsMap.OnRotateListener listener) {
     onRotateListenerList.add(listener);
   }
 
-  void removeOnRotateListener(MapLibreMap.OnRotateListener listener) {
+  void removeOnRotateListener(MapMetricsMap.OnRotateListener listener) {
     onRotateListenerList.remove(listener);
   }
 
-  void addOnScaleListener(MapLibreMap.OnScaleListener listener) {
+  void addOnScaleListener(MapMetricsMap.OnScaleListener listener) {
     onScaleListenerList.add(listener);
   }
 
-  void removeOnScaleListener(MapLibreMap.OnScaleListener listener) {
+  void removeOnScaleListener(MapMetricsMap.OnScaleListener listener) {
     onScaleListenerList.remove(listener);
   }
 
-  void addShoveListener(MapLibreMap.OnShoveListener listener) {
+  void addShoveListener(MapMetricsMap.OnShoveListener listener) {
     onShoveListenerList.add(listener);
   }
 
-  void removeShoveListener(MapLibreMap.OnShoveListener listener) {
+  void removeShoveListener(MapMetricsMap.OnShoveListener listener) {
     onShoveListenerList.remove(listener);
   }
 

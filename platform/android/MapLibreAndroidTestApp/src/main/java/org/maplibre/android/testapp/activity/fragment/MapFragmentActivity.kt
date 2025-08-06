@@ -23,7 +23,7 @@ class MapFragmentActivity :
     OnMapViewReadyCallback,
     OnMapReadyCallback,
     OnDidFinishRenderingFrameListener {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var initialCameraAnimation = true
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +42,8 @@ class MapFragmentActivity :
         mapFragment.getMapAsync(this)
     }
 
-    private fun createFragmentOptions(): MapLibreMapOptions {
-        val options = MapLibreMapOptions.createFromAttributes(this, null)
+    private fun createFragmentOptions(): MapMetricsMapOptions {
+        val options = MapMetricsMapOptions.createFromAttributes(this, null)
         options.scrollGesturesEnabled(false)
         options.zoomGesturesEnabled(false)
         options.tiltGesturesEnabled(false)
@@ -66,7 +66,7 @@ class MapFragmentActivity :
         mapView.addOnDidFinishRenderingFrameListener(this)
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Outdoor"))
     }

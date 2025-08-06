@@ -6,10 +6,10 @@ import android.graphics.PointF;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.geojson.Feature;
 import org.maplibre.android.location.modes.RenderMode;
 import org.maplibre.android.log.Logger;
-import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.expressions.Expression;
 
@@ -39,7 +39,7 @@ final class LocationLayerController {
   @RenderMode.Mode
   private int renderMode;
 
-  private final MapLibreMap maplibreMap;
+  private final MapMetricsMap maplibreMap;
   private final LayerBitmapProvider bitmapProvider;
   private LocationComponentOptions options;
   private final OnRenderModeChangedListener internalRenderModeChangedListener;
@@ -52,7 +52,7 @@ final class LocationLayerController {
 
   private LocationLayerRenderer locationLayerRenderer;
 
-  LocationLayerController(MapLibreMap maplibreMap, Style style,
+  LocationLayerController(MapMetricsMap maplibreMap, Style style,
                           LayerSourceProvider layerSourceProvider,
                           LayerFeatureProvider featureProvider,
                           LayerBitmapProvider bitmapProvider,

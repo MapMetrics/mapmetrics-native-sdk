@@ -10,11 +10,11 @@ import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.OnInfoWindowClickListener
-import org.maplibre.android.maps.MapLibreMap.OnInfoWindowCloseListener
-import org.maplibre.android.maps.MapLibreMap.OnInfoWindowLongClickListener
-import org.maplibre.android.maps.MapLibreMap.OnMapLongClickListener
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.OnInfoWindowClickListener
+import org.maplibre.android.maps.MapMetricsMap.OnInfoWindowCloseListener
+import org.maplibre.android.maps.MapMetricsMap.OnInfoWindowLongClickListener
+import org.maplibre.android.maps.MapMetricsMap.OnMapLongClickListener
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
@@ -34,7 +34,7 @@ class InfoWindowActivity :
     OnInfoWindowCloseListener,
     OnInfoWindowClickListener,
     OnInfoWindowLongClickListener {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var customMarker: Marker? = null
     private val mapLongClickListener = OnMapLongClickListener { point ->
@@ -65,7 +65,7 @@ class InfoWindowActivity :
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(maplibreMap: MapLibreMap) {
+    override fun onMapReady(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style? ->
             addMarkers()

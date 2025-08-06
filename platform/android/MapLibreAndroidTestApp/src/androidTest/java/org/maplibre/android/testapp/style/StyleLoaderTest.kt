@@ -3,7 +3,7 @@ package org.maplibre.android.testapp.style
 import android.view.View
 import androidx.test.espresso.UiController
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.action.MapLibreMapAction
@@ -22,7 +22,7 @@ class StyleLoaderTest : EspressoTest() {
         validateTestSetup()
         MapLibreMapAction.invoke(
             maplibreMap
-        ) { uiController: UiController?, maplibreMap: MapLibreMap ->
+        ) { uiController: UiController?, maplibreMap: MapMetricsMap ->
             try {
                 val expected =
                     readRawResource(
@@ -43,7 +43,7 @@ class StyleLoaderTest : EspressoTest() {
         validateTestSetup()
         MapLibreMapAction.invoke(
             maplibreMap
-        ) { uiController: UiController?, maplibreMap: MapLibreMap ->
+        ) { uiController: UiController?, maplibreMap: MapMetricsMap ->
             try {
                 val expected =
                     readRawResource(

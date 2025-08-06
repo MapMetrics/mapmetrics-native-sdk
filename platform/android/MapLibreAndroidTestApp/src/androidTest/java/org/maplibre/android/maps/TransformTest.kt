@@ -49,7 +49,7 @@ class TransformTest : EspressoTest() {
     @Test
     fun maplibreMapScrollByWithPadding() {
         validateTestSetup()
-        invoke(maplibreMap) { _: UiController, maplibreMap: MapLibreMap ->
+        invoke(maplibreMap) { _: UiController, maplibreMap: MapMetricsMap ->
             maplibreMap.moveCamera(initialCameraUpdate)
             maplibreMap.scrollBy(400.0f, 0.0f)
             val expectedCameraPosition = maplibreMap.cameraPosition

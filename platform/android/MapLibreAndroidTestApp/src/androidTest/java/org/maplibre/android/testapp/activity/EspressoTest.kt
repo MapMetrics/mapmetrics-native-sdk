@@ -1,7 +1,7 @@
 package org.maplibre.android.testapp.activity
 
 import androidx.annotation.UiThread
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.activity.espresso.EspressoTestActivity
 import org.maplibre.android.testapp.styles.TestStyles
@@ -19,7 +19,7 @@ open class EspressoTest : BaseTest() {
     }
 
     @UiThread
-    override fun initMap(maplibreMap: MapLibreMap) {
+    override fun initMap(maplibreMap: MapMetricsMap) {
         maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.VERSATILES))
         super.initMap(maplibreMap)
     }

@@ -12,7 +12,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -22,7 +22,7 @@ import org.maplibre.android.testapp.styles.TestStyles
  */
 class ScrollByActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var seekBarX: SeekBar
     private lateinit var seekBarY: SeekBar
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,7 @@ class ScrollByActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Pastel"))
         val uiSettings = maplibreMap.uiSettings

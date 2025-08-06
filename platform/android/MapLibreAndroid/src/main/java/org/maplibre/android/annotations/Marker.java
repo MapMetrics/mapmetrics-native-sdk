@@ -8,14 +8,14 @@ import androidx.annotation.Nullable;
 
 import org.maplibre.android.R;
 import org.maplibre.android.geometry.LatLng;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
 
 /**
  * Marker is an annotation that shows an icon image at a geographical location. The default marker
  * uses a provided icon. This icon can be customized using {@link IconFactory} to generate an
  * {@link Icon} using a provided image. Markers are added to the map by first giving a
- * {@link LatLng} and using {@link MapLibreMap#addMarker(MarkerOptions)}. The marker icon will be
+ * {@link LatLng} and using {@link MapMetricsMap#addMarker(MarkerOptions)}. The marker icon will be
  * centered at this position so it is common to add padding to the icon image before usage.
  * <p>
  * Markers are designed to be interactive. They receive click events by default, and are often used
@@ -123,7 +123,7 @@ public class Marker extends Annotation {
    */
   public void setPosition(LatLng position) {
     this.position = position;
-    MapLibreMap map = getMapLibreMap();
+    MapMetricsMap map = getMapLibreMap();
     if (map != null) {
       map.updateMarker(this);
     }
@@ -148,7 +148,7 @@ public class Marker extends Annotation {
   public void setIcon(@Nullable Icon icon) {
     this.icon = icon;
     this.iconId = icon != null ? icon.getId() : null;
-    MapLibreMap map = getMapLibreMap();
+    MapMetricsMap map = getMapLibreMap();
     if (map != null) {
       map.updateMarker(this);
     }
@@ -196,7 +196,7 @@ public class Marker extends Annotation {
       if (mapView.getContext() != null) {
         infoWindow.adaptDefaultMarker(this, maplibreMap, mapView);
       }
-      MapLibreMap map = getMapLibreMap();
+      MapMetricsMap map = getMapLibreMap();
       if (map != null) {
         map.updateMarker(this);
       }
@@ -205,7 +205,7 @@ public class Marker extends Annotation {
   }
 
   /**
-   * Do not use this method, used internally by the SDK. Use {@link MapLibreMap#selectMarker(Marker)}
+   * Do not use this method, used internally by the SDK. Use {@link MapMetricsMap#selectMarker(Marker)}
    * if you want to programmatically display the markers info window.
    *
    * @param maplibreMap The hosting MapLibreMap.
@@ -213,10 +213,10 @@ public class Marker extends Annotation {
    * @return The info window that was shown.
    */
   @Nullable
-  public InfoWindow showInfoWindow(@NonNull MapLibreMap maplibreMap, @NonNull MapView mapView) {
+  public InfoWindow showInfoWindow(@NonNull MapMetricsMap maplibreMap, @NonNull MapView mapView) {
     setMapLibreMap(maplibreMap);
     setMapView(mapView);
-    MapLibreMap.InfoWindowAdapter infoWindowAdapter = getMapLibreMap().getInfoWindowAdapter();
+    MapMetricsMap.InfoWindowAdapter infoWindowAdapter = getMapLibreMap().getInfoWindowAdapter();
     if (infoWindowAdapter != null) {
       // end developer is using a custom InfoWindowAdapter
       View content = infoWindowAdapter.getInfoWindow(this);

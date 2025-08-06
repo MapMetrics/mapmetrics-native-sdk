@@ -6,7 +6,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.location.MapLibreAnimator.AnimationsValueChangeListener
 import org.maplibre.android.location.modes.RenderMode
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.Layer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -17,7 +17,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 
 class LocationLayerControllerTest {
-    private val maplibreMap = Mockito.mock(MapLibreMap::class.java)
+    private val maplibreMap = Mockito.mock(MapMetricsMap::class.java)
     private val style = Mockito.mock(
         Style::class.java
     )

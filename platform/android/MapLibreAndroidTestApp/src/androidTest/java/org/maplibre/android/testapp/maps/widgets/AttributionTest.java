@@ -13,7 +13,7 @@ import androidx.test.espresso.UiController;
 import androidx.test.espresso.ViewAction;
 import androidx.test.espresso.intent.Intents;
 
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.style.sources.Source;
 import org.maplibre.android.testapp.R;
 import org.maplibre.android.testapp.activity.EspressoTest;
@@ -147,9 +147,9 @@ public class AttributionTest extends EspressoTest {
 
   private class DisableAction implements ViewAction {
 
-    private MapLibreMap maplibreMap;
+    private MapMetricsMap maplibreMap;
 
-    DisableAction(MapLibreMap map) {
+    DisableAction(MapMetricsMap map) {
       maplibreMap = map;
     }
 

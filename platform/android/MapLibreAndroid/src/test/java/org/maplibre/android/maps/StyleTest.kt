@@ -26,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class StyleTest {
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     private lateinit var nativeMapView: NativeMap
 
@@ -41,7 +41,7 @@ class StyleTest {
         MockitoAnnotations.initMocks(this)
         MapLibreInjector.inject(context, "abcdef", ConfigUtils.getMockedOptions())
         nativeMapView = mockk(relaxed = true)
-        maplibreMap = MapLibreMap(
+        maplibreMap = MapMetricsMap(
             nativeMapView,
             null,
             null,

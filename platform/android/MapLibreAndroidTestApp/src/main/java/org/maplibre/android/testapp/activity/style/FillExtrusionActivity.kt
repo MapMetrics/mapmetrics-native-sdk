@@ -9,7 +9,7 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.*
@@ -29,7 +29,7 @@ class FillExtrusionActivity : AppCompatActivity() {
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
-            OnMapReadyCallback { maplibreMap: MapLibreMap ->
+            OnMapReadyCallback { maplibreMap: MapMetricsMap ->
                 maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style ->
                     val lngLats = listOf(
                         Arrays.asList(

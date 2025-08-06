@@ -16,7 +16,7 @@ import org.maplibre.android.annotations.IconFactory
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.PropertyFactory.*
 import org.maplibre.android.style.layers.SymbolLayer
@@ -48,7 +48,7 @@ class DraggableMarkerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDraggableMarkerBinding
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private val featureCollection = FeatureCollection.fromFeatures(mutableListOf())
     private val source = GeoJsonSource(sourceId, featureCollection)
     private val layer = SymbolLayer(layerId, sourceId)
@@ -195,7 +195,7 @@ class DraggableMarkerActivity : AppCompatActivity() {
      */
     class DraggableSymbolsManager(
         mapView: MapView,
-        private val maplibreMap: MapLibreMap,
+        private val maplibreMap: MapMetricsMap,
         private val symbolsCollection: FeatureCollection,
         private val symbolsSource: GeoJsonSource,
         private val symbolsLayerId: String,
@@ -347,6 +347,6 @@ class DraggableMarkerActivity : AppCompatActivity() {
     }
 }
 
-private fun MapLibreMap.queryRenderedSymbols(latLng: LatLng, layerId: String): List<Feature> {
+private fun MapMetricsMap.queryRenderedSymbols(latLng: LatLng, layerId: String): List<Feature> {
     return this.queryRenderedFeatures(this.projection.toScreenLocation(latLng), layerId)
 }

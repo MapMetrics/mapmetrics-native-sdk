@@ -17,10 +17,10 @@
 }
 
 # dontnote for keeps the entry point x but not the descriptor class y
--dontnote org.maplibre.android.maps.MapLibreMap$OnFpsChangedListener
+-dontnote org.maplibre.android.maps.MapMetricsMap$OnFpsChangedListener
 -dontnote org.maplibre.android.style.layers.PropertyValue
--dontnote org.maplibre.android.maps.MapLibreMap
--dontnote org.maplibre.android.maps.MapLibreMapOptions
+-dontnote org.maplibre.android.maps.MapMetricsMap
+-dontnote org.maplibre.android.maps.MapMetricsMapOptions
 -dontnote org.maplibre.android.log.LoggerDefinition
 
 # config for mapbox-sdk-geojson:3.0.1

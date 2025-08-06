@@ -65,11 +65,11 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   @Nullable
   private NativeMap nativeMapView;
   @Nullable
-  private MapLibreMap maplibreMap;
+  private MapMetricsMap maplibreMap;
   private View renderView;
 
   private AttributionClickListener attributionClickListener;
-  MapLibreMapOptions maplibreMapOptions;
+  MapMetricsMapOptions maplibreMapOptions;
   private MapRenderer mapRenderer;
   private boolean destroyed;
 
@@ -96,33 +96,33 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   public MapView(@NonNull Context context) {
     super(context);
     Timber.d("MapView constructed with context");
-    initialize(context, MapLibreMapOptions.createFromAttributes(context));
+    initialize(context, MapMetricsMapOptions.createFromAttributes(context));
   }
 
   @UiThread
   public MapView(@NonNull Context context, @Nullable AttributeSet attrs) {
     super(context, attrs);
     Timber.d("MapView constructed with context and attribute set");
-    initialize(context, MapLibreMapOptions.createFromAttributes(context, attrs));
+    initialize(context, MapMetricsMapOptions.createFromAttributes(context, attrs));
   }
 
   @UiThread
   public MapView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
     Timber.d( "MapView constructed with context, attributeSet and defStyleAttr");
-    initialize(context, MapLibreMapOptions.createFromAttributes(context, attrs));
+    initialize(context, MapMetricsMapOptions.createFromAttributes(context, attrs));
   }
 
   @UiThread
-  public MapView(@NonNull Context context, @Nullable MapLibreMapOptions options) {
+  public MapView(@NonNull Context context, @Nullable MapMetricsMapOptions options) {
     super(context);
     Timber.d("MapView constructed with context and MapLibreMapOptions");
-    initialize(context, options == null ? MapLibreMapOptions.createFromAttributes(context) : options);
+    initialize(context, options == null ? MapMetricsMapOptions.createFromAttributes(context) : options);
   }
 
   @CallSuper
   @UiThread
-  protected void initialize(@NonNull final Context context, @NonNull final MapLibreMapOptions options) {
+  protected void initialize(@NonNull final Context context, @NonNull final MapMetricsMapOptions options) {
     if (isInEditMode()) {
       // in IDE layout editor, just return
       return;
@@ -164,8 +164,8 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     Transform transform = new Transform(this, nativeMapView, cameraDispatcher);
 
     // MapLibreMap
-    List<MapLibreMap.OnDeveloperAnimationListener> developerAnimationListeners = new ArrayList<>();
-    maplibreMap = new MapLibreMap(nativeMapView, transform, uiSettings, proj, registerTouchListener, cameraDispatcher,
+    List<MapMetricsMap.OnDeveloperAnimationListener> developerAnimationListeners = new ArrayList<>();
+    maplibreMap = new MapMetricsMap(nativeMapView, transform, uiSettings, proj, registerTouchListener, cameraDispatcher,
             developerAnimationListeners);
     maplibreMap.injectAnnotationManager(annotationManager);
 
@@ -245,9 +245,9 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     };
   }
 
-  private MapLibreMap.OnCompassAnimationListener createCompassAnimationListener(@NonNull final CameraChangeDispatcher
+  private MapMetricsMap.OnCompassAnimationListener createCompassAnimationListener(@NonNull final CameraChangeDispatcher
                                                                                       cameraChangeDispatcher) {
-    return new MapLibreMap.OnCompassAnimationListener() {
+    return new MapMetricsMap.OnCompassAnimationListener() {
       @Override
       public void onCompassAnimation() {
         cameraChangeDispatcher.onCameraMove();
@@ -275,7 +275,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
               0, maplibreMap.getWidth() / 2, maplibreMap.getHeight() / 2,
               TIME_MAP_NORTH_ANIMATION);
           }
-          cameraChangeDispatcher.onCameraMoveStarted(MapLibreMap.OnCameraMoveStartedListener.REASON_API_ANIMATION);
+          cameraChangeDispatcher.onCameraMoveStarted(MapMetricsMap.OnCameraMoveStartedListener.REASON_API_ANIMATION);
           compassView.isAnimating(true);
           compassView.postDelayed(compassView, TIME_WAIT_IDLE + TIME_MAP_NORTH_ANIMATION);
         }
@@ -306,7 +306,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     }
   }
 
-  private void initializeDrawingSurface(MapLibreMapOptions options) {
+  private void initializeDrawingSurface(MapMetricsMapOptions options) {
     mapRenderer = MapRenderer.create(options, getContext(), () -> MapView.this.onSurfaceCreated());
     renderView = mapRenderer.getView();
 
@@ -594,7 +594,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
 
   /**
    * Returns the map pixel ratio, by default it returns the device pixel ratio.
-   * Can be overwritten using {@link MapLibreMapOptions#pixelRatio(float)}.
+   * Can be overwritten using {@link MapMetricsMapOptions#pixelRatio(float)}.
    *
    * @return the current map pixel ratio
    */
@@ -1224,7 +1224,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   /**
    * Interface definition for a callback to be invoked when the map has entered the idle state.
    * <p>
-   * Calling {@link MapLibreMap#snapshot(MapLibreMap.SnapshotReadyCallback)} from this callback
+   * Calling {@link MapMetricsMap#snapshot(MapMetricsMap.SnapshotReadyCallback)} from this callback
    * will result in recursive execution. Use {@link OnDidFinishRenderingFrameListener} instead.
    * </p>
    * <p>
@@ -1479,7 +1479,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   }
 
   /**
-   * Sets a callback object which will be triggered when the {@link MapLibreMap} instance is ready to be used.
+   * Sets a callback object which will be triggered when the {@link MapMetricsMap} instance is ready to be used.
    *
    * @param callback The callback object that will be triggered when the map is ready to be used.
    */
@@ -1502,11 +1502,11 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   }
 
   @Nullable
-  MapLibreMap getMapLibreMap() {
+  MapMetricsMap getMapLibreMap() {
     return maplibreMap;
   }
 
-  void setMapLibreMap(MapLibreMap maplibreMap) {
+  void setMapLibreMap(MapMetricsMap maplibreMap) {
     this.maplibreMap = maplibreMap;
   }
 
@@ -1555,75 +1555,75 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     }
   }
 
-  private class GesturesManagerInteractionListener implements MapLibreMap.OnGesturesManagerInteractionListener {
+  private class GesturesManagerInteractionListener implements MapMetricsMap.OnGesturesManagerInteractionListener {
 
     @Override
-    public void onAddMapClickListener(MapLibreMap.OnMapClickListener listener) {
+    public void onAddMapClickListener(MapMetricsMap.OnMapClickListener listener) {
       mapGestureDetector.addOnMapClickListener(listener);
     }
 
     @Override
-    public void onRemoveMapClickListener(MapLibreMap.OnMapClickListener listener) {
+    public void onRemoveMapClickListener(MapMetricsMap.OnMapClickListener listener) {
       mapGestureDetector.removeOnMapClickListener(listener);
     }
 
     @Override
-    public void onAddMapLongClickListener(MapLibreMap.OnMapLongClickListener listener) {
+    public void onAddMapLongClickListener(MapMetricsMap.OnMapLongClickListener listener) {
       mapGestureDetector.addOnMapLongClickListener(listener);
     }
 
     @Override
-    public void onRemoveMapLongClickListener(MapLibreMap.OnMapLongClickListener listener) {
+    public void onRemoveMapLongClickListener(MapMetricsMap.OnMapLongClickListener listener) {
       mapGestureDetector.removeOnMapLongClickListener(listener);
     }
 
     @Override
-    public void onAddFlingListener(MapLibreMap.OnFlingListener listener) {
+    public void onAddFlingListener(MapMetricsMap.OnFlingListener listener) {
       mapGestureDetector.addOnFlingListener(listener);
     }
 
     @Override
-    public void onRemoveFlingListener(MapLibreMap.OnFlingListener listener) {
+    public void onRemoveFlingListener(MapMetricsMap.OnFlingListener listener) {
       mapGestureDetector.removeOnFlingListener(listener);
     }
 
     @Override
-    public void onAddMoveListener(MapLibreMap.OnMoveListener listener) {
+    public void onAddMoveListener(MapMetricsMap.OnMoveListener listener) {
       mapGestureDetector.addOnMoveListener(listener);
     }
 
     @Override
-    public void onRemoveMoveListener(MapLibreMap.OnMoveListener listener) {
+    public void onRemoveMoveListener(MapMetricsMap.OnMoveListener listener) {
       mapGestureDetector.removeOnMoveListener(listener);
     }
 
     @Override
-    public void onAddRotateListener(MapLibreMap.OnRotateListener listener) {
+    public void onAddRotateListener(MapMetricsMap.OnRotateListener listener) {
       mapGestureDetector.addOnRotateListener(listener);
     }
 
     @Override
-    public void onRemoveRotateListener(MapLibreMap.OnRotateListener listener) {
+    public void onRemoveRotateListener(MapMetricsMap.OnRotateListener listener) {
       mapGestureDetector.removeOnRotateListener(listener);
     }
 
     @Override
-    public void onAddScaleListener(MapLibreMap.OnScaleListener listener) {
+    public void onAddScaleListener(MapMetricsMap.OnScaleListener listener) {
       mapGestureDetector.addOnScaleListener(listener);
     }
 
     @Override
-    public void onRemoveScaleListener(MapLibreMap.OnScaleListener listener) {
+    public void onRemoveScaleListener(MapMetricsMap.OnScaleListener listener) {
       mapGestureDetector.removeOnScaleListener(listener);
     }
 
     @Override
-    public void onAddShoveListener(MapLibreMap.OnShoveListener listener) {
+    public void onAddShoveListener(MapMetricsMap.OnShoveListener listener) {
       mapGestureDetector.addShoveListener(listener);
     }
 
     @Override
-    public void onRemoveShoveListener(MapLibreMap.OnShoveListener listener) {
+    public void onRemoveShoveListener(MapMetricsMap.OnShoveListener listener) {
       mapGestureDetector.removeShoveListener(listener);
     }
 
@@ -1749,7 +1749,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     private final AttributionDialogManager defaultDialogManager;
     private UiSettings uiSettings;
 
-    private AttributionClickListener(@NonNull Context context, @NonNull MapLibreMap maplibreMap) {
+    private AttributionClickListener(@NonNull Context context, @NonNull MapMetricsMap maplibreMap) {
       this.defaultDialogManager = new AttributionDialogManager(context, maplibreMap);
       this.uiSettings = maplibreMap.getUiSettings();
     }

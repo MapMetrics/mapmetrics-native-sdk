@@ -17,7 +17,7 @@ class AttributionDialogManagerTest {
     )
 
     @InjectMocks
-    var maplibreMap = Mockito.mock(MapLibreMap::class.java)
+    var maplibreMap = Mockito.mock(MapMetricsMap::class.java)
 
     @InjectMocks
     var style = Mockito.mock(

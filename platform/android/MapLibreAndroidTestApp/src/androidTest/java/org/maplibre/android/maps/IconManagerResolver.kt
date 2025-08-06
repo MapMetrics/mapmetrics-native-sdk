@@ -3,12 +3,12 @@ package org.maplibre.android.maps
 import org.maplibre.android.annotations.Icon
 import timber.log.Timber
 
-class IconManagerResolver(maplibreMap: MapLibreMap?) {
+class IconManagerResolver(maplibreMap: MapMetricsMap?) {
     private var iconManager: IconManager? = null
 
     init {
         try {
-            val annotationManagerField = MapLibreMap::class.java.getDeclaredField("annotationManager")
+            val annotationManagerField = MapMetricsMap::class.java.getDeclaredField("annotationManager")
             annotationManagerField.isAccessible = true
             val annotationManager = annotationManagerField[maplibreMap] as AnnotationManager
             val iconManagerField = AnnotationManager::class.java.getDeclaredField("iconManager")

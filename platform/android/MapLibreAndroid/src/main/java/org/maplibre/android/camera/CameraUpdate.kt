@@ -1,6 +1,6 @@
 package org.maplibre.android.camera
 
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 
 /**
  * Interface definition for camera updates.
@@ -12,5 +12,5 @@ interface CameraUpdate {
      * @param maplibreMap Map object to build the position from
      * @return the camera position from the implementing camera update
      */
-    fun getCameraPosition(maplibreMap: MapLibreMap): CameraPosition?
+    fun getCameraPosition(maplibreMap: MapMetricsMap): CameraPosition?
 }

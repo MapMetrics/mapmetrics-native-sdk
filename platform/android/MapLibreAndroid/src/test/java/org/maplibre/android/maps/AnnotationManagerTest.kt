@@ -21,7 +21,7 @@ class AnnotationManagerTest {
     private val aIconManager = Mockito.mock(
         IconManager::class.java
     )
-    private val aMapLibreMap = Mockito.mock(MapLibreMap::class.java)
+    private val aMapMetricsMap = Mockito.mock(MapMetricsMap::class.java)
 
     private val annotations: Annotations = AnnotationContainer(aNativeMapView, annotationsArray)
     private val markers: Markers = MarkerContainer(aNativeMapView, annotationsArray, aIconManager)
@@ -53,9 +53,9 @@ class AnnotationManagerTest {
         val aMarkerOptions = Mockito.mock(
             BaseMarkerOptions::class.java
         )
-        val aMapLibreMap = Mockito.mock(MapLibreMap::class.java)
+        val aMapMetricsMap = Mockito.mock(MapMetricsMap::class.java)
         Mockito.`when`(aMarkerOptions.marker).thenReturn(aMarker)
-        annotationManager.addMarker(aMarkerOptions, aMapLibreMap)
+        annotationManager.addMarker(aMarkerOptions, aMapMetricsMap)
         Assert.assertEquals(aMarker, annotationManager.annotations[0])
         Assert.assertEquals(aMarker, annotationManager.getAnnotation(aId))
     }
@@ -70,7 +70,7 @@ class AnnotationManagerTest {
         val secondMarkerOption = MarkerOptions().position(LatLng()).title("second")
         markerList.add(firstMarkerOption)
         markerList.add(secondMarkerOption)
-        val aMapLibreMap = Mockito.mock(MapLibreMap::class.java)
+        val aMapMetricsMap = Mockito.mock(MapMetricsMap::class.java)
         Mockito.`when`(
             aNativeMapView.addMarker(
                 ArgumentMatchers.any(
@@ -80,7 +80,7 @@ class AnnotationManagerTest {
         ).thenReturn(firstId, secondId)
         Mockito.`when`(aNativeMapView.addMarkers(ArgumentMatchers.anyList()))
             .thenReturn(longArrayOf(firstId, secondId))
-        annotationManager.addMarkers(markerList, aMapLibreMap)
+        annotationManager.addMarkers(markerList, aMapMetricsMap)
         Assert.assertEquals(2, annotationManager.annotations.size)
         Assert.assertEquals("first", (annotationManager.annotations[0] as Marker).title)
         Assert.assertEquals("second", (annotationManager.annotations[1] as Marker).title)
@@ -95,7 +95,7 @@ class AnnotationManagerTest {
         val polygonOptions = PolygonOptions()
         val polygon = polygonOptions.polygon
         Mockito.`when`(aNativeMapView.addPolygon(polygon)).thenReturn(pId)
-        val resultPolygon = annotationManager.addPolygon(polygonOptions, aMapLibreMap)
+        val resultPolygon = annotationManager.addPolygon(polygonOptions, aMapMetricsMap)
         Assert.assertEquals(polygon, resultPolygon)
         Assert.assertEquals(pId, resultPolygon.id)
         Assert.assertEquals(1, annotationManager.annotations.size)
@@ -110,7 +110,7 @@ class AnnotationManagerTest {
         val polylineOptions = PolylineOptions()
         val polyline = polylineOptions.polyline
         Mockito.`when`(aNativeMapView.addPolyline(polyline)).thenReturn(pId)
-        val resultPolyline = annotationManager.addPolyline(polylineOptions, aMapLibreMap)
+        val resultPolyline = annotationManager.addPolyline(polylineOptions, aMapMetricsMap)
         Assert.assertEquals(polyline, resultPolyline)
         Assert.assertEquals(pId, resultPolyline.id)
         Assert.assertEquals(1, annotationManager.annotations.size)

@@ -3,7 +3,7 @@ package org.maplibre.android.testapp.activity.fragment
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.SupportMapFragment
 import org.maplibre.android.testapp.R
@@ -29,6 +29,6 @@ class MultiMapActivity : AppCompatActivity() {
         styleId: String
     ) {
         (fragmentManager.findFragmentById(fragmentId) as SupportMapFragment?)
-            ?.getMapAsync(OnMapReadyCallback { maplibreMap: MapLibreMap -> maplibreMap.setStyle(styleId) })
+            ?.getMapAsync(OnMapReadyCallback { maplibreMap: MapMetricsMap -> maplibreMap.setStyle(styleId) })
     }
 }

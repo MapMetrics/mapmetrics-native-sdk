@@ -10,7 +10,7 @@ import org.maplibre.geojson.FeatureCollection.fromJson
 import org.maplibre.geojson.Point
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.Property.ICON_ANCHOR_CENTER
 import org.maplibre.android.style.layers.PropertyFactory.*
@@ -26,7 +26,7 @@ import java.net.URISyntaxException
 /** Test activity showcasing using the LatLngBounds camera API. */
 class LatLngBoundsActivity : AppCompatActivity() {
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<*>
     private lateinit var bounds: LatLngBounds
     private lateinit var binding: ActivityLatlngboundsBinding

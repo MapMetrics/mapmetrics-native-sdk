@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
  * <p>
  * Once an instance of this interface is set on a {@link MapFragment} or {@link MapView} object,
  * the onMapReady(MapLibreMap) method is triggered when the map is ready to be used and provides an instance of
- * {@link MapLibreMap}.
+ * {@link MapMetricsMap}.
  * </p>
  */
 public interface OnMapReadyCallback {
@@ -18,5 +18,5 @@ public interface OnMapReadyCallback {
    * @param maplibreMap An instance of MapLibreMap associated with the {@link MapFragment} or
    *                  {@link MapView} that defines the callback.
    */
-  void onMapReady(@NonNull MapLibreMap maplibreMap);
+  void onMapReady(@NonNull MapMetricsMap maplibreMap);
 }

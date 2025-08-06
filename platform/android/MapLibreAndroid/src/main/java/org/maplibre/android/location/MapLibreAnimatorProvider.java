@@ -5,7 +5,7 @@ import android.view.animation.Interpolator;
 
 import androidx.annotation.Nullable;
 
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.geometry.LatLng;
 
 final class MapLibreAnimatorProvider {
@@ -35,13 +35,13 @@ final class MapLibreAnimatorProvider {
 
   MapLibreCameraAnimatorAdapter cameraAnimator(Float[] values,
                                                MapLibreAnimator.AnimationsValueChangeListener updateListener,
-                                               @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                               @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     return new MapLibreCameraAnimatorAdapter(values, updateListener, cancelableCallback);
   }
 
   MapLibrePaddingAnimator paddingAnimator(double[][] values,
                                         MapLibreAnimator.AnimationsValueChangeListener<double[]> updateListener,
-                                        @Nullable MapLibreMap.CancelableCallback cancelableCallback) {
+                                        @Nullable MapMetricsMap.CancelableCallback cancelableCallback) {
     return new MapLibrePaddingAnimator(values, updateListener, cancelableCallback);
   }
 

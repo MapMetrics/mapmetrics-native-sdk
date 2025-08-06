@@ -26,7 +26,7 @@ import java.util.List;
 
 /**
  * Responsible for managing and tracking state of Annotations linked to Map. All events related to
- * annotations that occur on {@link MapLibreMap} are forwarded to this class.
+ * annotations that occur on {@link MapMetricsMap} are forwarded to this class.
  * <p>
  * Responsible for referencing {@link InfoWindowManager}.
  * </p>
@@ -48,13 +48,13 @@ class AnnotationManager {
   private final LongSparseArray<Annotation> annotationsArray;
   private final List<Marker> selectedMarkers = new ArrayList<>();
 
-  private MapLibreMap maplibreMap;
+  private MapMetricsMap maplibreMap;
   @Nullable
-  private MapLibreMap.OnMarkerClickListener onMarkerClickListener;
+  private MapMetricsMap.OnMarkerClickListener onMarkerClickListener;
   @Nullable
-  private MapLibreMap.OnPolygonClickListener onPolygonClickListener;
+  private MapMetricsMap.OnPolygonClickListener onPolygonClickListener;
   @Nullable
-  private MapLibreMap.OnPolylineClickListener onPolylineClickListener;
+  private MapMetricsMap.OnPolylineClickListener onPolylineClickListener;
 
   private Annotations annotations;
   private ShapeAnnotations shapeAnnotations;
@@ -78,7 +78,7 @@ class AnnotationManager {
   // TODO refactor MapLibreMap out for Projection and Transform
   // Requires removing MapLibreMap from Annotations by using Peer model from #6912
   @NonNull
-  AnnotationManager bind(MapLibreMap maplibreMap) {
+  AnnotationManager bind(MapMetricsMap maplibreMap) {
     this.maplibreMap = maplibreMap;
     return this;
   }
@@ -151,16 +151,16 @@ class AnnotationManager {
   // Markers
   //
 
-  Marker addMarker(@NonNull BaseMarkerOptions markerOptions, @NonNull MapLibreMap maplibreMap) {
+  Marker addMarker(@NonNull BaseMarkerOptions markerOptions, @NonNull MapMetricsMap maplibreMap) {
     return markers.addBy(markerOptions, maplibreMap);
   }
 
   List<Marker> addMarkers(@NonNull List<? extends BaseMarkerOptions> markerOptionsList,
-                          @NonNull MapLibreMap maplibreMap) {
+                          @NonNull MapMetricsMap maplibreMap) {
     return markers.addBy(markerOptionsList, maplibreMap);
   }
 
-  void updateMarker(@NonNull Marker updatedMarker, @NonNull MapLibreMap maplibreMap) {
+  void updateMarker(@NonNull Marker updatedMarker, @NonNull MapMetricsMap maplibreMap) {
     if (!isAddedToMap(updatedMarker)) {
       logNonAdded(updatedMarker);
       return;
@@ -185,11 +185,11 @@ class AnnotationManager {
   // Polygons
   //
 
-  Polygon addPolygon(@NonNull PolygonOptions polygonOptions, @NonNull MapLibreMap maplibreMap) {
+  Polygon addPolygon(@NonNull PolygonOptions polygonOptions, @NonNull MapMetricsMap maplibreMap) {
     return polygons.addBy(polygonOptions, maplibreMap);
   }
 
-  List<Polygon> addPolygons(@NonNull List<PolygonOptions> polygonOptionsList, @NonNull MapLibreMap maplibreMap) {
+  List<Polygon> addPolygons(@NonNull List<PolygonOptions> polygonOptionsList, @NonNull MapMetricsMap maplibreMap) {
     return polygons.addBy(polygonOptionsList, maplibreMap);
   }
 
@@ -209,11 +209,11 @@ class AnnotationManager {
   // Polylines
   //
 
-  Polyline addPolyline(@NonNull PolylineOptions polylineOptions, @NonNull MapLibreMap maplibreMap) {
+  Polyline addPolyline(@NonNull PolylineOptions polylineOptions, @NonNull MapMetricsMap maplibreMap) {
     return polylines.addBy(polylineOptions, maplibreMap);
   }
 
-  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapLibreMap maplibreMap) {
+  List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, @NonNull MapMetricsMap maplibreMap) {
     return polylines.addBy(polylineOptionsList, maplibreMap);
   }
 
@@ -230,15 +230,15 @@ class AnnotationManager {
   }
 
   // TODO Refactor from here still in progress
-  void setOnMarkerClickListener(@Nullable MapLibreMap.OnMarkerClickListener listener) {
+  void setOnMarkerClickListener(@Nullable MapMetricsMap.OnMarkerClickListener listener) {
     onMarkerClickListener = listener;
   }
 
-  void setOnPolygonClickListener(@Nullable MapLibreMap.OnPolygonClickListener listener) {
+  void setOnPolygonClickListener(@Nullable MapMetricsMap.OnPolygonClickListener listener) {
     onPolygonClickListener = listener;
   }
 
-  void setOnPolylineClickListener(@Nullable MapLibreMap.OnPolylineClickListener listener) {
+  void setOnPolylineClickListener(@Nullable MapMetricsMap.OnPolylineClickListener listener) {
     onPolylineClickListener = listener;
   }
 
@@ -298,7 +298,7 @@ class AnnotationManager {
     return infoWindowManager;
   }
 
-  void adjustTopOffsetPixels(@NonNull MapLibreMap maplibreMap) {
+  void adjustTopOffsetPixels(@NonNull MapMetricsMap maplibreMap) {
     int count = annotationsArray.size();
     for (int i = 0; i < count; i++) {
       Annotation annotation = annotationsArray.get(i);
@@ -441,7 +441,7 @@ class AnnotationManager {
 
     private long closestMarkerId = NO_ANNOTATION_ID;
 
-    MarkerHitResolver(@NonNull MapLibreMap maplibreMap) {
+    MarkerHitResolver(@NonNull MapMetricsMap maplibreMap) {
       this.projection = maplibreMap.getProjection();
       this.minimalTouchSize = (int) (32 * MapLibre.getApplicationContext().getResources().getDisplayMetrics().density);
     }

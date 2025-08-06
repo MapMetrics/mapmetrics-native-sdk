@@ -11,8 +11,8 @@ import androidx.annotation.NonNull;
 
 import org.maplibre.android.LibraryLoader;
 import org.maplibre.android.log.Logger;
-import org.maplibre.android.maps.MapLibreMap;
-import org.maplibre.android.maps.MapLibreMapOptions;
+import org.maplibre.android.maps.MapMetricsMap;
+import org.maplibre.android.maps.MapMetricsMapOptions;
 
 /**
  * The {@link MapRenderer} encapsulates the render thread.
@@ -50,9 +50,9 @@ public abstract class MapRenderer implements MapRendererScheduler {
   // Holds the pointer to the native peer after initialization
   private long nativePtr = 0;
   private double expectedRenderTime = 0;
-  private MapLibreMap.OnFpsChangedListener onFpsChangedListener;
+  private MapMetricsMap.OnFpsChangedListener onFpsChangedListener;
 
-  public static MapRenderer create(MapLibreMapOptions options, @NonNull Context context, Runnable initCallback) {
+  public static MapRenderer create(MapMetricsMapOptions options, @NonNull Context context, Runnable initCallback) {
 
     MapRenderer renderer = null;
     String localFontFamily = options.getLocalIdeographFontFamily();
@@ -104,7 +104,7 @@ public abstract class MapRenderer implements MapRendererScheduler {
 
   public abstract RenderingRefreshMode getRenderingRefreshMode();
 
-  public void setOnFpsChangedListener(MapLibreMap.OnFpsChangedListener listener) {
+  public void setOnFpsChangedListener(MapMetricsMap.OnFpsChangedListener listener) {
     onFpsChangedListener = listener;
   }
 

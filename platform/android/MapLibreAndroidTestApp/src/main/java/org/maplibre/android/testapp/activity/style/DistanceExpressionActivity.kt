@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.geojson.Point
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression.distance
 import org.maplibre.android.style.expressions.Expression.lt
@@ -27,7 +27,7 @@ import org.maplibre.turf.TurfTransformation
 class DistanceExpressionActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWithinExpressionBinding
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     private val lat = 37.78794572301525
     private val lon = -122.40752220153807

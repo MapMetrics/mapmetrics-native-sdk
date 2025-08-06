@@ -3,7 +3,7 @@ package org.maplibre.android.testapp.activity.fragment
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.SupportMapFragment
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.databinding.ActivityBackstackFragmentBinding
@@ -57,7 +57,7 @@ class FragmentBackStackActivity : AppCompatActivity() {
         binding.button.setOnClickListener { handleClick() }
     }
 
-    private fun initMap(maplibreMap: MapLibreMap) {
+    private fun initMap(maplibreMap: MapMetricsMap) {
         try {
             val style = TestStyles.getPredefinedStyleWithFallback("Satellite Hybrid")
             maplibreMap.setStyle(style) {

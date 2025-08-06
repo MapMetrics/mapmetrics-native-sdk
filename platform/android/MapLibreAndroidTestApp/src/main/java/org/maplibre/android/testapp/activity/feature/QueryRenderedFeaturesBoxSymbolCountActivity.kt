@@ -7,7 +7,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.BackgroundLayer
@@ -24,7 +24,7 @@ import java.io.IOException
  */
 class QueryRenderedFeaturesBoxSymbolCountActivity : AppCompatActivity() {
     lateinit var mapView: MapView
-    lateinit var maplibreMap: MapLibreMap
+    lateinit var maplibreMap: MapMetricsMap
         private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +35,7 @@ class QueryRenderedFeaturesBoxSymbolCountActivity : AppCompatActivity() {
         // Initialize map as normal
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             this@QueryRenderedFeaturesBoxSymbolCountActivity.maplibreMap = maplibreMap
             try {
                 val testPoints = ResourceUtils.readRawResource(

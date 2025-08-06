@@ -8,8 +8,8 @@ import androidx.annotation.Nullable;
 
 import org.maplibre.android.constants.MapLibreConstants;
 import org.maplibre.android.maps.MapFragment;
+import org.maplibre.android.maps.MapMetricsMapOptions;
 import org.maplibre.android.maps.SupportMapFragment;
-import org.maplibre.android.maps.MapLibreMapOptions;
 
 /**
  * MapFragment utility class.
@@ -27,7 +27,7 @@ public class MapFragmentUtils {
    * @return a bundle of converted fragment arguments
    */
   @NonNull
-  public static Bundle createFragmentArgs(MapLibreMapOptions options) {
+  public static Bundle createFragmentArgs(MapMetricsMapOptions options) {
     Bundle bundle = new Bundle();
     bundle.putParcelable(MapLibreConstants.FRAG_ARG_MAPLIBREMAPOPTIONS, options);
     return bundle;
@@ -41,13 +41,13 @@ public class MapFragmentUtils {
    * @return converted MapLibreMapOptions
    */
   @Nullable
-  public static MapLibreMapOptions resolveArgs(@NonNull Context context, @Nullable Bundle args) {
-    MapLibreMapOptions options;
+  public static MapMetricsMapOptions resolveArgs(@NonNull Context context, @Nullable Bundle args) {
+    MapMetricsMapOptions options;
     if (args != null && args.containsKey(MapLibreConstants.FRAG_ARG_MAPLIBREMAPOPTIONS)) {
       options = args.getParcelable(MapLibreConstants.FRAG_ARG_MAPLIBREMAPOPTIONS);
     } else {
       // load default options
-      options = MapLibreMapOptions.createFromAttributes(context);
+      options = MapMetricsMapOptions.createFromAttributes(context);
     }
     return options;
   }

@@ -15,7 +15,7 @@ import org.maplibre.android.constants.MapLibreConstants;
 import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.log.Logger;
 
-import static org.maplibre.android.maps.MapLibreMap.OnCameraMoveStartedListener;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraMoveStartedListener;
 
 /**
  * Internal use.
@@ -37,7 +37,7 @@ public class Transform implements MapView.OnCameraDidChangeListener {
   @Nullable
   private CameraPosition cameraPosition;
   @Nullable
-  private MapLibreMap.CancelableCallback cameraCancelableCallback;
+  private MapMetricsMap.CancelableCallback cameraCancelableCallback;
   private CameraChangeDispatcher cameraChangeDispatcher;
 
   private final MapView.OnCameraDidChangeListener moveByChangeListener = new MapView.OnCameraDidChangeListener() {
@@ -56,7 +56,7 @@ public class Transform implements MapView.OnCameraDidChangeListener {
     this.cameraChangeDispatcher = cameraChangeDispatcher;
   }
 
-  void initialise(@NonNull MapLibreMap maplibreMap, @NonNull MapLibreMapOptions options) {
+  void initialise(@NonNull MapMetricsMap maplibreMap, @NonNull MapMetricsMapOptions options) {
     CameraPosition position = options.getCamera();
     if (position != null && !position.equals(CameraPosition.DEFAULT)) {
       moveCamera(maplibreMap, CameraUpdateFactory.newCameraPosition(position), null);
@@ -85,7 +85,7 @@ public class Transform implements MapView.OnCameraDidChangeListener {
     if (animated) {
       invalidateCameraPosition();
       if (cameraCancelableCallback != null) {
-        final MapLibreMap.CancelableCallback callback = cameraCancelableCallback;
+        final MapMetricsMap.CancelableCallback callback = cameraCancelableCallback;
 
         // nullification has to happen before Handler#post, see https://github.com/robolectric/robolectric/issues/1306
         cameraCancelableCallback = null;
@@ -106,8 +106,8 @@ public class Transform implements MapView.OnCameraDidChangeListener {
    * Internal use.
    */
   @UiThread
-  public void moveCamera(@NonNull MapLibreMap maplibreMap, CameraUpdate update,
-                               @Nullable final MapLibreMap.CancelableCallback callback) {
+  public void moveCamera(@NonNull MapMetricsMap maplibreMap, CameraUpdate update,
+                         @Nullable final MapMetricsMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(maplibreMap);
     if (isValidCameraPosition(cameraPosition)) {
       cancelTransitions();
@@ -130,9 +130,9 @@ public class Transform implements MapView.OnCameraDidChangeListener {
   }
 
   @UiThread
-  void easeCamera(@NonNull MapLibreMap maplibreMap, CameraUpdate update, int durationMs,
-                        boolean easingInterpolator,
-                        @Nullable final MapLibreMap.CancelableCallback callback) {
+  void easeCamera(@NonNull MapMetricsMap maplibreMap, CameraUpdate update, int durationMs,
+                  boolean easingInterpolator,
+                  @Nullable final MapMetricsMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(maplibreMap);
     if (isValidCameraPosition(cameraPosition)) {
       cancelTransitions();
@@ -153,8 +153,8 @@ public class Transform implements MapView.OnCameraDidChangeListener {
    * Internal use.
    */
   @UiThread
-  public void animateCamera(@NonNull MapLibreMap maplibreMap, CameraUpdate update, int durationMs,
-                                  @Nullable final MapLibreMap.CancelableCallback callback) {
+  public void animateCamera(@NonNull MapMetricsMap maplibreMap, CameraUpdate update, int durationMs,
+                            @Nullable final MapMetricsMap.CancelableCallback callback) {
     CameraPosition cameraPosition = update.getCameraPosition(maplibreMap);
     if (isValidCameraPosition(cameraPosition)) {
       cancelTransitions();
@@ -195,7 +195,7 @@ public class Transform implements MapView.OnCameraDidChangeListener {
 
     // notify animateCamera and easeCamera about cancelling
     if (cameraCancelableCallback != null) {
-      final MapLibreMap.CancelableCallback callback = cameraCancelableCallback;
+      final MapMetricsMap.CancelableCallback callback = cameraCancelableCallback;
       cameraChangeDispatcher.onCameraIdle();
 
       // nullification has to happen before Handler#post, see https://github.com/robolectric/robolectric/issues/1306

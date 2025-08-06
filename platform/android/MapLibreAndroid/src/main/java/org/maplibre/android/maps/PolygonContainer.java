@@ -25,7 +25,7 @@ class PolygonContainer implements Polygons {
   }
 
   @Override
-  public Polygon addBy(@NonNull PolygonOptions polygonOptions, @NonNull MapLibreMap maplibreMap) {
+  public Polygon addBy(@NonNull PolygonOptions polygonOptions, @NonNull MapMetricsMap maplibreMap) {
     Polygon polygon = polygonOptions.getPolygon();
     long id = nativeMap != null ? nativeMap.addPolygon(polygon) : 0;
     polygon.setId(id);
@@ -36,7 +36,7 @@ class PolygonContainer implements Polygons {
 
   @NonNull
   @Override
-  public List<Polygon> addBy(@NonNull List<PolygonOptions> polygonOptionsList, @NonNull MapLibreMap maplibreMap) {
+  public List<Polygon> addBy(@NonNull List<PolygonOptions> polygonOptionsList, @NonNull MapMetricsMap maplibreMap) {
     int count = polygonOptionsList.size();
 
     Polygon polygon;

@@ -3,8 +3,7 @@ package org.maplibre.android.testapp.activity.camera
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.OnMapClickListener
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
@@ -14,7 +13,7 @@ import timber.log.Timber
 /** Test activity showcasing using maximum and minimum zoom levels to restrict camera movement. */
 class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +24,7 @@ class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.addOnDidFinishLoadingStyleListener { Timber.d("Style Loaded") }
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         maplibreMap.setStyle(TestStyles.OPENFREEMAP_LIBERY)
         // # --8<-- [start:zoomPreference]

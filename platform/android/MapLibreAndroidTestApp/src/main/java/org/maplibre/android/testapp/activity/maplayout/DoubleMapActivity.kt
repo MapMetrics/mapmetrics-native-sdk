@@ -28,7 +28,7 @@ class DoubleMapActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map_fragment)
         if (savedInstanceState == null) {
-            val options = MapLibreMapOptions.createFromAttributes(this, null)
+            val options = MapMetricsMapOptions.createFromAttributes(this, null)
             options.camera(
                 CameraPosition.Builder()
                     .target(MACHU_PICCHU)
@@ -63,7 +63,7 @@ class DoubleMapActivity : AppCompatActivity() {
             // MapView large
             mapView = MapView(view.context, MapFragmentUtils.resolveArgs(view.context, arguments))
             mapView.onCreate(savedInstanceState)
-            mapView.getMapAsync { maplibreMap: MapLibreMap ->
+            mapView.getMapAsync { maplibreMap: MapMetricsMap ->
                 maplibreMap.setStyle(
                     TestStyles.getPredefinedStyleWithFallback(
                         "Streets"
@@ -76,7 +76,7 @@ class DoubleMapActivity : AppCompatActivity() {
             mapViewMini = view.findViewById(R.id.mini_map)
             mapViewMini.onCreate(savedInstanceState)
             mapViewMini.getMapAsync(
-                OnMapReadyCallback { maplibreMap: MapLibreMap ->
+                OnMapReadyCallback { maplibreMap: MapMetricsMap ->
                     maplibreMap.moveCamera(
                         CameraUpdateFactory.newCameraPosition(
                             CameraPosition.Builder().target(MACHU_PICCHU)

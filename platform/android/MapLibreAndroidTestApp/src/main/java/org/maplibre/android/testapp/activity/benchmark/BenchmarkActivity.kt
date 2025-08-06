@@ -24,11 +24,10 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.log.Logger
 import org.maplibre.android.log.Logger.INFO
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.CancelableCallback
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.CancelableCallback
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.testapp.R
-import org.maplibre.android.testapp.styles.TestStyles
 import org.maplibre.android.testapp.utils.BenchmarkInputData
 import org.maplibre.android.testapp.utils.BenchmarkResult
 import org.maplibre.android.testapp.utils.BenchmarkRun
@@ -36,12 +35,11 @@ import org.maplibre.android.testapp.utils.BenchmarkRunResult
 import org.maplibre.android.testapp.utils.FrameTimeStore
 import org.maplibre.android.testapp.utils.jsonPayload
 import java.io.File
-import java.util.ArrayList
 import kotlin.collections.flatMap
 import kotlin.collections.toTypedArray
 import kotlin.coroutines.resume
 
-suspend fun MapLibreMap.animateCameraSuspend(
+suspend fun MapMetricsMap.animateCameraSuspend(
     cameraUpdate: CameraUpdate,
     durationMs: Int
 ): Unit = suspendCancellableCoroutine { continuation ->
@@ -208,7 +206,7 @@ class BenchmarkActivity : AppCompatActivity() {
         }
 
         mapView = findViewById<View>(R.id.mapView) as MapView
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             val benchmarkResult = BenchmarkResult(arrayListOf())
 
             val benchmarkSlowDuration = 70000
@@ -242,7 +240,7 @@ class BenchmarkActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun doBenchmarkRun(maplibreMap: MapLibreMap, benchmarkRun: BenchmarkRun): BenchmarkRunResult {
+    private suspend fun doBenchmarkRun(maplibreMap: MapMetricsMap, benchmarkRun: BenchmarkRun): BenchmarkRunResult {
         var numFrames = 0
 
         val encodingTimeStore = FrameTimeStore()

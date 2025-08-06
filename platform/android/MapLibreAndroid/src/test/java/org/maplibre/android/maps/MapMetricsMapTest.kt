@@ -20,9 +20,9 @@ import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class MapLibreMapTest {
+class MapMetricsMapTest {
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     private lateinit var nativeMapView: NativeMap
 
@@ -30,7 +30,7 @@ class MapLibreMapTest {
 
     private lateinit var cameraChangeDispatcher: CameraChangeDispatcher
 
-    private lateinit var developerAnimationListener: MapLibreMap.OnDeveloperAnimationListener
+    private lateinit var developerAnimationListener: MapMetricsMap.OnDeveloperAnimationListener
 
     @Mock
     private lateinit var context: Context
@@ -46,7 +46,7 @@ class MapLibreMapTest {
         developerAnimationListener = mockk(relaxed = true)
         nativeMapView = mockk(relaxed = true)
         transform = mockk(relaxed = true)
-        maplibreMap = MapLibreMap(
+        maplibreMap = MapMetricsMap(
             nativeMapView,
             transform,
             mockk(relaxed = true),
@@ -71,7 +71,7 @@ class MapLibreMapTest {
 
     @Test
     fun testMoveCamera() {
-        val callback = mockk<MapLibreMap.CancelableCallback>()
+        val callback = mockk<MapMetricsMap.CancelableCallback>()
         val target = LatLng(1.0, 2.0)
         val expected = CameraPosition.Builder().target(target).build()
         val update = CameraUpdateFactory.newCameraPosition(expected)
@@ -82,7 +82,7 @@ class MapLibreMapTest {
 
     @Test
     fun testEaseCamera() {
-        val callback = mockk<MapLibreMap.CancelableCallback>()
+        val callback = mockk<MapMetricsMap.CancelableCallback>()
         val target = LatLng(1.0, 2.0)
         val expected = CameraPosition.Builder().target(target).build()
         val update = CameraUpdateFactory.newCameraPosition(expected)
@@ -93,7 +93,7 @@ class MapLibreMapTest {
 
     @Test
     fun testAnimateCamera() {
-        val callback = mockk<MapLibreMap.CancelableCallback>()
+        val callback = mockk<MapMetricsMap.CancelableCallback>()
         val target = LatLng(1.0, 2.0)
         val expected = CameraPosition.Builder().target(target).build()
         val update = CameraUpdateFactory.newCameraPosition(expected)
@@ -149,7 +149,7 @@ class MapLibreMapTest {
 
     @Test
     fun testFpsListener() {
-        val fpsChangedListener = mockk<MapLibreMap.OnFpsChangedListener>()
+        val fpsChangedListener = mockk<MapMetricsMap.OnFpsChangedListener>()
         maplibreMap.onFpsChangedListener = fpsChangedListener
         assertEquals("Listener should match", fpsChangedListener, maplibreMap.onFpsChangedListener)
     }

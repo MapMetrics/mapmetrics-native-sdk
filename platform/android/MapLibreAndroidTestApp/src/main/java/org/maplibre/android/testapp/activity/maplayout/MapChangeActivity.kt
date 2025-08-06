@@ -88,7 +88,7 @@ class MapChangeActivity : AppCompatActivity() {
         mapView.addOnWillStartRenderingMapListener(OnWillStartRenderingMapListener { Timber.v("OnWillStartRenderingMap") })
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
-            OnMapReadyCallback { maplibreMap: MapLibreMap ->
+            OnMapReadyCallback { maplibreMap: MapMetricsMap ->
                 maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
                 maplibreMap.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(

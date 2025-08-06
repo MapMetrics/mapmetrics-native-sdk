@@ -10,17 +10,17 @@ import java.lang.annotation.Retention;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.maplibre.android.maps.MapLibreMap.OnCameraIdleListener;
-import static org.maplibre.android.maps.MapLibreMap.OnCameraMoveCanceledListener;
-import static org.maplibre.android.maps.MapLibreMap.OnCameraMoveListener;
-import static org.maplibre.android.maps.MapLibreMap.OnCameraMoveStartedListener;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraIdleListener;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraMoveCanceledListener;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraMoveListener;
+import static org.maplibre.android.maps.MapMetricsMap.OnCameraMoveStartedListener;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
  * Class responsible for dispatching camera change events to registered listeners.
  */
-class CameraChangeDispatcher implements MapLibreMap.OnCameraMoveStartedListener, MapLibreMap.OnCameraMoveListener,
-  MapLibreMap.OnCameraMoveCanceledListener, OnCameraIdleListener {
+class CameraChangeDispatcher implements MapMetricsMap.OnCameraMoveStartedListener, MapMetricsMap.OnCameraMoveListener,
+  MapMetricsMap.OnCameraMoveCanceledListener, OnCameraIdleListener {
 
   private final CameraChangeHandler handler = new CameraChangeHandler(this);
 

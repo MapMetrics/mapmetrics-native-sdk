@@ -16,11 +16,10 @@ import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.permissions.PermissionsListener
 import org.maplibre.android.location.permissions.PermissionsManager
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
-import org.maplibre.android.testapp.styles.TestStyles
 
 // # --8<-- [start:top]
 /**
@@ -32,7 +31,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
     private lateinit var mapView: MapView
     private var permissionsManager: PermissionsManager? = null
     private var locationComponent: LocationComponent? = null
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +48,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
 
     // # --8<-- [start:onMapReady]
     @SuppressLint("MissingPermission")
-    override fun onMapReady(maplibreMap: MapLibreMap) {
+    override fun onMapReady(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
 
         maplibreMap.setStyle(

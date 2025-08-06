@@ -26,7 +26,7 @@ import java.util.ArrayList
  * Test stretchable image as a background for text..
  */
 class StretchableImageActivity : AppCompatActivity(), OnMapReadyCallback {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +36,7 @@ class StretchableImageActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(maplibreMap: MapLibreMap) {
+    override fun onMapReady(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style ->
             val popup = BitmapUtils.getBitmapFromDrawable(

@@ -20,7 +20,7 @@ import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.testapp.R
 import java.io.IOException
@@ -34,7 +34,7 @@ class JsonApiActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
 
     // Declare a variable for MapLibreMap
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     // # --8<-- [end:top]
 
     override fun onCreate(savedInstanceState: Bundle?) {

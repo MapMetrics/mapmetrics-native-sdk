@@ -11,7 +11,7 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression.within
 import org.maplibre.android.style.layers.CircleLayer
@@ -30,7 +30,7 @@ import org.maplibre.android.testapp.styles.TestStyles
  */
 class WithinExpressionActivity : AppCompatActivity() {
 
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var binding: ActivityWithinExpressionBinding
     private lateinit var mapView: MapView
 

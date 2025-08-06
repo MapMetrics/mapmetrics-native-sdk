@@ -48,7 +48,7 @@ import java.util.List;
 
 /**
  * The general class to interact with in the Android MapLibre SDK. It exposes the entry point for all
- * methods related to the MapView. You cannot instantiate {@link MapLibreMap} object directly, rather,
+ * methods related to the MapView. You cannot instantiate {@link MapMetricsMap} object directly, rather,
  * you must obtain one from the getMapAsync() method on a MapFragment or MapView that you have
  * added to your application.
  * <p>
@@ -56,7 +56,7 @@ import java.util.List;
  * </p>
  */
 @UiThread
-public final class MapLibreMap {
+public final class MapMetricsMap {
 
   private static final String TAG = "Mbgl-MapLibreMap";
 
@@ -76,7 +76,7 @@ public final class MapLibreMap {
   private AnnotationManager annotationManager;
 
   @Nullable
-  private MapLibreMap.OnFpsChangedListener onFpsChangedListener;
+  private MapMetricsMap.OnFpsChangedListener onFpsChangedListener;
 
   @Nullable
   private Style style;
@@ -84,9 +84,9 @@ public final class MapLibreMap {
   private boolean debugActive;
   private boolean started;
 
-  MapLibreMap(NativeMap map, Transform transform, UiSettings ui, Projection projection,
-              OnGesturesManagerInteractionListener listener, CameraChangeDispatcher cameraChangeDispatcher,
-              List<OnDeveloperAnimationListener> developerAnimationStartedListeners) {
+  MapMetricsMap(NativeMap map, Transform transform, UiSettings ui, Projection projection,
+                OnGesturesManagerInteractionListener listener, CameraChangeDispatcher cameraChangeDispatcher,
+                List<OnDeveloperAnimationListener> developerAnimationStartedListeners) {
     this.nativeMapView = map;
     this.uiSettings = ui;
     this.projection = projection;
@@ -107,7 +107,7 @@ public final class MapLibreMap {
     nativeMapView.setSwapBehaviorFlush(flush);
   }
 
-  void initialise(@NonNull Context context, @NonNull MapLibreMapOptions options) {
+  void initialise(@NonNull Context context, @NonNull MapMetricsMapOptions options) {
     transform.initialise(this, options);
     uiSettings.initialise(context, options);
 
@@ -267,7 +267,7 @@ public final class MapLibreMap {
    *
    * @param options the options object
    */
-  private void setPrefetchesTiles(@NonNull MapLibreMapOptions options) {
+  private void setPrefetchesTiles(@NonNull MapMetricsMapOptions options) {
     if (!options.getPrefetchesTiles()) {
       setPrefetchZoomDelta(0);
     } else {
@@ -291,7 +291,7 @@ public final class MapLibreMap {
    * Check whether tile pre-fetching is enabled or not.
    *
    * @return true if enabled
-   * @see MapLibreMap#setPrefetchesTiles(boolean)
+   * @see MapMetricsMap#setPrefetchesTiles(boolean)
    * @deprecated Use {@link #getPrefetchZoomDelta()} instead.
    */
   @Deprecated
@@ -317,7 +317,7 @@ public final class MapLibreMap {
    * Check current pre-fetching zoom delta.
    *
    * @return current zoom delta.
-   * @see MapLibreMap#setPrefetchZoomDelta(int)
+   * @see MapMetricsMap#setPrefetchZoomDelta(int)
    */
   @IntRange(from = 0)
   public int getPrefetchZoomDelta() {
@@ -338,7 +338,7 @@ public final class MapLibreMap {
    * Check whether tile cache is enabled or not.
    *
    * @return true if enabled
-   * @see MapLibreMap#setTileCacheEnabled(boolean)
+   * @see MapMetricsMap#setTileCacheEnabled(boolean)
    */
   public boolean getTileCacheEnabled() {
     return nativeMapView.getTileCacheEnabled();
@@ -547,9 +547,9 @@ public final class MapLibreMap {
    * @param callback the callback to be invoked when an animation finishes or is canceled
    */
   public final void moveCamera(@NonNull final CameraUpdate update,
-                               @Nullable final MapLibreMap.CancelableCallback callback) {
+                               @Nullable final MapMetricsMap.CancelableCallback callback) {
     notifyDeveloperAnimationListeners();
-    transform.moveCamera(MapLibreMap.this, update, callback);
+    transform.moveCamera(MapMetricsMap.this, update, callback);
   }
 
   /**
@@ -577,7 +577,7 @@ public final class MapLibreMap {
    *                 Do not update or ease the camera from within onCancel().
    * @see CameraUpdateFactory for a set of updates.
    */
-  public final void easeCamera(@NonNull CameraUpdate update, @Nullable final MapLibreMap.CancelableCallback callback) {
+  public final void easeCamera(@NonNull CameraUpdate update, @Nullable final MapMetricsMap.CancelableCallback callback) {
     easeCamera(update, MapLibreConstants.ANIMATION_DURATION, callback);
   }
 
@@ -615,7 +615,7 @@ public final class MapLibreMap {
    * @see CameraUpdateFactory for a set of updates.
    */
   public final void easeCamera(@NonNull CameraUpdate update, int durationMs,
-                               @Nullable final MapLibreMap.CancelableCallback callback) {
+                               @Nullable final MapMetricsMap.CancelableCallback callback) {
     easeCamera(update, durationMs, true, callback);
   }
 
@@ -656,12 +656,12 @@ public final class MapLibreMap {
   public final void easeCamera(@NonNull final CameraUpdate update,
                                final int durationMs,
                                final boolean easingInterpolator,
-                               @Nullable final MapLibreMap.CancelableCallback callback) {
+                               @Nullable final MapMetricsMap.CancelableCallback callback) {
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into easeCamera");
     }
     notifyDeveloperAnimationListeners();
-    transform.easeCamera(MapLibreMap.this, update, durationMs, easingInterpolator, callback);
+    transform.easeCamera(MapMetricsMap.this, update, durationMs, easingInterpolator, callback);
   }
 
   /**
@@ -689,7 +689,7 @@ public final class MapLibreMap {
    *                 called. Do not update or animate the camera from within onCancel().
    * @see CameraUpdateFactory for a set of updates.
    */
-  public final void animateCamera(@NonNull CameraUpdate update, @Nullable MapLibreMap.CancelableCallback callback) {
+  public final void animateCamera(@NonNull CameraUpdate update, @Nullable MapMetricsMap.CancelableCallback callback) {
     animateCamera(update, MapLibreConstants.ANIMATION_DURATION, callback);
   }
 
@@ -727,12 +727,12 @@ public final class MapLibreMap {
    * @see CameraUpdateFactory for a set of updates.
    */
   public final void animateCamera(@NonNull final CameraUpdate update, final int durationMs,
-                                  @Nullable final MapLibreMap.CancelableCallback callback) {
+                                  @Nullable final MapMetricsMap.CancelableCallback callback) {
     if (durationMs <= 0) {
       throw new IllegalArgumentException("Null duration passed into animateCamera");
     }
     notifyDeveloperAnimationListeners();
-    transform.animateCamera(MapLibreMap.this, update, durationMs, callback);
+    transform.animateCamera(MapMetricsMap.this, update, durationMs, callback);
   }
 
   /**
@@ -901,7 +901,7 @@ public final class MapLibreMap {
   // API endpoint config
   //
 
-  private void setApiBaseUrl(@NonNull MapLibreMapOptions options) {
+  private void setApiBaseUrl(@NonNull MapMetricsMapOptions options) {
     String apiBaseUrl = options.getApiBaseUrl();
     if (!TextUtils.isEmpty(apiBaseUrl)) {
       nativeMapView.setApiBaseUrl(apiBaseUrl);
@@ -2157,7 +2157,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the map is flinged.
    *
-   * @see MapLibreMap#addOnFlingListener(OnFlingListener)
+   * @see MapMetricsMap#addOnFlingListener(OnFlingListener)
    */
   public interface OnFlingListener {
     /**
@@ -2169,7 +2169,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the map is moved.
    *
-   * @see MapLibreMap#addOnMoveListener(OnMoveListener)
+   * @see MapMetricsMap#addOnMoveListener(OnMoveListener)
    */
   public interface OnMoveListener {
     void onMoveBegin(@NonNull MoveGestureDetector detector);
@@ -2182,7 +2182,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the map is rotated.
    *
-   * @see MapLibreMap#addOnRotateListener(OnRotateListener)
+   * @see MapMetricsMap#addOnRotateListener(OnRotateListener)
    */
   public interface OnRotateListener {
     void onRotateBegin(@NonNull RotateGestureDetector detector);
@@ -2195,7 +2195,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the map is scaled.
    *
-   * @see MapLibreMap#addOnScaleListener(OnScaleListener)
+   * @see MapMetricsMap#addOnScaleListener(OnScaleListener)
    */
   public interface OnScaleListener {
     void onScaleBegin(@NonNull StandardScaleGestureDetector detector);
@@ -2208,7 +2208,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the map is tilted.
    *
-   * @see MapLibreMap#addOnShoveListener(OnShoveListener)
+   * @see MapMetricsMap#addOnShoveListener(OnShoveListener)
    */
   public interface OnShoveListener {
     void onShoveBegin(@NonNull ShoveGestureDetector detector);
@@ -2286,7 +2286,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when a frame is rendered to the map view.
    *
-   * @see MapLibreMap#setOnFpsChangedListener(OnFpsChangedListener)
+   * @see MapMetricsMap#setOnFpsChangedListener(OnFpsChangedListener)
    */
   public interface OnFpsChangedListener {
     /**
@@ -2342,7 +2342,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user clicks on the map view.
    *
-   * @see MapLibreMap#addOnMapClickListener(OnMapClickListener)
+   * @see MapMetricsMap#addOnMapClickListener(OnMapClickListener)
    */
   public interface OnMapClickListener {
     /**
@@ -2358,7 +2358,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user long clicks on the map view.
    *
-   * @see MapLibreMap#addOnMapLongClickListener(OnMapLongClickListener)
+   * @see MapMetricsMap#addOnMapLongClickListener(OnMapLongClickListener)
    */
   public interface OnMapLongClickListener {
     /**
@@ -2374,7 +2374,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user clicks on a marker.
    *
-   * @see MapLibreMap#setOnMarkerClickListener(OnMarkerClickListener)
+   * @see MapMetricsMap#setOnMarkerClickListener(OnMarkerClickListener)
    * @deprecated As of 7.0.0,
    * use <a href="https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation">
    * MapLibre Annotation Plugin</a> instead
@@ -2393,7 +2393,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user clicks on a polygon.
    *
-   * @see MapLibreMap#setOnPolygonClickListener(OnPolygonClickListener)
+   * @see MapMetricsMap#setOnPolygonClickListener(OnPolygonClickListener)
    * @deprecated As of 7.0.0,
    * use <a href="https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation">
    * MapLibre Annotation Plugin</a> instead
@@ -2411,7 +2411,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user clicks on a polyline.
    *
-   * @see MapLibreMap#setOnPolylineClickListener(OnPolylineClickListener)
+   * @see MapMetricsMap#setOnPolylineClickListener(OnPolylineClickListener)
    * @deprecated As of 7.0.0,
    * use <a href="https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation">
    * MapLibre Annotation Plugin</a> instead
@@ -2429,7 +2429,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user clicks on an info window.
    *
-   * @see MapLibreMap#setOnInfoWindowClickListener(OnInfoWindowClickListener)
+   * @see MapMetricsMap#setOnInfoWindowClickListener(OnInfoWindowClickListener)
    */
   public interface OnInfoWindowClickListener {
     /**
@@ -2444,7 +2444,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when the user long presses on a marker's info window.
    *
-   * @see MapLibreMap#setOnInfoWindowClickListener(OnInfoWindowClickListener)
+   * @see MapMetricsMap#setOnInfoWindowClickListener(OnInfoWindowClickListener)
    */
   public interface OnInfoWindowLongClickListener {
 
@@ -2459,7 +2459,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when a marker's info window is closed.
    *
-   * @see MapLibreMap#setOnInfoWindowCloseListener(OnInfoWindowCloseListener)
+   * @see MapMetricsMap#setOnInfoWindowCloseListener(OnInfoWindowCloseListener)
    */
   public interface OnInfoWindowCloseListener {
 
@@ -2474,7 +2474,7 @@ public final class MapLibreMap {
   /**
    * Interface definition for a callback to be invoked when an info window will be shown.
    *
-   * @see MapLibreMap#setInfoWindowAdapter(InfoWindowAdapter)
+   * @see MapMetricsMap#setInfoWindowAdapter(InfoWindowAdapter)
    * @deprecated As of 7.0.0,
    * use <a href="https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation">
    * MapLibre Annotation Plugin</a> instead

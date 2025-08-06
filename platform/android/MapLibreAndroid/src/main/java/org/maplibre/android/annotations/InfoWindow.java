@@ -16,8 +16,8 @@ import androidx.annotation.Nullable;
 
 import org.maplibre.android.R;
 import org.maplibre.android.geometry.LatLng;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
 
 import java.lang.ref.WeakReference;
 
@@ -40,7 +40,7 @@ import java.lang.ref.WeakReference;
 public class InfoWindow {
 
   private WeakReference<Marker> boundMarker;
-  private WeakReference<MapLibreMap> maplibreMap;
+  private WeakReference<MapMetricsMap> maplibreMap;
   protected WeakReference<View> view;
 
   private float markerHeightOffset;
@@ -53,17 +53,17 @@ public class InfoWindow {
   @LayoutRes
   private int layoutRes;
 
-  InfoWindow(MapView mapView, int layoutResId, MapLibreMap maplibreMap) {
+  InfoWindow(MapView mapView, int layoutResId, MapMetricsMap maplibreMap) {
     layoutRes = layoutResId;
     View view = LayoutInflater.from(mapView.getContext()).inflate(layoutResId, mapView, false);
     initialize(view, maplibreMap);
   }
 
-  InfoWindow(@NonNull View view, MapLibreMap maplibreMap) {
+  InfoWindow(@NonNull View view, MapMetricsMap maplibreMap) {
     initialize(view, maplibreMap);
   }
 
-  private void initialize(@NonNull View view, MapLibreMap maplibreMap) {
+  private void initialize(@NonNull View view, MapMetricsMap maplibreMap) {
     this.maplibreMap = new WeakReference<>(maplibreMap);
     isVisible = false;
     this.view = new WeakReference<>(view);
@@ -71,9 +71,9 @@ public class InfoWindow {
     view.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        MapLibreMap maplibreMap = InfoWindow.this.maplibreMap.get();
+        MapMetricsMap maplibreMap = InfoWindow.this.maplibreMap.get();
         if (maplibreMap != null) {
-          MapLibreMap.OnInfoWindowClickListener onInfoWindowClickListener = maplibreMap.getOnInfoWindowClickListener();
+          MapMetricsMap.OnInfoWindowClickListener onInfoWindowClickListener = maplibreMap.getOnInfoWindowClickListener();
           boolean handledDefaultClick = false;
           if (onInfoWindowClickListener != null) {
             handledDefaultClick = onInfoWindowClickListener.onInfoWindowClick(getBoundMarker());
@@ -90,9 +90,9 @@ public class InfoWindow {
     view.setOnLongClickListener(new View.OnLongClickListener() {
       @Override
       public boolean onLongClick(View v) {
-        MapLibreMap maplibreMap = InfoWindow.this.maplibreMap.get();
+        MapMetricsMap maplibreMap = InfoWindow.this.maplibreMap.get();
         if (maplibreMap != null) {
-          MapLibreMap.OnInfoWindowLongClickListener listener = maplibreMap.getOnInfoWindowLongClickListener();
+          MapMetricsMap.OnInfoWindowLongClickListener listener = maplibreMap.getOnInfoWindowLongClickListener();
           if (listener != null) {
             listener.onInfoWindowLongClick(getBoundMarker());
           }
@@ -103,7 +103,7 @@ public class InfoWindow {
   }
 
   private void closeInfoWindow() {
-    MapLibreMap mapbox = maplibreMap.get();
+    MapMetricsMap mapbox = maplibreMap.get();
     Marker marker = boundMarker.get();
     if (marker != null && mapbox != null) {
       mapbox.deselectMarker(marker);
@@ -129,7 +129,7 @@ public class InfoWindow {
     MapView.LayoutParams lp = new MapView.LayoutParams(MapView.LayoutParams.WRAP_CONTENT,
       MapView.LayoutParams.WRAP_CONTENT);
 
-    MapLibreMap maplibreMap = this.maplibreMap.get();
+    MapMetricsMap maplibreMap = this.maplibreMap.get();
     View view = this.view.get();
     if (view != null && maplibreMap != null) {
       view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -222,7 +222,7 @@ public class InfoWindow {
    */
   @NonNull
   InfoWindow close() {
-    MapLibreMap maplibreMap = this.maplibreMap.get();
+    MapMetricsMap maplibreMap = this.maplibreMap.get();
     if (isVisible && maplibreMap != null) {
       isVisible = false;
       View view = this.view.get();
@@ -231,7 +231,7 @@ public class InfoWindow {
       }
 
       Marker marker = getBoundMarker();
-      MapLibreMap.OnInfoWindowCloseListener listener = maplibreMap.getOnInfoWindowCloseListener();
+      MapMetricsMap.OnInfoWindowCloseListener listener = maplibreMap.getOnInfoWindowCloseListener();
       if (listener != null) {
         listener.onInfoWindowClose(marker);
       }
@@ -247,7 +247,7 @@ public class InfoWindow {
    *
    * @param overlayItem the tapped overlay item
    */
-  void adaptDefaultMarker(@NonNull Marker overlayItem, MapLibreMap maplibreMap, @NonNull MapView mapView) {
+  void adaptDefaultMarker(@NonNull Marker overlayItem, MapMetricsMap maplibreMap, @NonNull MapView mapView) {
     View view = this.view.get();
     if (view == null) {
       view = LayoutInflater.from(mapView.getContext()).inflate(layoutRes, mapView, false);
@@ -291,7 +291,7 @@ public class InfoWindow {
    * Will result in getting this {@link InfoWindow} and updating the view being displayed.
    */
   public void update() {
-    MapLibreMap maplibreMap = this.maplibreMap.get();
+    MapMetricsMap maplibreMap = this.maplibreMap.get();
     Marker marker = boundMarker.get();
     View view = this.view.get();
     if (maplibreMap != null && marker != null && view != null) {

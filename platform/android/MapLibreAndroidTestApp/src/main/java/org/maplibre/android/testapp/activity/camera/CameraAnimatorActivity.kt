@@ -29,7 +29,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
     private val animators = LongSparseArray<Animator>()
     private lateinit var set: Animator
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_animator)
@@ -43,7 +43,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         map.setStyle(TestStyles.getMapMetricsStyle())
         initFab()

@@ -12,7 +12,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
@@ -32,7 +32,7 @@ import java.net.URISyntaxException
  */
 class GeoJsonClusteringActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var clusterSource: GeoJsonSource? = null
     private var clickOptionCounter = 0
     override fun onCreate(savedInstanceState: Bundle?) {

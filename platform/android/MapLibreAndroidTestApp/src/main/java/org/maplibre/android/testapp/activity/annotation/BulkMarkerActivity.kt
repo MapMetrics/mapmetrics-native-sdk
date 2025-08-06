@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 import org.maplibre.android.testapp.utils.GeoParseUtil
@@ -30,7 +30,7 @@ import kotlin.math.min
  * Test activity showcasing adding a large amount of Markers.
  */
 class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var locations: List<LatLng>? = null
     private var progressDialog: ProgressDialog? = null
@@ -42,7 +42,7 @@ class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
         mapView.getMapAsync { initMap(it) }
     }
 
-    private fun initMap(maplibreMap: MapLibreMap) {
+    private fun initMap(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
     }

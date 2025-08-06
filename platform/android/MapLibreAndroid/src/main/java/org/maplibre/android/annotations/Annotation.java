@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 
 /**
  * Annotation is an overlay on top of a Map.
@@ -29,7 +29,7 @@ public abstract class Annotation implements Comparable<Annotation> {
    * Internal C++ id is stored as unsigned int.
    */
   private long id = -1; // -1 unless added to a MapView
-  protected MapLibreMap maplibreMap;
+  protected MapMetricsMap maplibreMap;
   protected MapView mapView;
 
   protected Annotation() {
@@ -72,7 +72,7 @@ public abstract class Annotation implements Comparable<Annotation> {
    *
    * @param maplibreMap the hosting MapLibreMap
    */
-  public void setMapLibreMap(MapLibreMap maplibreMap) {
+  public void setMapLibreMap(MapMetricsMap maplibreMap) {
     this.maplibreMap = maplibreMap;
   }
 
@@ -81,7 +81,7 @@ public abstract class Annotation implements Comparable<Annotation> {
    *
    * @return the MapLibreMap
    */
-  protected MapLibreMap getMapLibreMap() {
+  protected MapMetricsMap getMapLibreMap() {
     return maplibreMap;
   }
 

@@ -40,7 +40,7 @@ fun calculateRotationAngle(from: Point, to: Point): Float {
  */
 class RealTimeGeoJsonActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var handler: Handler? = null
     private var runnable: Runnable? = null
 
@@ -59,7 +59,7 @@ class RealTimeGeoJsonActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         maplibreMap.cameraPosition = CameraPosition.Builder().target(netherlands).zoom(6.0).build()
         maplibreMap.setStyle(TestStyles.PROTOMAPS_WHITE) { style -> // add source
@@ -153,7 +153,7 @@ class RealTimeGeoJsonActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // --8<-- [start:Runnable]
     private inner class RefreshGeoJsonRunnable(
-        private val maplibreMap: MapLibreMap,
+        private val maplibreMap: MapMetricsMap,
         private val handler: Handler
     ) : Runnable {
         override fun run() {

@@ -78,7 +78,7 @@ package org.maplibre.android.testapp.activity.options
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
@@ -171,8 +171,8 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMapOptions
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style

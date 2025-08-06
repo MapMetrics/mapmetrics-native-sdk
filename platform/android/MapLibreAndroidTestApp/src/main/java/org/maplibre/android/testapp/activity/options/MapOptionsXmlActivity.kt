@@ -2,12 +2,10 @@ package org.maplibre.android.testapp.activity.options
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
-import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
-import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  *  TestActivity demonstrating configuring MapView with XML
@@ -15,7 +13,7 @@ import org.maplibre.android.testapp.styles.TestStyles
 
 class MapOptionsXmlActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +23,7 @@ class MapOptionsXmlActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
     }
 
-    override fun onMapReady(maplibreMap: MapLibreMap) {
+    override fun onMapReady(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         this.maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
     }

@@ -6,16 +6,16 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.print.PrintHelper
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  * Test activity showcasing using the Snapshot API to print a Map.
  */
-class PrintActivity : AppCompatActivity(), MapLibreMap.SnapshotReadyCallback {
+class PrintActivity : AppCompatActivity(), MapMetricsMap.SnapshotReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_print)
@@ -30,7 +30,7 @@ class PrintActivity : AppCompatActivity(), MapLibreMap.SnapshotReadyCallback {
         }
     }
 
-    private fun initMap(maplibreMap: MapLibreMap) {
+    private fun initMap(maplibreMap: MapMetricsMap) {
         this.maplibreMap = maplibreMap
         maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
     }

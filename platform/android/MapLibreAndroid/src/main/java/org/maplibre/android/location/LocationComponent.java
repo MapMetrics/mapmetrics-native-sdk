@@ -28,11 +28,11 @@ import org.maplibre.android.location.modes.RenderMode;
 import org.maplibre.android.location.engine.MapLibreFusedLocationEngineImpl;
 import org.maplibre.android.location.permissions.PermissionsManager;
 import org.maplibre.android.log.Logger;
+import org.maplibre.android.maps.MapMetricsMap;
 import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
-import org.maplibre.android.maps.MapLibreMap.OnCameraIdleListener;
-import org.maplibre.android.maps.MapLibreMap.OnCameraMoveListener;
-import org.maplibre.android.maps.MapLibreMap.OnMapClickListener;
+import org.maplibre.android.maps.MapMetricsMap.OnCameraIdleListener;
+import org.maplibre.android.maps.MapMetricsMap.OnCameraMoveListener;
+import org.maplibre.android.maps.MapMetricsMap.OnMapClickListener;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.maps.Transform;
 import org.maplibre.android.style.layers.SymbolLayer;
@@ -69,7 +69,7 @@ import static org.maplibre.android.location.modes.RenderMode.GPS;
  * mode set with {@link LocationComponent#setCameraMode(int)}.
  * <p>
  * <strong>
- * To get the component object use {@link MapLibreMap#getLocationComponent()} and activate it with
+ * To get the component object use {@link MapMetricsMap#getLocationComponent()} and activate it with
  * {@link #activateLocationComponent(LocationComponentActivationOptions)}.
  * Then, manage its visibility with {@link #setLocationComponentEnabled(boolean)}.
  * The component will not process location updates right after activation, but only after being enabled.
@@ -102,7 +102,7 @@ public final class LocationComponent {
   private static final String TAG = "Mbgl-LocationComponent";
 
   @NonNull
-  private final MapLibreMap maplibreMap;
+  private final MapMetricsMap maplibreMap;
   @NonNull
   private final Transform transform;
   private Style style;
@@ -190,11 +190,11 @@ public final class LocationComponent {
   /**
    * Internal use.
    * <p>
-   * To get the component object use {@link MapLibreMap#getLocationComponent()}.
+   * To get the component object use {@link MapMetricsMap#getLocationComponent()}.
    */
-  public LocationComponent(@NonNull MapLibreMap maplibreMap,
+  public LocationComponent(@NonNull MapMetricsMap maplibreMap,
                            @NonNull Transform transform,
-                           @NonNull List<MapLibreMap.OnDeveloperAnimationListener> developerAnimationListeners) {
+                           @NonNull List<MapMetricsMap.OnDeveloperAnimationListener> developerAnimationListeners) {
     this.maplibreMap = maplibreMap;
     this.transform = transform;
     developerAnimationListeners.add(developerAnimationListener);
@@ -208,9 +208,9 @@ public final class LocationComponent {
   }
 
   @VisibleForTesting
-  LocationComponent(@NonNull MapLibreMap maplibreMap,
+  LocationComponent(@NonNull MapMetricsMap maplibreMap,
                     @NonNull Transform transform,
-                    @NonNull List<MapLibreMap.OnDeveloperAnimationListener> developerAnimationListeners,
+                    @NonNull List<MapMetricsMap.OnDeveloperAnimationListener> developerAnimationListeners,
                     @NonNull LocationEngineCallback<LocationEngineResult> currentListener,
                     @NonNull LocationEngineCallback<LocationEngineResult> lastListener,
                     @NonNull LocationLayerController locationLayerController,
@@ -527,8 +527,8 @@ public final class LocationComponent {
    * Zooms to the desired zoom level.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the zoom change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the zoom as a camera change argument.
@@ -539,7 +539,7 @@ public final class LocationComponent {
    * @param callback          The callback with finish/cancel information
    */
   public void zoomWhileTracking(double zoomLevel, long animationDuration,
-                                @Nullable MapLibreMap.CancelableCallback callback) {
+                                @Nullable MapMetricsMap.CancelableCallback callback) {
     checkActivationState();
     if (!isLayerReady) {
       notifyUnsuccessfulCameraOperation(callback, null);
@@ -563,8 +563,8 @@ public final class LocationComponent {
    * Zooms to the desired zoom level.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the zoom change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the zoom as a camera change argument.
@@ -582,8 +582,8 @@ public final class LocationComponent {
    * Zooms to the desired zoom level.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the zoom change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the zoom as a camera change argument.
@@ -597,7 +597,7 @@ public final class LocationComponent {
   }
 
   /**
-   * Cancels animation started by {@link #zoomWhileTracking(double, long, MapLibreMap.CancelableCallback)}.
+   * Cancels animation started by {@link #zoomWhileTracking(double, long, MapMetricsMap.CancelableCallback)}.
    */
   public void cancelZoomWhileTrackingAnimation() {
     checkActivationState();
@@ -608,8 +608,8 @@ public final class LocationComponent {
    * Sets the padding.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the padding change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the padding as a camera change argument.
@@ -625,8 +625,8 @@ public final class LocationComponent {
    * Sets the padding.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the padding change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the padding as a camera change argument.
@@ -643,8 +643,8 @@ public final class LocationComponent {
    * Sets the padding.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the padding change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the padding as a camera change argument.
@@ -655,7 +655,7 @@ public final class LocationComponent {
    * @param callback          The callback with finish/cancel information
    */
   public void paddingWhileTracking(double[] padding, long animationDuration,
-                                   @Nullable MapLibreMap.CancelableCallback callback) {
+                                   @Nullable MapMetricsMap.CancelableCallback callback) {
     checkActivationState();
     if (!isLayerReady) {
       notifyUnsuccessfulCameraOperation(callback, null);
@@ -675,7 +675,7 @@ public final class LocationComponent {
   }
 
   /**
-   * Cancels animation started by {@link #paddingWhileTracking(double[], long, MapLibreMap.CancelableCallback)}.
+   * Cancels animation started by {@link #paddingWhileTracking(double[], long, MapMetricsMap.CancelableCallback)}.
    */
   public void cancelPaddingWhileTrackingAnimation() {
     checkActivationState();
@@ -686,8 +686,8 @@ public final class LocationComponent {
    * Tilts the camera.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the tilt change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the tilt as a camera change argument.
@@ -698,7 +698,7 @@ public final class LocationComponent {
    * @param callback          The callback with finish/cancel information
    */
   public void tiltWhileTracking(double tilt, long animationDuration,
-                                @Nullable MapLibreMap.CancelableCallback callback) {
+                                @Nullable MapMetricsMap.CancelableCallback callback) {
     checkActivationState();
     if (!isLayerReady) {
       notifyUnsuccessfulCameraOperation(callback, null);
@@ -720,8 +720,8 @@ public final class LocationComponent {
    * Tilts the camera.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the tilt change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the tilt as a camera change argument.
@@ -739,8 +739,8 @@ public final class LocationComponent {
    * Tilts the camera.
    * This API can only be used in pair with camera modes other than {@link CameraMode#NONE}.
    * If you are not using any of {@link CameraMode} modes,
-   * use one of {@link MapLibreMap#moveCamera(CameraUpdate)},
-   * {@link MapLibreMap#easeCamera(CameraUpdate)} or {@link MapLibreMap#animateCamera(CameraUpdate)} instead.
+   * use one of {@link MapMetricsMap#moveCamera(CameraUpdate)},
+   * {@link MapMetricsMap#easeCamera(CameraUpdate)} or {@link MapMetricsMap#animateCamera(CameraUpdate)} instead.
    * <p>
    * If the camera is transitioning when the tilt change is requested, the call is going to be ignored.
    * Use {@link CameraTransitionListener} to chain the animations, or provide the tilt as a camera change argument.
@@ -754,7 +754,7 @@ public final class LocationComponent {
   }
 
   /**
-   * Cancels animation started by {@link #tiltWhileTracking(double, long, MapLibreMap.CancelableCallback)}.
+   * Cancels animation started by {@link #tiltWhileTracking(double, long, MapMetricsMap.CancelableCallback)}.
    */
   public void cancelTiltWhileTrackingAnimation() {
     checkActivationState();
@@ -802,7 +802,7 @@ public final class LocationComponent {
    * Set max FPS at which location animators can output updates. The throttling will only impact the location puck
    * and camera tracking smooth animations.
    * <p>
-   * Setting this <b>will not impact</b> any other animations schedule with {@link MapLibreMap}, gesture animations or
+   * Setting this <b>will not impact</b> any other animations schedule with {@link MapMetricsMap}, gesture animations or
    * {@link #zoomWhileTracking(double)}/{@link #tiltWhileTracking(double)}.
    * <p>
    * Use this setting to limit animation rate of the location puck on higher zoom levels to decrease the stress on
@@ -947,7 +947,7 @@ public final class LocationComponent {
    * <p>
    * If there are registered location click listeners and the location is clicked,
    * only {@link OnLocationClickListener#onLocationComponentClick()} is going to be delivered,
-   * {@link MapLibreMap.OnMapClickListener#onMapClick(LatLng)} is going to be consumed
+   * {@link MapMetricsMap.OnMapClickListener#onMapClick(LatLng)} is going to be consumed
    * and not pushed to the listeners registered after the component's activation.
    *
    * @param listener The location click listener that is invoked when the
@@ -971,7 +971,7 @@ public final class LocationComponent {
    * <p>
    * If there are registered location long click listeners and the location is long clicked,
    * only {@link OnLocationLongClickListener#onLocationComponentLongClick()} is going to be delivered,
-   * {@link MapLibreMap.OnMapLongClickListener#onMapLongClick(LatLng)} is going to be consumed
+   * {@link MapMetricsMap.OnMapLongClickListener#onMapLongClick(LatLng)} is going to be consumed
    * and not pushed to the listeners registered after the component's activation.
    *
    * @param listener The location click listener that is invoked when the
@@ -1418,7 +1418,7 @@ public final class LocationComponent {
   };
 
   @NonNull
-  private MapLibreMap.OnMapLongClickListener onMapLongClickListener = new MapLibreMap.OnMapLongClickListener() {
+  private MapMetricsMap.OnMapLongClickListener onMapLongClickListener = new MapMetricsMap.OnMapLongClickListener() {
     @Override
     public boolean onMapLongClick(@NonNull LatLng point) {
       if (!onLocationLongClickListeners.isEmpty() && locationLayerController.onMapClick(point)) {
@@ -1542,8 +1542,8 @@ public final class LocationComponent {
   };
 
   @NonNull
-  private final MapLibreMap.OnDeveloperAnimationListener developerAnimationListener =
-    new MapLibreMap.OnDeveloperAnimationListener() {
+  private final MapMetricsMap.OnDeveloperAnimationListener developerAnimationListener =
+    new MapMetricsMap.OnDeveloperAnimationListener() {
       @Override
       public void onDeveloperAnimationStarted() {
         if (isComponentInitialized && isEnabled) {
@@ -1558,7 +1558,7 @@ public final class LocationComponent {
     }
   }
 
-  private void notifyUnsuccessfulCameraOperation(@Nullable MapLibreMap.CancelableCallback callback,
+  private void notifyUnsuccessfulCameraOperation(@Nullable MapMetricsMap.CancelableCallback callback,
                                                  @Nullable String msg) {
     if (msg != null) {
       Logger.e(TAG, msg);

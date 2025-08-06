@@ -4,7 +4,7 @@ import android.graphics.Color;
 
 import androidx.annotation.Keep;
 
-import org.maplibre.android.maps.MapLibreMap;
+import org.maplibre.android.maps.MapMetricsMap;
 
 /**
  * Polyline is a geometry feature with an unclosed list of coordinates drawn as a line
@@ -64,7 +64,7 @@ public final class Polyline extends BasePointCollection {
 
   @Override
   void update() {
-    MapLibreMap maplibreMap = getMapLibreMap();
+    MapMetricsMap maplibreMap = getMapLibreMap();
     if (maplibreMap != null) {
       maplibreMap.updatePolyline(this);
     }

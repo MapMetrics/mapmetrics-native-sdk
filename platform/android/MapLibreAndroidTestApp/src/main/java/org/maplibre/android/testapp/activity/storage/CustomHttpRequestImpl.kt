@@ -7,16 +7,11 @@ import org.maplibre.android.ModuleProvider
 import org.maplibre.android.ModuleProviderImpl
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.MapLibre
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
-import org.maplibre.android.storage.FileSource
-import org.maplibre.android.storage.FileSource.ResourceTransformCallback
-import org.maplibre.android.storage.Resource
 import org.maplibre.android.testapp.R
-import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.ExampleCustomModuleProviderImpl
-import timber.log.Timber
 
 /**
  * This example activity shows how to provide your own HTTP request implementation.
@@ -35,7 +30,7 @@ class CustomHttpRequestImplActivity : AppCompatActivity() {
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
-            OnMapReadyCallback { maplibreMap: MapLibreMap ->
+            OnMapReadyCallback { maplibreMap: MapMetricsMap ->
                 maplibreMap.setStyle(Style.Builder().fromUri("https://demotiles.maplibre.org/style.json"))
             }
         )

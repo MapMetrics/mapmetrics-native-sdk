@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.*
-import org.maplibre.android.maps.MapLibreMap.CancelableCallback
+import org.maplibre.android.maps.MapMetricsMap.CancelableCallback
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
 import java.util.*
@@ -19,7 +19,7 @@ import java.util.*
  */
 class TextureViewAnimationActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private var handler: Handler? = null
     private var delayed: Runnable? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +40,7 @@ class TextureViewAnimationActivity : AppCompatActivity() {
 
     private fun setupMapView(savedInstanceState: Bundle?) {
         mapView = findViewById<View>(R.id.mapView) as MapView
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             this@TextureViewAnimationActivity.maplibreMap = maplibreMap
             maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
             setFpsView(maplibreMap)
@@ -56,7 +56,7 @@ class TextureViewAnimationActivity : AppCompatActivity() {
         }
     }
 
-    private fun flyTo(maplibreMap: MapLibreMap, place: Int, zoom: Double) {
+    private fun flyTo(maplibreMap: MapMetricsMap, place: Int, zoom: Double) {
         maplibreMap.animateCamera(
             CameraUpdateFactory.newLatLngZoom(PLACES[place], zoom),
             10000,
@@ -78,7 +78,7 @@ class TextureViewAnimationActivity : AppCompatActivity() {
         )
     }
 
-    private fun setFpsView(maplibreMap: MapLibreMap) {
+    private fun setFpsView(maplibreMap: MapMetricsMap) {
         val fpsView = findViewById<View>(R.id.fpsView) as TextView
         maplibreMap.setOnFpsChangedListener { fps: Double ->
             fpsView.text = String.format(Locale.US, "FPS: %4.2f", fps)

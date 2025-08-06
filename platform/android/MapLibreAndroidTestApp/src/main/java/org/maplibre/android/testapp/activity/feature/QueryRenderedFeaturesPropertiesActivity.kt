@@ -12,9 +12,9 @@ import org.maplibre.geojson.Feature
 import org.maplibre.android.annotations.BaseMarkerOptions
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapLibreMap.InfoWindowAdapter
-import org.maplibre.android.maps.MapLibreMap.OnMapClickListener
+import org.maplibre.android.maps.MapMetricsMap
+import org.maplibre.android.maps.MapMetricsMap.InfoWindowAdapter
+import org.maplibre.android.maps.MapMetricsMap.OnMapClickListener
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.styles.TestStyles
@@ -25,7 +25,7 @@ import timber.log.Timber
  */
 class QueryRenderedFeaturesPropertiesActivity : AppCompatActivity() {
     lateinit var mapView: MapView
-    lateinit var maplibreMap: MapLibreMap
+    lateinit var maplibreMap: MapMetricsMap
         private set
     private var marker: Marker? = null
     private val mapClickListener = OnMapClickListener { point ->
@@ -61,7 +61,7 @@ class QueryRenderedFeaturesPropertiesActivity : AppCompatActivity() {
         // Initialize map as normal
         mapView = findViewById<View>(R.id.mapView) as MapView
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { maplibreMap: MapLibreMap ->
+        mapView.getMapAsync { maplibreMap: MapMetricsMap ->
             maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets")) { style: Style? ->
                 this@QueryRenderedFeaturesPropertiesActivity.maplibreMap = maplibreMap
 
@@ -100,7 +100,7 @@ class QueryRenderedFeaturesPropertiesActivity : AppCompatActivity() {
         }
     }
 
-    private fun addCustomInfoWindowAdapter(maplibreMap: MapLibreMap) {
+    private fun addCustomInfoWindowAdapter(maplibreMap: MapMetricsMap) {
         maplibreMap.infoWindowAdapter = object : InfoWindowAdapter {
             private fun row(text: String): TextView {
                 val view = TextView(this@QueryRenderedFeaturesPropertiesActivity)

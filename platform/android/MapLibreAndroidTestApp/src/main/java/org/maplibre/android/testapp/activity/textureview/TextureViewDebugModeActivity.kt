@@ -2,7 +2,7 @@ package org.maplibre.android.testapp.activity.textureview
 
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
-import org.maplibre.android.maps.MapLibreMapOptions
+import org.maplibre.android.maps.MapMetricsMapOptions
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.testapp.activity.maplayout.DebugModeActivity
 import org.maplibre.android.testapp.utils.NavUtils
@@ -22,7 +22,7 @@ class TextureViewDebugModeActivity : DebugModeActivity(), OnMapReadyCallback {
         })
     }
 
-    override fun setupMapLibreMapOptions(): MapLibreMapOptions {
+    override fun setupMapLibreMapOptions(): MapMetricsMapOptions {
         val maplibreMapOptions = super.setupMapLibreMapOptions()
         maplibreMapOptions.textureMode(true)
         return maplibreMapOptions

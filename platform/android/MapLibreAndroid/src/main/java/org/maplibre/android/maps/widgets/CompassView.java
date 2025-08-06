@@ -13,15 +13,15 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.ViewPropertyAnimatorCompat;
 import androidx.core.view.ViewPropertyAnimatorListenerAdapter;
 
-import org.maplibre.android.maps.MapLibreMap;
-import org.maplibre.android.maps.MapLibreMapOptions;
+import org.maplibre.android.maps.MapMetricsMap;
+import org.maplibre.android.maps.MapMetricsMapOptions;
 
 /**
  * UI element overlaid on a map to show the map's bearing when it isn't true north (0.0). Tapping
  * the compass resets the bearing to true north and hides the compass.
  * <p>
  * You can change the behaviour of this View during initialisation with
- * {@link MapLibreMapOptions}, and xml attributes. While running you can
+ * {@link MapMetricsMapOptions}, and xml attributes. While running you can
  * use {@link org.maplibre.android.maps.UiSettings}.
  * </p>
  */
@@ -35,7 +35,7 @@ public final class CompassView extends ImageView implements Runnable {
   private boolean fadeCompassViewFacingNorth = true;
   @Nullable
   private ViewPropertyAnimatorCompat fadeAnimator;
-  private MapLibreMap.OnCompassAnimationListener compassAnimationListener;
+  private MapMetricsMap.OnCompassAnimationListener compassAnimationListener;
   private boolean isAnimating = false;
 
   public CompassView(@NonNull Context context) {
@@ -62,7 +62,7 @@ public final class CompassView extends ImageView implements Runnable {
     setLayoutParams(lp);
   }
 
-  public void injectCompassAnimationListener(@NonNull MapLibreMap.OnCompassAnimationListener compassAnimationListener) {
+  public void injectCompassAnimationListener(@NonNull MapMetricsMap.OnCompassAnimationListener compassAnimationListener) {
     this.compassAnimationListener = compassAnimationListener;
   }
 

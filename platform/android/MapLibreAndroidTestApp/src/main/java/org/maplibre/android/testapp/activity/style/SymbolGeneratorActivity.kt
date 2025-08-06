@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
@@ -39,7 +39,7 @@ import timber.log.Timber
  */
 class SymbolGeneratorActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_symbol_generator)
@@ -49,7 +49,7 @@ class SymbolGeneratorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    override fun onMapReady(map: MapLibreMap) {
+    override fun onMapReady(map: MapMetricsMap) {
         maplibreMap = map
         map.setStyle(TestStyles.getPredefinedStyleWithFallback("Outdoor")) { style: Style? ->
             addSymbolClickListener()

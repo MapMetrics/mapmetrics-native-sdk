@@ -2,7 +2,7 @@ package org.maplibre.android.location
 
 import android.animation.TypeEvaluator
 import androidx.annotation.Size
-import org.maplibre.android.maps.MapLibreMap.CancelableCallback
+import org.maplibre.android.maps.MapMetricsMap.CancelableCallback
 
 class MapLibrePaddingAnimator internal constructor(
     @Size(min = 2) values: Array<DoubleArray>,

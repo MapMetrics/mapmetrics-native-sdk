@@ -9,7 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
@@ -32,7 +32,7 @@ import java.net.URISyntaxException
  */
 class CircleLayerActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapLibreMap
+    private lateinit var maplibreMap: MapMetricsMap
     private lateinit var styleFab: FloatingActionButton
     private lateinit var routeFab: FloatingActionButton
     private var layer: CircleLayer? = null
@@ -45,7 +45,7 @@ class CircleLayerActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.activity_circle_layer)
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { map: MapLibreMap? ->
+        mapView.getMapAsync { map: MapMetricsMap? ->
             if (map != null) {
                 maplibreMap = map
             }
