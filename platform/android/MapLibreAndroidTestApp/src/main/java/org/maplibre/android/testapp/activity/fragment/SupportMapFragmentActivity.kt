@@ -15,7 +15,7 @@ import org.maplibre.android.testapp.styles.TestStyles
  * Test activity showcasing using the MapFragment API using Support Library Fragments.
  *
  *
- * Uses MapLibreMapOptions to initialise the Fragment.
+ * Uses MapMetricsMapOptions to initialise the Fragment.
  *
  */
 class SupportMapFragmentActivity :
@@ -23,7 +23,7 @@ class SupportMapFragmentActivity :
     OnMapViewReadyCallback,
     OnMapReadyCallback,
     OnDidFinishRenderingFrameListener {
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var initialCameraAnimation = true
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,8 +67,8 @@ class SupportMapFragmentActivity :
     }
 
     override fun onMapReady(map: MapMetricsMap) {
-        maplibreMap = map
-        maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Satellite Hybrid"))
+        mapMetricsMap = map
+        mapMetricsMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Satellite Hybrid"))
     }
 
     override fun onDestroy() {
@@ -77,8 +77,8 @@ class SupportMapFragmentActivity :
     }
 
     override fun onDidFinishRenderingFrame(fully: Boolean, frameEncodingTime: Double, frameRenderingTime: Double) {
-        if (initialCameraAnimation && fully && this::maplibreMap.isInitialized) {
-            maplibreMap.animateCamera(
+        if (initialCameraAnimation && fully && this::mapMetricsMap.isInitialized) {
+            mapMetricsMap.animateCamera(
                 CameraUpdateFactory.newCameraPosition(CameraPosition.Builder().tilt(45.0).build()),
                 5000
             )

@@ -23,6 +23,7 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.testapp.R
+import org.maplibre.android.testapp.styles.TestStyles
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -33,8 +34,8 @@ class JsonApiActivity : AppCompatActivity() {
     // Declare a variable for MapView
     private lateinit var mapView: MapView
 
-    // Declare a variable for MapLibreMap
-    private lateinit var maplibreMap: MapMetricsMap
+    // Declare a variable for MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     // # --8<-- [end:top]
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,9 +51,9 @@ class JsonApiActivity : AppCompatActivity() {
 
         // # --8<-- [start:mapAsync]
         mapView.getMapAsync { map ->
-            maplibreMap = map
+            mapMetricsMap = map
 
-            maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
+            mapMetricsMap.setStyle(TestStyles.getMapMetricsStyle())
 
             // Fetch data from USGS
             getEarthQuakeDataFromUSGS()
@@ -102,7 +103,7 @@ class JsonApiActivity : AppCompatActivity() {
             this.resources,
             // Intentionally specify package name
             // This makes copy from another project easier
-            org.maplibre.android.R.drawable.maplibre_info_icon_default,
+            org.maplibre.android.R.drawable.mapmetrics_info_icon_default,
             theme
         )!!
         val bitmapBlue = infoIconDrawable.toBitmap()
@@ -134,16 +135,16 @@ class JsonApiActivity : AppCompatActivity() {
                 .title(dateString)
                 .snippet(title)
                 .icon(icon)
-            maplibreMap.addMarker(markerOptions)
+            mapMetricsMap.addMarker(markerOptions)
         }
 
         // Move camera to newly added annotations
-        maplibreMap.getCameraForLatLngBounds(LatLngBounds.fromLatLngs(bounds))?.let {
+        mapMetricsMap.getCameraForLatLngBounds(LatLngBounds.fromLatLngs(bounds))?.let {
             val newCameraPosition = CameraPosition.Builder()
                 .target(it.target)
                 .zoom(it.zoom - 0.5)
                 .build()
-            maplibreMap.cameraPosition = newCameraPosition
+            mapMetricsMap.cameraPosition = newCameraPosition
         }
     }
     // # --8<-- [end:addMarkers]

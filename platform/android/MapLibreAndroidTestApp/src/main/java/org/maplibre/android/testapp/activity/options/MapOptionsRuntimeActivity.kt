@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import org.maplibre.android.MapMetricsConfig
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapMetricsMap
@@ -11,21 +12,22 @@ import org.maplibre.android.maps.MapMetricsMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.testapp.R
+import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  *  TestActivity demonstrating configuring MapView with MapOptions
  */
 class MapOptionsRuntimeActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var mapView: MapView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map_options_runtime)
 
         // Create map configuration
-        val maplibreMapOptions = MapMetricsMapOptions.createFromAttributes(this)
-        maplibreMapOptions.apply {
+        val mapMetricsMapOptions = MapMetricsMapOptions.createFromAttributes(this)
+        mapMetricsMapOptions.apply {
             apiBaseUri("https://api.maplibre.org")
             camera(
                 CameraPosition.Builder()
@@ -49,15 +51,15 @@ class MapOptionsRuntimeActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         // Create map programmatically, add to view hierarchy
-        mapView = MapView(this, maplibreMapOptions)
+        mapView = MapView(this, mapMetricsMapOptions)
         mapView.getMapAsync(this)
         mapView.onCreate(savedInstanceState)
         (findViewById<View>(R.id.container) as ViewGroup).addView(mapView)
     }
 
-    override fun onMapReady(maplibreMap: MapMetricsMap) {
-        this.maplibreMap = maplibreMap
-        this.maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
+    override fun onMapReady(mapMetricsMap: MapMetricsMap) {
+        this.mapMetricsMap = mapMetricsMap
+        this.mapMetricsMap.setStyle(TestStyles.getMapMetricsStyle())
     }
 
     override fun onStart() {

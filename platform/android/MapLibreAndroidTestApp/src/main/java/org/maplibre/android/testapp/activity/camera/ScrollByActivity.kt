@@ -22,7 +22,7 @@ import org.maplibre.android.testapp.styles.TestStyles
  */
 class ScrollByActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var seekBarX: SeekBar
     private lateinit var seekBarY: SeekBar
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,16 +52,16 @@ class ScrollByActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: MapMetricsMap) {
-        maplibreMap = map
-        maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Pastel"))
-        val uiSettings = maplibreMap.uiSettings
+        mapMetricsMap = map
+        mapMetricsMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Pastel"))
+        val uiSettings = mapMetricsMap.uiSettings
         uiSettings.isLogoEnabled = false
         uiSettings.isAttributionEnabled = false
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setColorFilter(ContextCompat.getColor(this@ScrollByActivity, R.color.primary))
         fab.setOnClickListener { _: View? ->
             // # --8<-- [start:scrollBy]
-            maplibreMap.scrollBy(
+            mapMetricsMap.scrollBy(
                 (seekBarX.progress * MULTIPLIER_PER_PIXEL).toFloat(),
                 (seekBarY.progress * MULTIPLIER_PER_PIXEL).toFloat()
             )

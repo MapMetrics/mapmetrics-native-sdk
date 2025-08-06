@@ -110,7 +110,7 @@ private fun getEarthQuakeDataFromUSGS() {
       this.resources,
       // Intentionally specify package name
       // This makes copy from another project easier
-      org.maplibre.android.R.drawable.maplibre_info_icon_default,
+      org.maplibre.android.R.drawable.mapmetrics_info_icon_default,
       theme
    )!!
    val bitmapBlue = infoIconDrawable.toBitmap()

@@ -26,7 +26,7 @@ import java.net.URISyntaxException
 /** Test activity showcasing using the LatLngBounds camera API. */
 class LatLngBoundsActivity : AppCompatActivity() {
 
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<*>
     private lateinit var bounds: LatLngBounds
     private lateinit var binding: ActivityLatlngboundsBinding
@@ -50,7 +50,7 @@ class LatLngBoundsActivity : AppCompatActivity() {
     private fun initMapView(savedInstanceState: Bundle?) {
         binding.mapView.onCreate(savedInstanceState)
         binding.mapView.getMapAsync { map ->
-            maplibreMap = map
+            mapMetricsMap = map
 
             // # --8<-- [start:featureCollection]
             val featureCollection: FeatureCollection =
@@ -71,7 +71,7 @@ class LatLngBoundsActivity : AppCompatActivity() {
     }
 
     private fun loadStyle(featureCollection: FeatureCollection) {
-        maplibreMap.setStyle(
+        mapMetricsMap.setStyle(
             Style.Builder()
                 .fromUri(TestStyles.VERSATILES)
                 .withLayer(
@@ -107,8 +107,8 @@ class LatLngBoundsActivity : AppCompatActivity() {
                     val offset = convertSlideOffset(slideOffset)
                     val bottomPadding = (peekHeight * offset).toInt()
 
-                    maplibreMap.getCameraForLatLngBounds(bounds, createPadding(bottomPadding))
-                        ?.let { maplibreMap.cameraPosition = it }
+                    mapMetricsMap.getCameraForLatLngBounds(bounds, createPadding(bottomPadding))
+                        ?.let { mapMetricsMap.cameraPosition = it }
                 }
 
                 override fun onStateChanged(bottomSheet: View, newState: Int) {

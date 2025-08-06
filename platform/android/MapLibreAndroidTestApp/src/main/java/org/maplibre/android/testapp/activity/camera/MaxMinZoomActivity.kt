@@ -13,7 +13,7 @@ import timber.log.Timber
 /** Test activity showcasing using maximum and minimum zoom levels to restrict camera movement. */
 class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,17 +25,17 @@ class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: MapMetricsMap) {
-        maplibreMap = map
-        maplibreMap.setStyle(TestStyles.OPENFREEMAP_LIBERY)
+        mapMetricsMap = map
+        mapMetricsMap.setStyle(TestStyles.OPENFREEMAP_LIBERY)
         // # --8<-- [start:zoomPreference]
-        maplibreMap.setMinZoomPreference(3.0)
-        maplibreMap.setMaxZoomPreference(5.0)
+        mapMetricsMap.setMinZoomPreference(3.0)
+        mapMetricsMap.setMaxZoomPreference(5.0)
         // # --8<-- [end:zoomPreference]
 
         // # --8<-- [start:addOnMapClickListener]
-        maplibreMap.addOnMapClickListener {
-            if (this::maplibreMap.isInitialized) {
-                maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.AMERICANA))
+        mapMetricsMap.addOnMapClickListener {
+            if (this::mapMetricsMap.isInitialized) {
+                mapMetricsMap.setStyle(Style.Builder().fromUri(TestStyles.AMERICANA))
             }
             true
         }

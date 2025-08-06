@@ -20,6 +20,7 @@ import org.maplibre.android.maps.MapMetricsMap
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.testapp.R
+import org.maplibre.android.testapp.styles.TestStyles
 
 // # --8<-- [start:top]
 /**
@@ -31,7 +32,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
     private lateinit var mapView: MapView
     private var permissionsManager: PermissionsManager? = null
     private var locationComponent: LocationComponent? = null
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,14 +49,14 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
 
     // # --8<-- [start:onMapReady]
     @SuppressLint("MissingPermission")
-    override fun onMapReady(maplibreMap: MapMetricsMap) {
-        this.maplibreMap = maplibreMap
+    override fun onMapReady(mapMetricsMap: MapMetricsMap) {
+        this.mapMetricsMap = mapMetricsMap
 
-        maplibreMap.setStyle(
+        mapMetricsMap.setStyle(
             Style.Builder()
-                .fromUri("https://gateway.mapmetrics-atlas.net/styles/?fileName=dd508822-9502-4ab5-bfe2-5e6ed5809c2d/portal.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZDUwODgyMi05NTAyLTRhYjUtYmZlMi01ZTZlZDU4MDljMmQiLCJzY29wZSI6WyJtYXBzIl0sImlhdCI6MTc1MzQ0MjMzOH0.TogFJJb58kA7QP2664xA3g5tIEZGcX8mNHVkRBlHLBM")
+                .fromUri(TestStyles.getMapMetricsStyle())
         ) { style: Style ->
-            locationComponent = maplibreMap.locationComponent
+            locationComponent = mapMetricsMap.locationComponent
             val locationComponentOptions =
                 LocationComponentOptions.builder(this@BasicLocationPulsingCircleActivity)
                     .pulseEnabled(true)
@@ -145,7 +146,7 @@ class BasicLocationPulsingCircleActivity : AppCompatActivity(), OnMapReadyCallba
     }
 
     private fun loadNewStyle() {
-        maplibreMap.setStyle(Style.Builder().fromUri(Utils.nextStyle()))
+        mapMetricsMap.setStyle(Style.Builder().fromUri(Utils.nextStyle()))
     }
 
     // # --8<-- [start:permission]

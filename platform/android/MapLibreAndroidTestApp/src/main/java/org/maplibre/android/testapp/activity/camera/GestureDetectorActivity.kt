@@ -41,7 +41,7 @@ import org.maplibre.android.testapp.utils.ResourceUtils
 /** Test activity showcasing APIs around gestures implementation. */
 class GestureDetectorActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var recyclerView: RecyclerView
     private var gestureAlertsAdapter: GestureAlertsAdapter? = null
     private var gesturesManager: AndroidGesturesManager? = null
@@ -53,8 +53,8 @@ class GestureDetectorActivity : AppCompatActivity() {
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync { map: MapMetricsMap ->
-            maplibreMap = map
-            maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
+            mapMetricsMap = map
+            mapMetricsMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
             initializeMap()
         }
         recyclerView = findViewById(R.id.alerts_recycler)
@@ -100,18 +100,18 @@ class GestureDetectorActivity : AppCompatActivity() {
     }
 
     private fun initializeMap() {
-        gesturesManager = maplibreMap.gesturesManager
+        gesturesManager = mapMetricsMap.gesturesManager
         val layoutParams = recyclerView.layoutParams as RelativeLayout.LayoutParams
         layoutParams.height = (mapView.height / 1.75).toInt()
         layoutParams.width = mapView.width / 3
         recyclerView.layoutParams = layoutParams
         attachListeners()
-        fixedFocalPointEnabled(maplibreMap.uiSettings.focalPoint != null)
+        fixedFocalPointEnabled(mapMetricsMap.uiSettings.focalPoint != null)
     }
 
     fun attachListeners() {
         // # --8<-- [start:addOnMoveListener]
-        maplibreMap.addOnMoveListener(
+        mapMetricsMap.addOnMoveListener(
             object : OnMoveListener {
                 override fun onMoveBegin(detector: MoveGestureDetector) {
                     gestureAlertsAdapter!!.addAlert(
@@ -134,7 +134,7 @@ class GestureDetectorActivity : AppCompatActivity() {
             }
         )
         // # --8<-- [end:addOnMoveListener]
-        maplibreMap.addOnRotateListener(
+        mapMetricsMap.addOnRotateListener(
             object : OnRotateListener {
                 override fun onRotateBegin(detector: RotateGestureDetector) {
                     gestureAlertsAdapter!!.addAlert(
@@ -156,7 +156,7 @@ class GestureDetectorActivity : AppCompatActivity() {
                 }
             }
         )
-        maplibreMap.addOnScaleListener(
+        mapMetricsMap.addOnScaleListener(
             object : OnScaleListener {
                 override fun onScaleBegin(detector: StandardScaleGestureDetector) {
                     gestureAlertsAdapter!!.addAlert(
@@ -204,7 +204,7 @@ class GestureDetectorActivity : AppCompatActivity() {
                 }
             }
         )
-        maplibreMap.addOnShoveListener(
+        mapMetricsMap.addOnShoveListener(
             object : OnShoveListener {
                 override fun onShoveBegin(detector: ShoveGestureDetector) {
                     gestureAlertsAdapter!!.addAlert(
@@ -233,7 +233,7 @@ class GestureDetectorActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val uiSettings = maplibreMap.uiSettings
+        val uiSettings = mapMetricsMap.uiSettings
         when (item.itemId) {
             R.id.menu_gesture_focus_point -> {
                 fixedFocalPointEnabled(focalPointLatLng == null)
@@ -284,8 +284,8 @@ class GestureDetectorActivity : AppCompatActivity() {
     private fun fixedFocalPointEnabled(enabled: Boolean) {
         if (enabled) {
             focalPointLatLng = LatLng(51.50325, -0.12968)
-            marker = maplibreMap.addMarker(MarkerOptions().position(focalPointLatLng))
-            maplibreMap.easeCamera(
+            marker = mapMetricsMap.addMarker(MarkerOptions().position(focalPointLatLng))
+            mapMetricsMap.easeCamera(
                 CameraUpdateFactory.newLatLngZoom(focalPointLatLng!!, 16.0),
                 object : CancelableCallback {
                     override fun onCancel() {
@@ -299,18 +299,18 @@ class GestureDetectorActivity : AppCompatActivity() {
             )
         } else {
             if (marker != null) {
-                maplibreMap.removeMarker(marker!!)
+                mapMetricsMap.removeMarker(marker!!)
                 marker = null
             }
             focalPointLatLng = null
-            maplibreMap.uiSettings.focalPoint = null
+            mapMetricsMap.uiSettings.focalPoint = null
         }
     }
 
     private fun recalculateFocalPoint() {
         if (focalPointLatLng != null) {
-            maplibreMap.uiSettings.focalPoint =
-                maplibreMap.projection.toScreenLocation(focalPointLatLng!!)
+            mapMetricsMap.uiSettings.focalPoint =
+                mapMetricsMap.projection.toScreenLocation(focalPointLatLng!!)
         }
     }
 

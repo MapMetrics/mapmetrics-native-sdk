@@ -30,7 +30,7 @@ import kotlin.math.min
  * Test activity showcasing adding a large amount of Markers.
  */
 class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var locations: List<LatLng>? = null
     private var progressDialog: ProgressDialog? = null
@@ -42,9 +42,9 @@ class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
         mapView.getMapAsync { initMap(it) }
     }
 
-    private fun initMap(maplibreMap: MapMetricsMap) {
-        this.maplibreMap = maplibreMap
-        maplibreMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
+    private fun initMap(mapMetricsMap: MapMetricsMap) {
+        this.mapMetricsMap = mapMetricsMap
+        mapMetricsMap.setStyle(TestStyles.getPredefinedStyleWithFallback("Streets"))
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -84,10 +84,10 @@ class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
     }
 
     private fun showMarkers(amount: Int) {
-        if (!this::maplibreMap.isInitialized || locations == null || mapView.isDestroyed) {
+        if (!this::mapMetricsMap.isInitialized || locations == null || mapView.isDestroyed) {
             return
         }
-        maplibreMap.clear()
+        mapMetricsMap.clear()
         showGlMarkers(min(amount, locations!!.size))
     }
 
@@ -106,7 +106,7 @@ class BulkMarkerActivity : AppCompatActivity(), OnItemSelectedListener {
                     .snippet(formatter.format(latLng.latitude) + "`, " + formatter.format(latLng.longitude))
             )
         }
-        maplibreMap.addMarkers(markerOptionsList)
+        mapMetricsMap.addMarkers(markerOptionsList)
     }
 
     override fun onNothingSelected(parent: AdapterView<*>?) {

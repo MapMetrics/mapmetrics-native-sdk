@@ -49,12 +49,12 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     // # --8<-- [end:callback]
 
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     private lateinit var mapView: MapView
     private var cameraState = false
     private val cameraIdleListener = OnCameraIdleListener {
-        if (this::maplibreMap.isInitialized) {
-            Timber.w(maplibreMap.cameraPosition.toString())
+        if (this::mapMetricsMap.isInitialized) {
+            Timber.w(mapMetricsMap.cameraPosition.toString())
         }
     }
 
@@ -69,13 +69,13 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: MapMetricsMap) {
-        maplibreMap = map
+        mapMetricsMap = map
 
-        maplibreMap.setStyle(TestStyles.getMapMetricsStyle())
+        mapMetricsMap.setStyle(TestStyles.getMapMetricsStyle())
 
-        maplibreMap.uiSettings.isAttributionEnabled = false
-        maplibreMap.uiSettings.isLogoEnabled = false
-        maplibreMap.addOnCameraIdleListener(cameraIdleListener)
+        mapMetricsMap.uiSettings.isAttributionEnabled = false
+        mapMetricsMap.uiSettings.isLogoEnabled = false
+        mapMetricsMap.addOnCameraIdleListener(cameraIdleListener)
 
         // handle move button clicks
         val moveButton = findViewById<View>(R.id.cameraMoveButton)
@@ -88,7 +88,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
                     .tilt(30.0)
                     .tilt(0.0)
                     .build()
-            maplibreMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+            mapMetricsMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
             // # --8<-- [end:moveCamera]
         }
 
@@ -103,7 +103,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
                     .bearing(180.0)
                     .tilt(30.0)
                     .build()
-            maplibreMap.easeCamera(
+            mapMetricsMap.easeCamera(
                 CameraUpdateFactory.newCameraPosition(cameraPosition),
                 7500,
                 callback
@@ -117,7 +117,7 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
             // # --8<-- [start:animateCamera]
             val cameraPosition =
                 CameraPosition.Builder().target(nextLatLng).bearing(270.0).tilt(20.0).build()
-            maplibreMap.animateCamera(
+            mapMetricsMap.animateCamera(
                 CameraUpdateFactory.newCameraPosition(cameraPosition),
                 7500,
                 callback
@@ -159,8 +159,8 @@ class CameraAnimationTypeActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::maplibreMap.isInitialized) {
-            maplibreMap.removeOnCameraIdleListener(cameraIdleListener)
+        if (this::mapMetricsMap.isInitialized) {
+            mapMetricsMap.removeOnCameraIdleListener(cameraIdleListener)
         }
         mapView.onDestroy()
     }

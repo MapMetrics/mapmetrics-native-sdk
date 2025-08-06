@@ -29,7 +29,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
     private val animators = LongSparseArray<Animator>()
     private lateinit var set: Animator
     private lateinit var mapView: MapView
-    private lateinit var maplibreMap: MapMetricsMap
+    private lateinit var mapMetricsMap: MapMetricsMap
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_animator)
@@ -44,7 +44,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: MapMetricsMap) {
-        maplibreMap = map
+        mapMetricsMap = map
         map.setStyle(TestStyles.getMapMetricsStyle())
         initFab()
     }
@@ -59,7 +59,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
                     .zoom(14.5)
                     .bearing(135.0)
                     .build()
-            set = createExampleAnimator(maplibreMap.cameraPosition, animatedPosition)
+            set = createExampleAnimator(mapMetricsMap.cameraPosition, animatedPosition)
             set.start()
         }
     }
@@ -85,7 +85,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         latLngAnimator.duration = (1000 * ANIMATION_DELAY_FACTOR).toLong()
         latLngAnimator.interpolator = FastOutSlowInInterpolator()
         latLngAnimator.addUpdateListener { animation: ValueAnimator ->
-            maplibreMap.moveCamera(
+            mapMetricsMap.moveCamera(
                 CameraUpdateFactory.newLatLng((animation.animatedValue as LatLng))
             )
         }
@@ -98,7 +98,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         zoomAnimator.startDelay = (600 * ANIMATION_DELAY_FACTOR).toLong()
         zoomAnimator.interpolator = AnticipateOvershootInterpolator()
         zoomAnimator.addUpdateListener { animation: ValueAnimator ->
-            maplibreMap.moveCamera(
+            mapMetricsMap.moveCamera(
                 CameraUpdateFactory.zoomTo((animation.animatedValue as Float).toDouble())
             )
         }
@@ -112,7 +112,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         bearingAnimator.startDelay = (1000 * ANIMATION_DELAY_FACTOR).toLong()
         bearingAnimator.interpolator = FastOutLinearInInterpolator()
         bearingAnimator.addUpdateListener { animation: ValueAnimator ->
-            maplibreMap.moveCamera(
+            mapMetricsMap.moveCamera(
                 CameraUpdateFactory.bearingTo((animation.animatedValue as Float).toDouble())
             )
         }
@@ -124,7 +124,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         tiltAnimator.duration = (1000 * ANIMATION_DELAY_FACTOR).toLong()
         tiltAnimator.startDelay = (1500 * ANIMATION_DELAY_FACTOR).toLong()
         tiltAnimator.addUpdateListener { animation: ValueAnimator ->
-            maplibreMap.moveCamera(
+            mapMetricsMap.moveCamera(
                 CameraUpdateFactory.tiltTo((animation.animatedValue as Float).toDouble())
             )
         }
@@ -144,7 +144,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (!::maplibreMap.isInitialized) {
+        if (!::mapMetricsMap.isInitialized) {
             return false
         }
         if (item.itemId != android.R.id.home) {
@@ -156,7 +156,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun resetCameraPosition() {
-        maplibreMap.moveCamera(
+        mapMetricsMap.moveCamera(
             CameraUpdateFactory.newCameraPosition(
                 CameraPosition.Builder()
                     .target(START_LAT_LNG)
@@ -181,7 +181,7 @@ class CameraAnimatorActivity : AppCompatActivity(), OnMapReadyCallback {
         zoomAnimator.duration = (duration * ANIMATION_DELAY_FACTOR).toLong()
         zoomAnimator.interpolator = interpolator
         zoomAnimator.addUpdateListener { animation: ValueAnimator ->
-            maplibreMap.moveCamera(
+            mapMetricsMap.moveCamera(
                 CameraUpdateFactory.zoomTo((animation.animatedValue as Float).toDouble())
             )
         }
