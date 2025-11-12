@@ -29,7 +29,9 @@ class SimpleMapActivity : AppCompatActivity() {
         mapView.onCreate(savedInstanceState)
         
         // Using just the token for initialization
-        val token = ""
+        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4MjQ5NGNjNy04YTUzLTQwNGUtODNlOS1hZjA5OWY1MGE0Y2IiLCJzY29wZSI6WyJtYXBzIiwic2VhcmNoIl0sImlhdCI6MTc0NDY5NTgxOH0.3oDQzbcD72gIvtd4lkKi96aMFF3-d-i7UnIdc9iADeA"
+        val style = "82494cc7-8a53-404e-83e9-af099f50a4cb/testMap.json"
+
         MapLibre.initializeSessionWithToken(applicationContext, token) {
             // Only get the map after cookie is initialized
             initializeMap()

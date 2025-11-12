@@ -256,7 +256,7 @@ public class HttpRequestImpl implements HttpRequest {
   }
 
   public static class HttpCookieInitializer {
-    private static final String BASE_GATEWAY_URL = "https://gateway.mapmetrics.org/20250110/1/1/3.mvt?token=";
+    private static final String BASE_GATEWAY_URL = "https://www.gateway.mapmetrics.org/20250110/1/1/3.mvt?token=";
     
     public static void initializeSessionCookie(Context context, String token, Runnable onComplete) {
         // Construct the full URL with the base URL and token
