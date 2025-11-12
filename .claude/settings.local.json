@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/Users/muhammad/StudioProjects/**)",
+      "Read(/Users/muhammad/Desktop/org/**)",
+      "Read(/Users/muhammad/Desktop/org/mapmetrics/android-sdk/mapmetrics-native-sdk/1.0.2/**)",
+      "Bash(./gradlew:*)",
+      "Bash(for file in *1.0.2*)",
+      "Bash(do mv \"$file\" \"$file/1.0.2/1.0.3\")",
+      "Bash(done)",
+      "Bash(sed:*)",
+      "Bash(chmod:*)",
+      "Bash(/Users/muhammad/StudioProjects/mapmetrics-native-sdk/platform/android/upload_to_maven.sh)",
+      "Bash(gpg:*)",
+      "Bash(brew install:*)",
+      "Bash(HOMEBREW_NO_AUTO_UPDATE=1 brew install gnupg)",
+      "Bash(zip:*)",
+      "Bash(pkill:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

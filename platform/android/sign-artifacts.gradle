@@ -1,0 +1,33 @@
+plugins {
+    id 'signing'
+}
+
+ext["signing.keyId"] = "58197F4A"
+ext["signing.password"] = "Hold-Sharp4-Purple-Final-Eventually"
+ext["signing.secretKeyRingFile"] = "/Users/muhammad/StudioProjects/mapmetrics-native-sdk/platform/android/buildSrc/src/main/secretkeyringfile.gpg"
+
+task signUpdatedFiles {
+    doLast {
+        def artifactDir = "/Users/muhammad/Desktop/org_fixed/mapmetrics/android-sdk/mapmetrics-native-sdk/1.0.3"
+        
+        def filesToSign = [
+            "${artifactDir}/mapmetrics-native-sdk-1.0.3.pom",
+            "${artifactDir}/mapmetrics-native-sdk-1.0.3.module"
+        ]
+        
+        filesToSign.each { filePath ->
+            def file = new File(filePath)
+            if (file.exists()) {
+                println "Signing ${file.name}..."
+                def signature = signing.sign(file)
+                def signatureFile = new File(filePath + ".asc")
+                signature.each { sig ->
+                    signatureFile.text = sig.file.text
+                }
+                println "✓ Created signature: ${signatureFile.name}"
+            } else {
+                println "✗ File not found: ${file.name}"
+            }
+        }
+    }
+}
