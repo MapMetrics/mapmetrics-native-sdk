@@ -57,22 +57,31 @@ To follow this example from scratch, in Android Studio create a new "Empty Views
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-
-            // Init MapLibre
-            MapLibre.getInstance(this)
+//coulb be any
+            
 
             // Init layout view
             val inflater = LayoutInflater.from(this)
             val rootView = inflater.inflate(R.layout.activity_main, null)
             setContentView(rootView)
-
             // Init the MapView
             mapView = rootView.findViewById(R.id.mapView)
-            mapView.getMapAsync { map ->
+            val token = ""
+            // Init MapLibre
+            MapLibre.getInstance(applicationContext, token) { instance ->
+            // Safe to use MapLibre instance here
+                   initializeMap()
+            }
+            
+           
+        }
+
+         private fun initializeMap() {
+                mapView.getMapAsync { map ->
                 map.setStyle("https://demotiles.maplibre.org/style.json")
                 map.cameraPosition = CameraPosition.Builder().target(LatLng(0.0,0.0)).zoom(1.0).build()
             }
-        }
+         }
 
         override fun onStart() {
             super.onStart()

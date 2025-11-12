@@ -60,7 +60,9 @@ open class MapLibreApplication : MultiDexApplication() {
         if (apiKey != null) {
             validateApiKey(apiKey)
         }
-        MapLibre.getInstance(applicationContext, apiKey, TILE_SERVER)
+        MapLibre.getInstance(applicationContext, apiKey, "" ,TILE_SERVER) {
+
+        }
         TileLoadingMeasurementUtils.setUpTileLoadingMeasurement()
         MapStrictMode.setStrictModeEnabled(true)
     }
