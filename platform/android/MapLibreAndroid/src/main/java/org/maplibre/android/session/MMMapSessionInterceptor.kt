@@ -30,7 +30,8 @@ class MMMapSessionInterceptor : Interceptor {
         // Signing is a no-op for anything that is not a v2 tile URL on the pinned origin, and
         // signedUrl never throws — an unsigned tile 401s and recovers below.
         val signed = MMMapSession.signedUrl(original.url)
-        val request = if (signed != original.url) {
+        val wasSigned = signed != original.url
+        val request = if (wasSigned) {
             original.newBuilder().url(signed).build()
         } else {
             original
@@ -66,6 +67,15 @@ class MMMapSessionInterceptor : Interceptor {
             MMMapSession.shouldRefreshForResponseUrl(request.url)
         ) {
             MMMapSession.refreshNow()
+        }
+
+        if (wasSigned && response.code != 401) {
+            // A tile WE SIGNED came back with something other than 401: the gateway honoured the
+            // credential. That is what makes the tile-401 budget in
+            // [MMMapSession.shouldRefreshForResponseUrl] consecutive rather than cumulative —
+            // without it, three isolated and fully recovered 401s hours apart would eventually
+            // give up on a perfectly healthy session.
+            MMMapSession.noteSignedTileAccepted()
         }
 
         return response
@@ -161,23 +171,64 @@ class MMMapSessionInterceptor : Interceptor {
             } catch (throwable: Throwable) {
                 // A manifest we cannot read must not take getInstance down; the learn-once
                 // fallback still produces a working map.
+                //
+                // But RESET the guard, exactly as installClient does. Leaving it set abandons
+                // origin pinning for the life of the process on a single throwing
+                // getApplicationInfo, and falls back SILENTLY to learning the origin from
+                // traffic — the weaker path, the one that decides where the customer's permanent
+                // API key gets POSTed. Apps call getInstance from every Activity's onCreate, so
+                // one more attempt costs nothing and usually succeeds.
+                originPinAttempted.set(false)
                 Logger.e(TAG, "could not read $GATEWAY_ORIGIN_META_DATA from the manifest", throwable)
             }
         }
 
+        /**
+         * Installs the signing client, or RE-installs it if something displaced ours.
+         *
+         * [HttpRequestUtil.setOkHttpClient] is public API and host apps commonly use it (custom
+         * certificate pinning, proxies, logging). An app that calls it after
+         * `MapLibre.getInstance` silently unhooks signing: every v2 tile then goes out unsigned,
+         * 401s, and — 401 being retryable in this fork — retries forever, blank and unlogged.
+         * A one-shot AtomicBoolean made that unrecoverable. The iOS sibling re-asserts on every
+         * foreground for exactly this reason (MMMapSession.mm, applicationWillEnterForeground),
+         * so this is a check, not a latch: it is a no-op unless our client is no longer the one
+         * in use.
+         */
         private fun installClient() {
-            if (!installed.compareAndSet(false, true)) return
+            val current = MMHttpClients.currentClient()
+            val ours = installedClient
+            val alreadyInstalled = ours != null && current === ours
+            if (alreadyInstalled) return
+            val displaced = ours != null
             try {
                 // newBuilder() on the EXISTING client, never a fresh OkHttpClient.Builder(): the
                 // default client carries this fork's InMemoryCookieJar, which holds the gateway's
                 // usageSession cookie. A fresh client drops it silently — tiles still render, and
                 // v1 billing regresses by roughly 200x with nothing logged anywhere.
+                //
+                // Built from the DEFAULT client rather than from whatever is installed now: an
+                // app-supplied client may itself be derived from ours, and chaining onto it would
+                // stack a second interceptor and drive N adoptions and N refreshes per response.
                 val client: OkHttpClient = MMHttpClients.defaultClient()
                     .newBuilder()
                     .addInterceptor(MMMapSessionInterceptor())
                     .build()
-                installedClient = client
+                // Registered FIRST, and only then recorded as ours. Recording it before the call
+                // would leave `installedClient` naming a client that was never installed, and the
+                // displacement check above would then be comparing against a phantom.
                 HttpRequestUtil.setOkHttpClient(client)
+                installedClient = client
+                installed.set(true)
+                if (displaced) {
+                    Logger.w(
+                        TAG,
+                        "the map-session HTTP client had been replaced via " +
+                            "HttpRequestUtil.setOkHttpClient, which unhooks v2 tile signing; " +
+                            "re-installed it. A host app that needs its own client should build " +
+                            "it from the one this SDK installs."
+                    )
+                }
             } catch (throwable: Throwable) {
                 // Never take the map down over this: without the interceptor, v2 tiles go
                 // unsigned, which is the pre-existing v1 behaviour rather than a failure.
@@ -221,6 +272,9 @@ class MMMapSessionInterceptor : Interceptor {
             // Only the 0 -> 1 edge is a foreground transition; every later activity start within
             // the same session is just navigation and must not re-arm anything.
             if (startedActivities.incrementAndGet() == 1) {
+                // Re-assert the signing client first: if a host app displaced it while we were
+                // backgrounded, everything onEnterForeground re-arms would go out unsigned.
+                installClient()
                 MMMapSession.onEnterForeground()
             }
         }
@@ -235,7 +289,21 @@ class MMMapSessionInterceptor : Interceptor {
                 pendingConfigChangeRestarts.incrementAndGet()
                 return
             }
-            if (startedActivities.decrementAndGet() < 0) startedActivities.set(0)
+            if (startedActivities.decrementAndGet() <= 0) {
+                startedActivities.set(0)
+                // NO PENDING RESTART SURVIVES A BACKGROUND. An Activity that reported
+                // isChangingConfigurations and was then never restarted — finished during the
+                // rotation, or rotate-then-Home — leaves the counter permanently elevated, so the
+                // NEXT genuine foreground entry is consumed by it and onEnterForeground never
+                // fires. That kills the only fast escape from the give-up state. By the time
+                // nothing is started there is no restart still owed to anyone.
+                pendingConfigChangeRestarts.set(0)
+                // THE IDLE GATE, across a background/foreground cycle. Without this, `activity`
+                // stays true from the last map the user looked at, and merely reopening the app
+                // to ANY screen buys a BILLED window for a map that is not on screen. See
+                // MMMapSession.onEnterBackground.
+                MMMapSession.onEnterBackground()
+            }
         }
 
         /** Test seam: the client [install] registered, or null if it has not run. */

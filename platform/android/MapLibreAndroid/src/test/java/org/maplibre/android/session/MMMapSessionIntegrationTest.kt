@@ -268,7 +268,7 @@ class MMMapSessionIntegrationTest {
         assertEquals(
             "exactly one window must have been bought; each one is a billed map load",
             1,
-            MMMapSession.refreshCallCountForTesting()
+            MMMapSession.refreshDecisionCountForTesting()
         )
         assertEquals(
             "the origin must have been learned from the tile URL",
@@ -316,7 +316,7 @@ class MMMapSessionIntegrationTest {
         assertEquals(
             "serving ${TILES.size} tiles must not have bought a second window",
             1,
-            MMMapSession.refreshCallCountForTesting()
+            MMMapSession.refreshDecisionCountForTesting()
         )
         assertFalse(
             "the refresh loop must not have given up",

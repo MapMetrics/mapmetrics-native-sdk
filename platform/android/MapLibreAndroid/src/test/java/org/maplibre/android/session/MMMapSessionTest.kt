@@ -9,6 +9,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
@@ -36,8 +37,13 @@ class MMMapSessionTest {
     private lateinit var requests: MutableList<Request>
     private lateinit var callbacks: MutableList<Callback>
 
+    private lateinit var originalCallFactory: Call.Factory
+
     @Before
     fun setUp() {
+        // Captured BEFORE it is replaced: leaving a mock installed leaks into every later test
+        // class in the same JVM, where a refresh would silently enqueue onto a dead factory.
+        originalCallFactory = MMMapSession.callFactory
         MMMapSession.resetForTesting()
         MMMapSession.resetOriginForTesting()
         requests = mutableListOf()
@@ -73,6 +79,7 @@ class MMMapSessionTest {
     fun tearDown() {
         MMMapSession.resetForTesting()
         MMMapSession.resetOriginForTesting()
+        MMMapSession.callFactory = originalCallFactory
     }
 
     private fun now() = System.currentTimeMillis() / 1000L
@@ -254,7 +261,13 @@ class MMMapSessionTest {
             }
         }
         assertEquals("stale 401s must not each buy a window", 0, billed)
-        assertEquals(0, MMMapSession.refreshCallCountForTesting())
+        assertEquals(0, MMMapSession.refreshDecisionCountForTesting())
+        // The tile-401 spacing gate (see tileDriven401RefreshesAreSpaced) would otherwise refuse
+        // this too, because the S1 401 above already authorised one within the spacing window.
+        // This test is about the IDENTITY gate, so step past the spacing gate explicitly.
+        MMMapSession.rewindFailureClocksForTesting(
+            MMMapSession.MIN_HARD_FAILURE_SPACING_SECONDS + 1
+        )
         assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S2")))
     }
 
@@ -396,7 +409,11 @@ class MMMapSessionTest {
         }
         assertTrue(MMMapSession.hasGivenUpForTesting())
         MMMapSession.refreshNow()
-        assertEquals("a given-up session must stop refreshing", 0, MMMapSession.refreshCallCountForTesting())
+        assertEquals(
+            "a given-up session must stop refreshing",
+            0,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
     }
 
     @Test
@@ -423,7 +440,7 @@ class MMMapSessionTest {
         MMMapSession.onEnterForeground()
         assertFalse(MMMapSession.hasGivenUpForTesting())
         MMMapSession.refreshNow()
-        assertEquals(1, MMMapSession.refreshCallCountForTesting())
+        assertEquals(1, MMMapSession.refreshDecisionCountForTesting())
     }
 
     @Test
@@ -432,7 +449,7 @@ class MMMapSessionTest {
         MMMapSession.rewindFailureClocksForTesting(MMMapSession.GIVE_UP_COOLDOWN_SECONDS + 1)
         MMMapSession.refreshNow()
         assertFalse(MMMapSession.hasGivenUpForTesting())
-        assertEquals(1, MMMapSession.refreshCallCountForTesting())
+        assertEquals(1, MMMapSession.refreshDecisionCountForTesting())
     }
 
     private fun giveUp() {
@@ -509,7 +526,7 @@ class MMMapSessionTest {
         assertEquals(
             "an idle map must never buy a window",
             0,
-            MMMapSession.refreshCallCountForTesting()
+            MMMapSession.refreshDecisionCountForTesting()
         )
     }
 
@@ -520,7 +537,7 @@ class MMMapSessionTest {
         MMMapSession.resetOriginForTesting() // keep the assertion traffic-free
         MMMapSession.scheduleRenewal()
         assertFalse(MMMapSession.hasPendingTimerForTesting())
-        assertEquals(1, MMMapSession.refreshCallCountForTesting())
+        assertEquals(1, MMMapSession.refreshDecisionCountForTesting())
     }
 
     @Test
@@ -537,6 +554,332 @@ class MMMapSessionTest {
             "the renew-immediately path must cancel the armed timer",
             MMMapSession.hasPendingTimerForTesting()
         )
+    }
+
+    // -----------------------------------------------------------------------------
+    // C1: a signed tile that keeps 401ing must not buy a credential every time
+    // -----------------------------------------------------------------------------
+
+    /**
+     * THE UNBOUNDED BILLED LOOP. On the gateway a SIGNED tile only 401s for `malformed` or
+     * `bad_signature` — `expired` and `session_ended` take the rollover path and serve the tile.
+     * So a signed 401 means a signature or key-id mismatch, and the replacement credential we buy
+     * is rejected identically. `/v2/map-sessions[/renew]` ALWAYS bills. Identity matching alone
+     * says yes every single time, and the `hardFailures` budget cannot see it because every
+     * create in the loop returns 200.
+     */
+    @Test
+    fun aRepeatedlyRejectedSignedTileDoesNotBuyACredentialEveryTime() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        seed(session = "S1")
+
+        var authorised = 0
+        // 50 tiles come back 401 for the credential we hold, each one a fresh identity match.
+        repeat(50) {
+            if (MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1"))) authorised++
+        }
+        assertEquals(
+            "a burst of 401s for one credential is one incident, not fifty billed windows",
+            1,
+            authorised
+        )
+    }
+
+    @Test
+    fun tileDriven401RefreshesAreSpacedAndSpendTheHardFailureBudget() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed(session = "S1")
+
+        // First rejection: allowed, and it buys a window.
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1")))
+        // Immediately again: same incident, refused.
+        assertFalse(
+            "a second tile 401 inside the spacing window must not buy another window",
+            MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1"))
+        )
+
+        // Spaced out, the REPLACEMENT credential is now being rejected too. Allowed once more,
+        // but it now costs one unit of the give-up budget.
+        MMMapSession.rewindFailureClocksForTesting(
+            MMMapSession.MIN_HARD_FAILURE_SPACING_SECONDS + 1
+        )
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1")))
+        assertEquals(1, MMMapSession.tile401RefreshCountForTesting())
+
+        MMMapSession.rewindFailureClocksForTesting(
+            MMMapSession.MIN_HARD_FAILURE_SPACING_SECONDS + 1
+        )
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1")))
+        assertEquals(2, MMMapSession.tile401RefreshCountForTesting())
+
+        // Budget exhausted: the loop stops, permanently until something changes.
+        MMMapSession.rewindFailureClocksForTesting(
+            MMMapSession.MIN_HARD_FAILURE_SPACING_SECONDS + 1
+        )
+        assertFalse(
+            "the loop must terminate; every turn of it is a billed map load",
+            MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1"))
+        )
+        assertTrue(MMMapSession.hasGivenUpForTesting())
+
+        // And it really stops spending: refreshNow is suppressed too.
+        val before = MMMapSession.refreshDecisionCountForTesting()
+        MMMapSession.refreshNow()
+        assertEquals(before, MMMapSession.refreshDecisionCountForTesting())
+    }
+
+    /**
+     * The tile-401 budget must be CONSECUTIVE. Three isolated 401s hours apart, each fully
+     * recovered from, are a healthy session — giving up on it would blank a working map.
+     */
+    @Test
+    fun anAcceptedSignedTileClearsTheTile401Budget() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed(session = "S1")
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1")))
+
+        MMMapSession.noteSignedTileAccepted()
+        assertEquals(0, MMMapSession.tile401RefreshCountForTesting())
+        // No spacing rewind: a working credential resets the clock as well as the count.
+        assertTrue(
+            "a recovered session must not be throttled by an old incident",
+            MMMapSession.shouldRefreshForResponseUrl(tileUrl(query = "?s=S1"))
+        )
+    }
+
+    @Test
+    fun anUnsignedColdStart401IsNotChargedToTheTile401Budget() {
+        // Cold start: repeated unsigned 401s are the bootstrap, not a credential rejection.
+        repeat(5) { assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl())) }
+        assertEquals(0, MMMapSession.tile401RefreshCountForTesting())
+        assertFalse(MMMapSession.hasGivenUpForTesting())
+    }
+
+    // -----------------------------------------------------------------------------
+    // C2: backgrounding stops the clock on "activity"
+    // -----------------------------------------------------------------------------
+
+    /**
+     * View a map, background the app, come back HOURS LATER TO ANY SCREEN. `activity` was cleared
+     * only on successful adoption, so the foreground hook read a stale `true`, found the delay at
+     * zero, and bought a BILLED window for a map that is not on screen and has requested nothing.
+     */
+    @Test
+    fun foregroundingAfterBackgroundingDoesNotBillAnIdleMap() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        seed(exp = now() + 10) // inside the 60s renew lead, so the delay is already zero
+        MMMapSession.signedUrl(tileUrl()) // the user looked at a map: activity = true
+        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
+
+        MMMapSession.onEnterBackground()
+        assertFalse(
+            "backgrounding is exactly when use stops",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+
+        val before = MMMapSession.refreshDecisionCountForTesting()
+        MMMapSession.onEnterForeground()
+        assertEquals(
+            "reopening the app to a screen with no map must not buy a window",
+            before,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+        assertEquals(0, requests.size)
+    }
+
+    // -----------------------------------------------------------------------------
+    // I1: the timer must not buy a second window for a rollover already paid for
+    // -----------------------------------------------------------------------------
+
+    /**
+     * The timer tests `shouldRenewNow()` at fire time, but between that and taking the lock in
+     * `refreshNow` an OkHttp thread can adopt a rollover credential — which the gateway has
+     * ALREADY charged for — and reset `activity`. Firing anyway buys a second window for one use.
+     */
+    @Test
+    fun aTimerFiringAfterARolloverDoesNotBuyASecondWindow() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        seed(exp = now() + 3600)
+        MMMapSession.signedUrl(tileUrl())
+        // The rollover lands: a fresh, already-billed credential with plenty of time on it.
+        assertTrue(MMMapSession.applyCredentialFromHeaders(rollover(), tileUrl()))
+
+        val before = MMMapSession.refreshDecisionCountForTesting()
+        MMMapSession.refreshNowFromTimerForTesting()
+        assertEquals(
+            "a credential with time still on the clock does not need a timer-driven renewal",
+            before,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+
+        // The same call against a credential that really is due still goes through.
+        seed(exp = now() + 10)
+        MMMapSession.signedUrl(tileUrl())
+        MMMapSession.refreshNowFromTimerForTesting()
+        assertEquals(before + 1, MMMapSession.refreshDecisionCountForTesting())
+    }
+
+    // -----------------------------------------------------------------------------
+    // I3: a refresh whose callback never fires must not wedge the SDK forever
+    // -----------------------------------------------------------------------------
+
+    @Test
+    fun aRefreshWhoseCallbackNeverFiresIsEventuallyReleased() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.refreshNow()
+        assertEquals(1, requests.size)
+        assertTrue(MMMapSession.isRefreshInFlightForTesting())
+
+        // Nothing ever answers. Every later refresh coalesces onto it: blank map, forever.
+        MMMapSession.refreshNow()
+        assertEquals(1, requests.size)
+
+        MMMapSession.rewindFailureClocksForTesting(MMMapSession.REFRESH_STALE_SECONDS + 1)
+        MMMapSession.refreshNow()
+        assertEquals(
+            "a wedged in-flight flag must be released, or the map is blank until the process " +
+                "restarts",
+            2,
+            requests.size
+        )
+    }
+
+    @Test
+    fun foregroundingReleasesAWedgedRefresh() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.refreshNow()
+        assertTrue(MMMapSession.isRefreshInFlightForTesting())
+        MMMapSession.rewindFailureClocksForTesting(MMMapSession.REFRESH_STALE_SECONDS + 1)
+
+        MMMapSession.onEnterForeground()
+        assertFalse(
+            "the fast escape from a blank map must also clear the coalescing gate",
+            MMMapSession.isRefreshInFlightForTesting()
+        )
+    }
+
+    @Test
+    fun theDefaultCallFactoryBoundsTheWholeCall() {
+        val client = MMMapSession.defaultCallFactory() as OkHttpClient
+        assertTrue(
+            "a bare OkHttpClient has no call timeout, so a trickling body wedges the SDK forever",
+            client.callTimeoutMillis > 0
+        )
+    }
+
+    // -----------------------------------------------------------------------------
+    // I7: session_ends_at is validated to the same standard as expires_at
+    // -----------------------------------------------------------------------------
+
+    /**
+     * Absent or malformed, `session_ends_at` yields 0, which makes `canRenew` permanently false:
+     * every later refresh becomes a CREATE rather than a renew. Silent billing multiplication with
+     * no symptom at all — the map keeps working.
+     */
+    @Test
+    fun aCreateResponseWithoutAUsableSessionEndsAtIsRejected() {
+        MMMapSession.seedAccountForTesting("acct-1")
+        val missing = JSONObject()
+            .put("account", "acct-1")
+            .put("session_id", "S9")
+            .put("sig", "SIG9")
+            .put("expires_at", now() + 3600)
+        assertFalse("absent session_ends_at", MMMapSession.adoptRefreshResponse(missing))
+        assertFalse(
+            "past session_ends_at",
+            MMMapSession.adoptRefreshResponse(body(ends = now() - 1))
+        )
+        assertFalse(MMMapSession.hasCredentialForTesting())
+        assertTrue(MMMapSession.adoptRefreshResponse(body()))
+    }
+
+    @Test
+    fun anAdoptedCreateResponseCanThenRenewRatherThanCreateAgain() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.seedAccountForTesting("acct-1")
+        assertTrue(MMMapSession.adoptRefreshResponse(body()))
+        MMMapSession.refreshNow()
+        assertEquals(
+            "a credential with a live session_ends_at must RENEW, not buy a whole new session",
+            "/v2/map-sessions/renew",
+            requests[0].url.encodedPath
+        )
+    }
+
+    // -----------------------------------------------------------------------------
+    // I4: origin identity is scheme + host + port, not host alone
+    // -----------------------------------------------------------------------------
+
+    @Test
+    fun aPlaintextTileOnThePinnedHostIsNotSigned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val plaintext = "http://$gateway/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+        assertSame(
+            "signing http would put sig on the wire in cleartext",
+            plaintext,
+            MMMapSession.signedUrl(plaintext)
+        )
+        assertFalse(
+            "a request we refused to sign is not billable use",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+    }
+
+    @Test
+    fun rolloverHeadersFromAPlaintextResponseAreRejected() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        assertFalse(
+            "anyone on the path can forge headers on a plaintext response",
+            MMMapSession.applyCredentialFromHeaders(
+                rollover(),
+                "http://$gateway/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+            )
+        )
+        assertEquals("S1", MMMapSession.signedUrl(tileUrl()).queryParameter("s"))
+    }
+
+    @Test
+    fun aTileOnADifferentPortIsNotSigned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val otherPort = "https://$gateway:8443/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+        assertSame(otherPort, MMMapSession.signedUrl(otherPort))
+    }
+
+    // -----------------------------------------------------------------------------
+    // M4: the tile-path match is anchored
+    // -----------------------------------------------------------------------------
+
+    @Test
+    fun aForeignPathThatMerelyContainsTheTileMarkerIsNotATile() {
+        val proxied = "https://cdn.example.com/proxy/v2/tiles/index.json".toHttpUrl()
+        assertSame(proxied, MMMapSession.signedUrl(proxied))
+        assertNull(
+            "a proxied path must not become the host the API key is POSTed to",
+            MMMapSession.originForTesting()
+        )
+    }
+
+    // -----------------------------------------------------------------------------
+    // Diagnostics: the weak origin path must be distinguishable at runtime
+    // -----------------------------------------------------------------------------
+
+    @Test
+    fun learningTheOriginIsLoggedExactlyOnce() {
+        repeat(50) { MMMapSession.signedUrl(tileUrl()) }
+        assertEquals(1, MMMapSession.originLearnedLogCountForTesting())
+    }
+
+    @Test
+    fun aConfiguredOriginIsNeverReportedAsLearned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        repeat(10) { MMMapSession.signedUrl(tileUrl()) }
+        assertEquals(0, MMMapSession.originLearnedLogCountForTesting())
     }
 
     @Test

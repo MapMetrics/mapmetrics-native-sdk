@@ -6,11 +6,13 @@ import io.mockk.mockk
 import io.mockk.slot
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
@@ -18,6 +20,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -26,6 +29,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.maplibre.android.MapLibre
 import org.maplibre.android.MapLibreInjector
+import org.maplibre.android.module.http.HttpRequestUtil
 import org.maplibre.android.module.http.MMHttpClients
 import org.maplibre.android.utils.ConfigUtils
 import org.robolectric.RobolectricTestRunner
@@ -42,8 +46,13 @@ class MMMapSessionInterceptorTest {
     private val gateway = "gw.example.com"
     private val interceptor = MMMapSessionInterceptor()
 
+    private lateinit var originalCallFactory: Call.Factory
+
     @Before
     fun setUp() {
+        // Captured BEFORE it is replaced: a mock left installed leaks into every later test class
+        // in the same JVM.
+        originalCallFactory = MMMapSession.callFactory
         // HttpRequestImpl's static initialiser reaches MapLibre.getApplicationContext(), so the
         // SDK must be initialised before anything touches the default client. In production this
         // is guaranteed: install() runs from getInstance, after INSTANCE is assigned.
@@ -65,6 +74,7 @@ class MMMapSessionInterceptorTest {
         MMMapSession.resetForTesting()
         MMMapSession.resetOriginForTesting()
         MMMapSessionInterceptor.resetInstallStateForTesting()
+        MMMapSession.callFactory = originalCallFactory
         MapLibreInjector.clear()
     }
 
@@ -286,19 +296,19 @@ class MMMapSessionInterceptorTest {
     fun matchingSession401TriggersRefresh() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed(session = "S1")
-        val before = MMMapSession.refreshCallCountForTesting()
+        val before = MMMapSession.refreshDecisionCountForTesting()
         val chain = FakeChain(request(tileUrl()), code = 401)
         interceptor.intercept(chain)
 
         assertEquals("S1", chain.proceeded!!.url.queryParameter("s"))
-        assertEquals(before + 1, MMMapSession.refreshCallCountForTesting())
+        assertEquals(before + 1, MMMapSession.refreshDecisionCountForTesting())
     }
 
     @Test
     fun staleSession401DoesNotTriggerRefresh() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed(session = "S1")
-        val before = MMMapSession.refreshCallCountForTesting()
+        val before = MMMapSession.refreshDecisionCountForTesting()
         // The real race: this tile went out signed with S1, and the credential rolled over to S9
         // before its 401 came back. The response is stale news about a credential we have already
         // replaced; buying another window for it would bill once per straggler after a
@@ -311,7 +321,7 @@ class MMMapSessionInterceptorTest {
         interceptor.intercept(chain)
 
         assertEquals("S1", chain.proceeded!!.url.queryParameter("s"))
-        assertEquals(before, MMMapSession.refreshCallCountForTesting())
+        assertEquals(before, MMMapSession.refreshDecisionCountForTesting())
     }
 
     /**
@@ -323,7 +333,7 @@ class MMMapSessionInterceptorTest {
     fun refused401RolloverHeadersStillTriggerRefresh() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed(session = "S1")
-        val before = MMMapSession.refreshCallCountForTesting()
+        val before = MMMapSession.refreshDecisionCountForTesting()
 
         // Refused because it is not newer than what we hold: exp is in the past.
         val stale = rollover(sid = "S2", exp = now() - 10, ends = now() - 10)
@@ -333,7 +343,7 @@ class MMMapSessionInterceptorTest {
         assertEquals(
             "a refused rollover on a 401 must fall through to recovery",
             before + 1,
-            MMMapSession.refreshCallCountForTesting()
+            MMMapSession.refreshDecisionCountForTesting()
         )
     }
 
@@ -341,11 +351,11 @@ class MMMapSessionInterceptorTest {
     fun adopted200DoesNotTriggerRefresh() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed(session = "S1")
-        val before = MMMapSession.refreshCallCountForTesting()
+        val before = MMMapSession.refreshDecisionCountForTesting()
         val chain = FakeChain(request(tileUrl("?s=S1")), code = 200, headers = rollover())
         interceptor.intercept(chain)
 
-        assertEquals(before, MMMapSession.refreshCallCountForTesting())
+        assertEquals(before, MMMapSession.refreshDecisionCountForTesting())
     }
 
     // ---------------------------------------------------------------------------------
@@ -362,6 +372,24 @@ class MMMapSessionInterceptorTest {
         val default = MMHttpClients.defaultClient()
         val installed = MMMapSessionInterceptor.installedClientForTesting()!!
 
+        // assertSame(default.cookieJar, installed.cookieJar) alone CANNOT FAIL for the reason
+        // that matters: it only proves newBuilder() was used. Remove InMemoryCookieJar from
+        // HttpRequestImpl on a re-vendor and both sides become CookieJar.NO_COOKIES, identical,
+        // and the assertion stays green while v1 billing regresses ~200x. So assert the jar's
+        // IDENTITY first: something that actually stores cookies must be present.
+        assertNotSame(
+            "the default client has no cookie jar at all. HttpRequestImpl's InMemoryCookieJar " +
+                "holds the gateway's usageSession cookie; without it v1 bills once per TILE " +
+                "instead of once per 30-minute window — roughly 200x, silently, with tiles " +
+                "still rendering perfectly.",
+            CookieJar.NO_COOKIES,
+            default.cookieJar
+        )
+        assertEquals(
+            "the default client's cookie jar is no longer HttpRequestImpl's InMemoryCookieJar",
+            "InMemoryCookieJar",
+            default.cookieJar.javaClass.simpleName
+        )
         assertSame(
             "the installed client must reuse the default client's cookie jar, or v1 billing " +
                 "regresses ~200x with no other symptom",
@@ -541,6 +569,189 @@ class MMMapSessionInterceptorTest {
         assertFalse(
             "the rotation guard must not leave the counter drifted",
             MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // I5: a host app that installs its own client must not silently unhook signing
+    // ---------------------------------------------------------------------------------
+
+    /**
+     * `HttpRequestUtil.setOkHttpClient` is public API and host apps use it (cert pinning, proxies,
+     * logging). Called after `MapLibre.getInstance` it displaces our client, and from then on
+     * every v2 tile goes out unsigned, 401s, and — 401 being retryable in this fork — retries
+     * forever: blank map, nothing logged. A one-shot AtomicBoolean made that unrecoverable. The
+     * iOS sibling re-asserts on every foreground for exactly this reason.
+     */
+    @Test
+    fun aDisplacedClientIsReInstalledOnForeground() {
+        MMMapSessionInterceptor.install()
+        val ours = MMMapSessionInterceptor.installedClientForTesting()!!
+        assertSame(ours, MMHttpClients.currentClient())
+
+        // The host app installs its own.
+        val theirs = OkHttpClient.Builder().build()
+        HttpRequestUtil.setOkHttpClient(theirs)
+        assertSame(theirs, MMHttpClients.currentClient())
+        assertFalse(
+            "precondition: signing is unhooked",
+            (MMHttpClients.currentClient() as OkHttpClient)
+                .interceptors.any { it is MMMapSessionInterceptor }
+        )
+
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertTrue(
+            "a displaced client must be re-installed, or every v2 tile 401s forever, blank " +
+                "and unlogged",
+            (MMHttpClients.currentClient() as OkHttpClient)
+                .interceptors.any { it is MMMapSessionInterceptor }
+        )
+        assertEquals(
+            "re-installing must not stack a second interceptor",
+            1,
+            (MMHttpClients.currentClient() as OkHttpClient)
+                .interceptors.count { it is MMMapSessionInterceptor }
+        )
+    }
+
+    @Test
+    fun installReAssertsWhenTheClientHasBeenDisplaced() {
+        MMMapSessionInterceptor.install()
+        HttpRequestUtil.setOkHttpClient(OkHttpClient.Builder().build())
+        MMMapSessionInterceptor.install()
+
+        assertSame(
+            MMMapSessionInterceptor.installedClientForTesting(),
+            MMHttpClients.currentClient()
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // I8: a throwing manifest read must not abandon origin pinning for the process
+    // ---------------------------------------------------------------------------------
+
+    /**
+     * `originPinAttempted` was set BEFORE its try/catch and never reset, so one throwing
+     * `getApplicationInfo` abandoned origin pinning for the life of the process and fell back
+     * silently to learning the origin from traffic — the weaker path, the one that decides where
+     * the customer's permanent API key gets POSTed. Its sibling `installed` IS reset in catch.
+     */
+    @Test
+    fun aFailedManifestReadIsRetriedOnTheNextGetInstance() {
+        val application = RuntimeEnvironment.getApplication()
+        val packageInfo = shadowOf(application.packageManager)
+            .getInternalMutablePackageInfo(application.packageName)
+        // No applicationInfo at all: the read inside the try throws.
+        val realApplicationInfo = packageInfo.applicationInfo
+        packageInfo.applicationInfo = null
+        MMMapSessionInterceptor.install(application)
+        assertNull(
+            "precondition: the failing read pinned nothing",
+            MMMapSession.originForTesting()
+        )
+
+        // Apps call getInstance from every Activity's onCreate; the next one must try again.
+        packageInfo.applicationInfo = realApplicationInfo
+        setGatewayMetaData("https://pinned.example.com")
+        MMMapSessionInterceptor.install(application)
+
+        assertEquals(
+            "one throwing manifest read must not abandon origin pinning for the process",
+            "pinned.example.com",
+            MMMapSession.originForTesting()?.host
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // C2 / I9: backgrounding resets the things that would otherwise leak across the cycle
+    // ---------------------------------------------------------------------------------
+
+    /**
+     * View a map, background, come back hours later TO ANY SCREEN. `activity` survived the
+     * background, so the foreground hook found "there was use" and bought a BILLED window for a
+     * map that is not on screen and has requested nothing.
+     */
+    @Test
+    fun backgroundingClearsActivitySoForegroundingDoesNotBillAnIdleMap() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        // Inside the renew lead, so the foreground path takes the renew-immediately branch.
+        MMMapSession.seedCredentialForTesting("acct-1", "S1", "SIG1", now() + 10, now() + 86400)
+
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        interceptor.intercept(FakeChain(request(tileUrl()))) // the user looks at a map
+        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
+
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+        assertFalse(
+            "backgrounding is exactly when use stops",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+
+        val before = MMMapSession.refreshDecisionCountForTesting()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        assertEquals(
+            "reopening the app to a screen with no map must not buy a window",
+            before,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+    }
+
+    /**
+     * An Activity that reports `isChangingConfigurations` and is then never restarted — finished
+     * during the rotation, or rotate-then-Home — left the pending count permanently elevated. The
+     * next genuine foreground entry was consumed by it and `onEnterForeground` never fired,
+     * killing the only fast escape from the give-up state.
+     */
+    @Test
+    fun anUnclaimedConfigChangeRestartDoesNotEatTheNextForegroundEntry() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        // Rotate, then the user presses Home before the restart lands: the activity is finished
+        // and the promised restart never arrives.
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting(isChangingConfigurations = true)
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertFalse(
+            "a restart that never arrived must not consume the next real foreground entry, or " +
+                "the only fast escape from a blank map is dead for the life of the process",
+            MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // C1: a served signed tile clears the tile-401 budget
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    fun aServedSignedTileClearsTheTile401Budget() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed(session = "S1")
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl("?s=S1").toHttpUrl()))
+        // Inside the spacing window, so the next one is refused.
+        assertFalse(MMMapSession.shouldRefreshForResponseUrl(tileUrl("?s=S1").toHttpUrl()))
+
+        // A signed tile is then served: the credential works, so the incident is over and the
+        // budget must not carry into the next, unrelated one.
+        interceptor.intercept(FakeChain(request(tileUrl()), code = 200))
+        assertTrue(
+            "a served signed tile proves the credential works and must clear the throttle",
+            MMMapSession.shouldRefreshForResponseUrl(tileUrl("?s=S1").toHttpUrl())
+        )
+    }
+
+    @Test
+    fun aSigned401DoesNotClearTheTile401Budget() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed(session = "S1")
+        assertTrue(MMMapSession.shouldRefreshForResponseUrl(tileUrl("?s=S1").toHttpUrl()))
+        interceptor.intercept(FakeChain(request(tileUrl()), code = 401))
+        assertFalse(
+            "a 401 is the failure the budget exists to count; it must not clear it",
+            MMMapSession.shouldRefreshForResponseUrl(tileUrl("?s=S1").toHttpUrl())
         )
     }
 

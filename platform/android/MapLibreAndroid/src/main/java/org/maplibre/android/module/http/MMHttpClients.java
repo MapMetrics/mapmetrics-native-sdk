@@ -39,4 +39,23 @@ public final class MMHttpClients {
   public static OkHttpClient defaultClient() {
     return HttpRequestImpl.DEFAULT_CLIENT;
   }
+
+  /**
+   * The call factory the SDK is currently issuing map requests through.
+   *
+   * <p>
+   * {@link HttpRequestUtil#setOkHttpClient(okhttp3.Call.Factory)} is public API, so a host app can
+   * replace this at any time — and doing so after {@code MapLibre.getInstance} silently unhooks v2
+   * tile signing, after which every v2 tile 401s and retries forever with a blank map and nothing
+   * logged. {@code MMMapSessionInterceptor} reads this on install and on every foreground entry so
+   * it can notice it has been displaced and re-install, rather than installing once and never
+   * checking again.
+   * </p>
+   *
+   * @return the current call factory; never null (it defaults to {@link #defaultClient()})
+   */
+  @NonNull
+  public static okhttp3.Call.Factory currentClient() {
+    return HttpRequestImpl.client;
+  }
 }

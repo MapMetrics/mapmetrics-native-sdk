@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import androidx.annotation.RestrictTo
 import org.json.JSONObject
 import org.maplibre.android.log.Logger
 import java.io.IOException
@@ -63,6 +64,26 @@ object MMMapSession {
      */
     const val GIVE_UP_COOLDOWN_SECONDS = 600L
 
+    /**
+     * A create/renew that has been in flight longer than this is treated as dead and the in-flight
+     * flag is released.
+     *
+     * [refreshInFlight] is the coalescing gate; if it is never lowered, NOTHING refreshes again for
+     * the life of the process and the map is permanently blank. The OkHttp callback lowers it on
+     * every path — but only if the callback ever fires, and a server that trickles a response
+     * body forever without closing it blocks `body.string()` indefinitely. [defaultCallFactory]
+     * sets a call timeout so that cannot happen with the shipped client; this covers a call
+     * factory injected by a host app that does not.
+     */
+    const val REFRESH_STALE_SECONDS = 120L
+
+    /**
+     * A create/renew round trip that takes longer than this is not going to arrive. Deliberately
+     * shorter than [REFRESH_STALE_SECONDS] so the transport, not the staleness sweep, is what
+     * normally releases the in-flight flag.
+     */
+    private const val REFRESH_CALL_TIMEOUT_SECONDS = 30L
+
     private val lock = ReentrantLock()
 
     // --- credential ------------------------------------------------------------------
@@ -78,6 +99,7 @@ object MMMapSession {
     private var originIsConfigured = false
     private var loggedOriginMismatch = false
     private var originMismatchLogs = 0
+    private var originLearnedLogs = 0
 
     // --- refresh state ---------------------------------------------------------------
     private var refreshInFlight = false
@@ -86,9 +108,21 @@ object MMMapSession {
     private var gaveUp = false
     private var gaveUpAt = 0L
     private var lastCountedFailureAt = 0L
-    private var refreshCalls = 0
+    private var refreshDecisionCount = 0
     private var cachedApiKey: String? = null
     private var timer: ScheduledFuture<*>? = null
+
+    /**
+     * When the last refresh DRIVEN BY A SIGNED TILE 401 was authorised, and how many of those have
+     * run back to back without a signed tile ever being accepted since. See
+     * [shouldRefreshForResponseUrl] — the loop brake. Every turn of that loop is money.
+     */
+    private var lastTile401RefreshAt = 0L
+    private var tile401Refreshes = 0
+
+    /** When [refreshInFlight] was raised, so a wedged call can be spotted. See
+     *  [REFRESH_STALE_SECONDS]. */
+    private var refreshInFlightSince = 0L
 
     /**
      * How long before `exp` to renew. Must be shorter than the gateway's session ttl.
@@ -98,9 +132,24 @@ object MMMapSession {
 
     /**
      * The call factory used for create/renew. Replaced in tests so no traffic leaves the JVM.
+     *
+     * Restricted: an app that swaps this owns where the permanent API key is POSTed.
      */
     @JvmStatic
-    var callFactory: Call.Factory = OkHttpClient()
+    @set:RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    var callFactory: Call.Factory = defaultCallFactory()
+
+    /**
+     * A bare `OkHttpClient()` has NO call timeout (0 means unlimited). A gateway that accepts the
+     * connection and then trickles the response body forever blocks the OkHttp callback in
+     * `body.string()`, so [refreshInFlight] is never lowered and every future refresh coalesces
+     * onto a request that will never finish — a permanently blank map, escapable only by killing
+     * the process. A call timeout bounds the whole call, retries and redirects included.
+     */
+    @JvmStatic
+    fun defaultCallFactory(): Call.Factory = OkHttpClient.Builder()
+        .callTimeout(REFRESH_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .build()
 
     private val scheduler: ScheduledExecutorService by lazy {
         Executors.newSingleThreadScheduledExecutor { runnable ->
@@ -175,6 +224,18 @@ object MMMapSession {
     private fun originOf(url: HttpUrl): HttpUrl =
         HttpUrl.Builder().scheme(url.scheme).host(url.host).port(url.port).build()
 
+    /**
+     * Origin equality for signing and for adoption. SCHEME AND PORT COUNT, not just the host.
+     *
+     * Host-only matching would sign tiles for `http://gw` against a `https://gw` pin — putting
+     * `sig` on the wire in cleartext — and would accept `X-Map-Session-*` from a plaintext
+     * response, which anyone on the path can forge. Origin LEARNING is already https-only
+     * ([signedUrl]), so host-only matching here was an inconsistency rather than a deliberate
+     * relaxation.
+     */
+    private fun sameOrigin(url: HttpUrl, pinned: HttpUrl): Boolean =
+        url.scheme == pinned.scheme && url.host == pinned.host && url.port == pinned.port
+
     /** Test seam: the pinned gateway origin, or null if none has been established. */
     @JvmStatic
     fun originForTesting(): HttpUrl? = lock.withLock { origin }
@@ -199,9 +260,13 @@ object MMMapSession {
     @JvmStatic
     fun signedUrl(url: HttpUrl): HttpUrl {
         try {
-            if (!url.encodedPath.contains(TILE_PATH_MARKER)) return url
+            // ANCHORED, not `contains`. A foreign CDN serving `/proxy/v2/tiles/index.json` is not
+            // a MapMetrics tile: matching it loose would let that host become the LEARNED origin
+            // and so decide where the permanent API key is POSTed.
+            if (!url.encodedPath.startsWith(TILE_PATH_MARKER)) return url
 
             var logMismatch = false
+            var logLearned = false
             val requestHost = url.host
             var originHost: String? = null
             var params: List<Pair<String, String>>? = null
@@ -214,10 +279,15 @@ object MMMapSession {
                 // different host can never re-point the origin.
                 if (origin == null && url.scheme == "https" && url.host.isNotEmpty()) {
                     origin = originOf(url)
+                    originLearnedLogs++
+                    // The learned path is the WEAK one and is otherwise indistinguishable from
+                    // the configured one at runtime. Name the host the API key will be POSTed to,
+                    // once, so an operator can see which path this process took.
+                    logLearned = true
                 }
                 val pinned = origin
                 originHost = pinned?.host
-                val sameOrigin = pinned != null && url.host == pinned.host
+                val sameOrigin = pinned != null && sameOrigin(url, pinned)
 
                 // A credential is only usable once we know which account it belongs to: the
                 // account is inside the HMAC payload the gateway signs, so an empty `u` can
@@ -252,6 +322,17 @@ object MMMapSession {
                         "sig" to sig!!
                     )
                 }
+            }
+
+            if (logLearned) {
+                // Outside the lock: logging is foreign code and must never run with our lock held.
+                Logger.w(
+                    TAG,
+                    "map-session gateway origin LEARNED from tile traffic as " +
+                        "\"$requestHost\"; the API key will be POSTed there. Set the " +
+                        "\"${MMMapSessionInterceptor.GATEWAY_ORIGIN_META_DATA}\" <meta-data> in " +
+                        "AndroidManifest.xml to configure it instead."
+                )
             }
 
             if (logMismatch) {
@@ -301,6 +382,7 @@ object MMMapSession {
      * Adoption with NO origin validation. Test seam only — never call this from production code.
      */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun applyCredentialFromHeadersUnvalidatedForTesting(headers: Headers): Boolean =
         applyCredentialFromHeadersInternal(headers, null)
 
@@ -326,7 +408,7 @@ object MMMapSession {
         val newer = lock.withLock {
             // Only the pinned gateway may mint credentials.
             val pinned = origin
-            if (pinned != null && responseUrl != null && responseUrl.host != pinned.host) {
+            if (pinned != null && responseUrl != null && !sameOrigin(responseUrl, pinned)) {
                 return@withLock false
             }
             // A rollover only ever replaces sessionId/sig/exp/sae for the account that created
@@ -358,25 +440,86 @@ object MMMapSession {
     /**
      * Whether a 401 for this response URL should trigger a refresh. (Invariant 2.)
      *
-     * Many tiles are in flight at once, so a signing-key rotation 401s all of them. Without this
-     * gate the first 401 buys a new credential and every straggler — still carrying the now-dead
-     * session id — buys ANOTHER billed one. `refreshInFlight` cannot help: the responses arrive
-     * serialised, each after the previous refresh has already completed.
+     * Many tiles are in flight at once, so a signing-key rotation 401s all of them. Without the
+     * session-identity gate the first 401 buys a new credential and every straggler — still
+     * carrying the now-dead session id — buys ANOTHER billed one. `refreshInFlight` cannot help:
+     * the responses arrive serialised, each after the previous refresh has already completed.
+     *
+     * THE SECOND GATE, and the reason this is not just an identity check. Identity answers "is
+     * this 401 about the credential we hold?" It does not answer "did we already buy a credential
+     * for this same symptom?" — and on the gateway a SIGNED tile only 401s for `malformed` or
+     * `bad_signature`; `expired` and `session_ended` take the rollover path, which serves the tile.
+     * So a signed 401 means a signature or key-id mismatch, and the replacement credential we buy
+     * will be rejected in exactly the same way. Each turn of that loop calls
+     * `/v2/map-sessions[/renew]`, which ALWAYS bills. The old code looped on it forever: the
+     * existing `hardFailures` budget could not stop it because it counts failures of the CREATE
+     * call, and every create in this loop returns 200.
+     *
+     * So a tile-401-driven refresh is spaced by [MIN_HARD_FAILURE_SPACING_SECONDS] and, when the
+     * replacement it bought is itself rejected, spends the same
+     * [MAX_CONSECUTIVE_HARD_FAILURES] budget. [noteSignedTileAccepted] is what makes the count
+     * CONSECUTIVE: a credential the gateway actually honours clears it.
      */
     @JvmStatic
     fun shouldRefreshForResponseUrl(url: HttpUrl): Boolean {
         val responseSessionId = url.queryParameter("s")
-        return lock.withLock {
+        val now = nowSeconds()
+        var givingUp = false
+        val allow = lock.withLock {
             if (responseSessionId.isNullOrEmpty()) {
                 // An unsigned tile 401ing is the cold-start bootstrap. If we DO hold a
                 // credential, an unsigned request is none of our business and must not buy
-                // a window.
-                sig == null
-            } else {
-                // Otherwise: stale news about a credential we have already replaced.
-                responseSessionId == sessionId
+                // a window. Not a credential rejection, so it spends no budget.
+                return@withLock sig == null
             }
+            // Stale news about a credential we have already replaced.
+            if (responseSessionId != sessionId) return@withLock false
+
+            if (lastTile401RefreshAt > 0) {
+                // Too soon after the last one is the same incident; refusing here is what
+                // actually caps the spend, whatever the cause turns out to be.
+                if (now - lastTile401RefreshAt < MIN_HARD_FAILURE_SPACING_SECONDS) {
+                    return@withLock false
+                }
+                // Far enough apart to be a separate attempt: the credential the PREVIOUS
+                // tile-401 refresh bought has now been rejected too. That is a hard failure of
+                // the credential even though the create returned 200.
+                tile401Refreshes++
+                if (!gaveUp && tile401Refreshes >= MAX_CONSECUTIVE_HARD_FAILURES) {
+                    gaveUp = true
+                    gaveUpAt = now
+                    givingUp = true
+                    return@withLock false
+                }
+            }
+            lastTile401RefreshAt = now
+            true
         }
+        if (givingUp) {
+            Logger.e(
+                TAG,
+                "giving up after $MAX_CONSECUTIVE_HARD_FAILURES map-session credentials were " +
+                    "each rejected by a signed tile with 401. A signed tile only 401s on a " +
+                    "malformed or badly signed credential, so buying more will not help and " +
+                    "every one of them is billed. Check the gateway signing key / key id. " +
+                    "Refreshing resumes when the app next enters the foreground, or after " +
+                    "$GIVE_UP_COOLDOWN_SECONDS seconds."
+            )
+        }
+        return allow
+    }
+
+    /**
+     * A signed tile came back with something other than 401 — the credential we hold works.
+     *
+     * This is what makes the tile-401 count in [shouldRefreshForResponseUrl] CONSECUTIVE rather
+     * than cumulative. Without it three isolated 401s hours apart, each fully recovered from,
+     * would trip the give-up guard on a perfectly healthy session.
+     */
+    @JvmStatic
+    fun noteSignedTileAccepted() = lock.withLock {
+        tile401Refreshes = 0
+        lastTile401RefreshAt = 0
     }
 
     // ---------------------------------------------------------------------------------
@@ -385,7 +528,9 @@ object MMMapSession {
 
     /** Creates or renews. Asynchronous; concurrent callers coalesce onto one request. */
     @JvmStatic
-    fun refreshNow() {
+    fun refreshNow() = refreshNow(fromTimer = false)
+
+    private fun refreshNow(fromTimer: Boolean) {
         val now = nowSeconds()
         var snapshotOrigin: HttpUrl? = null
         var canRenew = false
@@ -405,13 +550,32 @@ object MMMapSession {
                 hardFailures = 0
                 lastCountedFailureAt = 0
             }
+            // A refresh whose callback never fired leaves refreshInFlight raised forever and
+            // wedges every future refresh — a permanently blank map. Treat a flag older than
+            // [REFRESH_STALE_SECONDS] as dead rather than trusting the transport.
+            if (refreshInFlight && now - refreshInFlightSince >= REFRESH_STALE_SECONDS) {
+                Logger.e(
+                    TAG,
+                    "a map-session refresh has been in flight for ${now - refreshInFlightSince}s " +
+                        "and its callback never fired; releasing the coalescing flag so " +
+                        "refreshing can resume."
+                )
+                refreshInFlight = false
+                refreshInFlightSince = 0
+            }
             if (refreshInFlight || gaveUp) return
+            // THE TIMER RE-CHECK. shouldRenewNow() is tested at fire time, but between that and
+            // this lock an OkHttp thread can adopt a rollover credential — already charged for by
+            // the gateway — and reset `activity`. Firing anyway buys a SECOND window for the same
+            // use. Anything with a live credential and time still on the clock does not need one.
+            if (fromTimer && secondsUntilNextRenewalLocked() > 0) return
             // Counted after the suppression gates and before the origin check, so a test can
             // observe "a refresh was warranted and not suppressed" without any traffic. Every
             // increment here is a BILLED map load in production.
-            refreshCalls++
+            refreshDecisionCount++
             val pinned = origin ?: return
             refreshInFlight = true
+            refreshInFlightSince = now
             snapshotOrigin = pinned
             canRenew = sig != null && sae > now
             snapAccount = account
@@ -496,13 +660,23 @@ object MMMapSession {
      * signs `u=`, which the gateway rejects as malformed, forever.
      */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun adoptRefreshResponse(json: JSONObject?): Boolean {
         if (json == null) return false
         val expValue = json.optDouble("expires_at", 0.0).toLong()
         val sid = json.optString("session_id")
         val newSig = json.optString("sig")
         val newAccount = json.optString("account").takeIf { it.isNotEmpty() }
-        if (expValue <= nowSeconds() || sid.isEmpty() || newSig.isEmpty()) return false
+        // `session_ends_at` is validated to the SAME standard as `expires_at`, and the rollover
+        // path already requires X-Map-Session-Ends. Absent or malformed yields 0, which makes
+        // `canRenew = sig != null && sae > now` permanently false, so every later refresh is a
+        // CREATE rather than a renew — silent billing multiplication with no other symptom.
+        val saeValue = json.optDouble("session_ends_at", 0.0).toLong()
+        if (expValue <= nowSeconds() || saeValue <= nowSeconds() ||
+            sid.isEmpty() || newSig.isEmpty()
+        ) {
+            return false
+        }
 
         lock.withLock {
             if (newAccount == null && account.isNullOrEmpty()) return false
@@ -511,9 +685,10 @@ object MMMapSession {
             sig = newSig
             keyId = json.optString("key_id").takeIf { it.isNotEmpty() } ?: "1"
             exp = expValue
-            sae = json.optDouble("session_ends_at", 0.0).toLong()
+            sae = saeValue
             activity = false // a new window starts with no use recorded (invariant 1)
             refreshInFlight = false
+            refreshInFlightSince = 0
             hardFailures = 0 // success clears the consecutive-failure count (invariant 4)
             lastCountedFailureAt = 0
             gaveUp = false
@@ -531,6 +706,7 @@ object MMMapSession {
      * so every later refresh fails the same way forever.
      */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun handleRefreshFailure(status: Int) {
         val hard = status == 401 || status == 403
         val now = nowSeconds()
@@ -556,6 +732,7 @@ object MMMapSession {
             }
             failures = hardFailures
             refreshInFlight = false
+            refreshInFlightSince = 0
         }
         if (givingUp) {
             Logger.e(
@@ -594,45 +771,57 @@ object MMMapSession {
     @JvmStatic
     fun shouldRenewNow(): Boolean = hasActivitySinceCredentialIssued
 
-    private fun secondsUntilNextRenewal(): Long {
+    /** Must be called with [lock] held. Lock-free so [scheduleRenewal] can decide inside it. */
+    private fun secondsUntilNextRenewalLocked(): Long {
         val lead = if (renewLeadTimeSeconds > 0) renewLeadTimeSeconds else 60
-        val left = secondsUntilExpiry - lead
+        val left = (if (exp > 0) exp - nowSeconds() else 0) - lead
         return if (left > 0) left else 0
     }
 
     /**
-     * Cancels any armed renewal task and arms the next one, atomically.
+     * Cancels any armed renewal task and arms the next one.
      *
      * Callers are genuinely concurrent (the network thread via [applyCredentialFromHeaders], the
      * OkHttp dispatcher via the refresh completion, the main thread via the foreground hook, and
      * the timer's own body). With the lock dropped in between, two callers could interleave as
      * cancel/cancel/arm-A/arm-B and leave task A alive but unreferenced — it would then fire on
      * a superseded schedule and, if there had been activity since, buy a BILLED window nobody
-     * asked for. So EVERY path through here cancels, including the "renew immediately" one.
+     * asked for. So EVERY path through here cancels, including the "renew immediately" one, and
+     * the delay and the renew-now decision are both computed INSIDE the lock against the same
+     * snapshot of the credential.
+     *
+     * What is NOT atomic, and cannot be: the [refreshNow] tail runs after the lock is released,
+     * because refreshNow takes the lock itself. refreshNow re-checks the decision in its own
+     * critical section, which is where the race is actually closed.
      */
     @JvmStatic
     fun scheduleRenewal() {
-        // Computed before the lock: these accessors take it themselves.
-        val delay = secondsUntilNextRenewal()
-
-        lock.withLock {
+        // Decided INSIDE the lock, against one snapshot. Computing `delay` outside it let two
+        // concurrent callers arm against stale values, and let the immediate branch fire against
+        // a credential that had already been replaced — another billed window.
+        val renewNow = lock.withLock {
+            val delay = secondsUntilNextRenewalLocked()
             timer?.cancel(false)
             timer = null
             if (delay > 0) {
                 timer = scheduler.schedule(
                     {
                         // Re-checked AT FIRE TIME, not at schedule time: a map that was in use
-                        // when the timer was set may have gone idle since.
-                        if (shouldRenewNow()) refreshNow()
+                        // when the timer was set may have gone idle since. refreshNow(fromTimer)
+                        // re-checks again under the lock.
+                        if (shouldRenewNow()) refreshNow(fromTimer = true)
                     },
                     delay,
                     TimeUnit.SECONDS
                 )
+                false
+            } else {
+                activity
             }
         }
 
         // Outside the lock: refreshNow takes it, and must never be called with it held.
-        if (delay <= 0 && shouldRenewNow()) refreshNow()
+        if (renewNow) refreshNow()
     }
 
     /**
@@ -648,8 +837,38 @@ object MMMapSession {
             gaveUpAt = 0
             hardFailures = 0
             lastCountedFailureAt = 0
+            tile401Refreshes = 0
+            lastTile401RefreshAt = 0
+            // Clearing gaveUp without clearing this leaves the wedge in place: refreshInFlight is
+            // the coalescing gate, so a refresh whose callback never fired blocks every future one
+            // and the fast escape from a blank map does nothing at all.
+            if (refreshInFlight && nowSeconds() - refreshInFlightSince >= REFRESH_STALE_SECONDS) {
+                refreshInFlight = false
+                refreshInFlightSince = 0
+            }
         }
         scheduleRenewal()
+    }
+
+    /**
+     * The app left the foreground. Clears the activity flag.
+     *
+     * WITHOUT THIS the idle gate leaks across a background/foreground cycle and bills an idle map.
+     * `activity` was cleared only on successful adoption, so: view a map (activity = true) ->
+     * background -> the credential lapses -> hours later the user reopens the app TO ANY SCREEN ->
+     * `activityStarted` -> [onEnterForeground] -> [scheduleRenewal] -> delay is 0 ->
+     * `shouldRenewNow` reads the STALE activity = true -> [refreshNow] -> BILLED, with no map on
+     * screen and not one tile requested. Once per background/foreground cycle.
+     *
+     * Backgrounding is exactly the moment use stops, so this is where the flag belongs. The
+     * foreground [refreshNow] tail is kept: with the flag correctly false it cannot fire for an
+     * idle map, and for a map that IS on screen the next signed tile sets it again — and if the
+     * credential has lapsed by then the gateway rolls it over and bills once, which
+     * [shouldRenewNow] already documents as the correct moment.
+     */
+    @JvmStatic
+    fun onEnterBackground() = lock.withLock {
+        activity = false
     }
 
     // ---------------------------------------------------------------------------------
@@ -658,12 +877,14 @@ object MMMapSession {
 
     /** Seeds the account the way a create response normally would, without a round trip. */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun seedAccountForTesting(newAccount: String?) = lock.withLock {
         account = newAccount
     }
 
     /** Seeds a full credential without a round trip. */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun seedCredentialForTesting(
         newAccount: String,
         newSessionId: String,
@@ -689,9 +910,15 @@ object MMMapSession {
     @JvmStatic
     fun hasGivenUpForTesting(): Boolean = lock.withLock { gaveUp }
 
-    /** How many times a refresh was warranted and not suppressed. Each one is a billed load. */
+    /**
+     * How many refresh DECISIONS were warranted and not suppressed.
+     *
+     * Deliberately not "billed loads": the counter increments before the origin check, so a
+     * decision taken with no origin established is counted and never becomes a request.
+     * In production, where an origin always exists by the time this runs, the two coincide.
+     */
     @JvmStatic
-    fun refreshCallCountForTesting(): Int = lock.withLock { refreshCalls }
+    fun refreshDecisionCountForTesting(): Int = lock.withLock { refreshDecisionCount }
 
     /** True if a credential is currently held. */
     @JvmStatic
@@ -699,12 +926,39 @@ object MMMapSession {
 
     /** Back-dates the failure clocks so spacing and cool-down can be exercised without sleeping. */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun rewindFailureClocksForTesting(seconds: Long) = lock.withLock {
         if (lastCountedFailureAt > 0) lastCountedFailureAt -= seconds
         if (gaveUpAt > 0) gaveUpAt -= seconds
+        if (lastTile401RefreshAt > 0) lastTile401RefreshAt -= seconds
+        if (refreshInFlightSince > 0) refreshInFlightSince -= seconds
     }
 
+    /**
+     * Test seam: how many times the "origin was LEARNED rather than configured" warning has been
+     * emitted. At most 1 per process — the origin is learned once and never re-pointed.
+     */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    fun originLearnedLogCountForTesting(): Int = lock.withLock { originLearnedLogs }
+
+    /** Test seam: drives [refreshNow] as the renewal timer does, so its extra gate is exercised. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    fun refreshNowFromTimerForTesting() = refreshNow(fromTimer = true)
+
+    /** Test seam: how many consecutive credentials a signed tile 401 has rejected. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    fun tile401RefreshCountForTesting(): Int = lock.withLock { tile401Refreshes }
+
+    /** Test seam: whether a create/renew is currently coalescing every other caller onto it. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    fun isRefreshInFlightForTesting(): Boolean = lock.withLock { refreshInFlight }
+
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun resetForTesting() = lock.withLock {
         account = null
         sessionId = null
@@ -718,9 +972,13 @@ object MMMapSession {
         gaveUp = false
         gaveUpAt = 0
         lastCountedFailureAt = 0
-        refreshCalls = 0
+        refreshDecisionCount = 0
         loggedOriginMismatch = false
         originMismatchLogs = 0
+        originLearnedLogs = 0
+        lastTile401RefreshAt = 0
+        tile401Refreshes = 0
+        refreshInFlightSince = 0
         cachedApiKey = null
         renewLeadTimeSeconds = 60
         if (!originIsConfigured) origin = null
@@ -730,10 +988,12 @@ object MMMapSession {
 
     /** Also drops a configured origin. Separate so [resetForTesting] mirrors the iOS semantics. */
     @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     fun resetOriginForTesting() = lock.withLock {
         origin = null
         originIsConfigured = false
         loggedOriginMismatch = false
         originMismatchLogs = 0
+        originLearnedLogs = 0
     }
 }
