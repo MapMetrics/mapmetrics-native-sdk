@@ -122,6 +122,22 @@ android {
         }
     }
 
+    // MAPMETRICS PATCH -- v2 map sessions.
+    //
+    // MMMapSessionIntegrationTest.nativeHttpSourceStillTreats401And403AsRetryable reads
+    // src/cpp/http_file_source.cpp as a FILE, to assert the 401/403 -> Error::Reason::Server
+    // patch is still present. Gradle cannot see that dependency: a .cpp file is not an input to
+    // a JVM test task, so editing it leaves the task UP-TO-DATE and the guard reports a stale
+    // pass. That is worst for exactly the person the guard is for -- a re-vendorer working
+    // incrementally, who would drop the patch and still see green.
+    //
+    // Declaring it as an explicit input makes the guard re-run whenever the patched file changes.
+    tasks.withType<Test>().configureEach {
+        inputs.file("src/cpp/http_file_source.cpp")
+            .withPropertyName("mapMetricsPatchedHttpFileSource")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+
     buildTypes {
         debug {
             isTestCoverageEnabled = false

@@ -25,13 +25,22 @@ import java.util.concurrent.TimeUnit
  *
  * WHY THIS TEST STARTS COLD, and why it must never be "simplified" by seeding a credential first:
  *
- * `MAPMETRICS-FORK.md` tells a future re-vendorer to confirm the v2 session tests pass as the
- * check that no MapMetrics patch was dropped. The patch most easily lost is the one in
- * `http_file_source.cpp` that maps 401/403 to `Error::Reason::Server` (retryable). Nothing else in
- * the suite depends on it. This test does: it issues the FIRST tile with no credential held, so the
- * gateway 401s, and the whole recovery — interceptor sees the 401, `shouldRefreshForResponseUrl`
- * agrees it is ours, `refreshNow` buys a window, later tiles are signed and served — hangs off that
- * 401 being survivable. Revert the patch and the cold start never recovers and this test fails.
+ * `MAPMETRICS-FORK.md` tells a future re-vendorer to confirm the v2 session tests pass as the check
+ * that no MapMetrics patch was dropped. That guarantee has TWO halves, and this file covers them
+ * with two different tests. Be precise about which is which — an earlier draft of this comment
+ * claimed the cold start below would catch a reverted C++ patch, and that is FALSE.
+ *
+ * - The KOTLIN half — [coldStartRecoversFrom401AndServesTilesOnOneCredential]. It issues the FIRST
+ *   tile with no credential held, so the gateway 401s, and asserts the recovery that hangs off it:
+ *   the interceptor sees the 401, `shouldRefreshForResponseUrl` agrees it is ours, `refreshNow`
+ *   buys a window, later tiles are signed and served. Break any of that and this test fails.
+ *
+ * - The NATIVE half — [nativeHttpSourceStillTreats401And403AsRetryable]. The 401/403 ->
+ *   `Error::Reason::Server` mapping lives in C++, in `http_file_source.cpp`, and this suite runs
+ *   with `-Pmaplibre.abis=none`: the native library is not compiled, never mind loaded, so NO test
+ *   in this source set executes that code. The cold start above does not exercise it and would
+ *   stay green with the patch reverted. That is why the second test exists and why it is a
+ *   source-level check.
  *
  * Staging runs a COMPRESSED credential lifetime (ttl 20s, renewWindow 8s, grace 5s), so the whole
  * test is kept well inside one window: it asserts the one-credential-many-tiles property, not the
@@ -54,6 +63,9 @@ class MMMapSessionIntegrationTest {
         )
 
         const val CREDENTIAL_WAIT_MILLIS = 15_000L
+
+        /** The string `MAPMETRICS-FORK.md` tells a re-vendorer to grep for. */
+        const val PATCH_MARKER = "MAPMETRICS PATCH -- v2 map sessions"
     }
 
     private var apiKey: String? = null
@@ -89,15 +101,66 @@ class MMMapSessionIntegrationTest {
                 .firstOrNull { it.isFile }
 
         assertNotNull("could not locate http_file_source.cpp from ${java.io.File("").absolutePath}", source)
-        val text = source!!.readText().replace(Regex("\\s+"), " ")
+        val raw = source!!.readText()
 
+        // MAPMETRICS-FORK.md tells the re-vendorer to grep for this exact string, so it is the
+        // most re-vendor-faithful signal there is: if it is gone, the patch went with it.
         assertTrue(
-            "http_file_source.cpp no longer maps 401/403 to Error::Reason::Server. That patch is " +
-                "what makes the cold-start 401 retryable; without it the first tile of every map " +
-                "load is terminal and the map stays blank. If this file was just re-vendored " +
-                "from upstream, re-apply the MAPMETRICS PATCH described in MAPMETRICS-FORK.md.",
-            text.contains("code == 401 || code == 403") &&
-                text.contains("Error>(Error::Reason::Server")
+            "the \"$PATCH_MARKER\" marker is gone from http_file_source.cpp. MAPMETRICS-FORK.md " +
+                "tells you to grep for it; if this file was just re-vendored from upstream, the " +
+                "401/403 patch was dropped and must be re-applied.",
+            raw.contains(PATCH_MARKER)
+        )
+
+        // Strip // comments BEFORE looking at the branch body. The patch's own comment explains
+        // why Reason::Other would be wrong, so a naive "body must not contain Reason::Other"
+        // would trip over the very comment that documents the fix.
+        val code = raw.lineSequence()
+            .joinToString(" ") { it.substringBefore("//") }
+            .replace(Regex("\\s+"), " ")
+
+        // Scope the assertions to the BRANCH, not the file. Checking "the file contains
+        // Reason::Server" anywhere is worthless: the 5xx branch immediately above already
+        // satisfies it, so the check would stay green through the one mutation that matters —
+        // Server swapped for Other while the branch stays put.
+        //
+        // `[^{}]` keeps the condition from spanning another branch's body; the non-greedy body
+        // stops at the first `}` followed by `else`, which is the branch close and not the `}`
+        // inside `std::string{"HTTP status code "}`.
+        val branch = Regex(
+            """else\s*if\s*\(\s*([^{}]*?code\s*==\s*40[13][^{}]*?)\s*\)\s*\{(.*?)\}\s*else\b""",
+            RegexOption.DOT_MATCHES_ALL
+        ).find(code)
+
+        assertNotNull(
+            "http_file_source.cpp has no `else if (... code == 401/403 ...)` branch at all. " +
+                "Without it a 401 falls through to Error::Reason::Other, which " +
+                "src/mbgl/util/http_timeout.cpp treats as terminal (Duration::max()), so the " +
+                "first tile of every cold start is never retried and the map stays blank. " +
+                "Re-apply the MAPMETRICS PATCH described in MAPMETRICS-FORK.md.",
+            branch
+        )
+        val condition = branch!!.groupValues[1]
+        val body = branch.groupValues[2]
+
+        // Both codes, in either order and with or without parentheses — the branch is what
+        // matters, not how someone chose to punctuate it.
+        assertTrue(
+            "the retryable branch no longer covers both 401 and 403 (condition: \"$condition\")",
+            condition.contains("401") && condition.contains("403")
+        )
+        assertTrue(
+            "the 401/403 branch no longer maps to Error::Reason::Server (body: \"$body\"). That " +
+                "mapping is what makes the cold-start 401 retryable with backoff while " +
+                "MMMapSession re-authenticates.",
+            body.contains("Error::Reason::Server")
+        )
+        assertFalse(
+            "the 401/403 branch maps to Error::Reason::Other (body: \"$body\"). Reason::Other is " +
+                "TERMINAL — http_timeout.cpp returns Duration::max() for it — so 401 is " +
+                "non-retryable again, the unsigned first tile of every cold start is never " +
+                "retried, and the map stays blank with nothing surfaced to the app.",
+            body.contains("Error::Reason::Other")
         )
     }
 
