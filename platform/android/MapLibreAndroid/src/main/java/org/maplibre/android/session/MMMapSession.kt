@@ -420,8 +420,11 @@ object MMMapSession {
             snapKeyId = keyId
             snapExp = exp
             snapSae = sae
-            // The API key is read from the CACHE, never from MapLibre.getApiKey(): this runs
-            // on an OkHttp dispatcher thread and that call throws off the main thread.
+            // The API key is read from the CACHE, never from MapLibre.getApiKey(). This runs on
+            // an OkHttp dispatcher thread, and MapLibre is @UiThread by contract, so the refresh
+            // path must never reach into its static state: the key is PUSHED in via
+            // [cacheApiKey]. (getApiKey() is a plain field read today and does NOT throw off the
+            // main thread — but that is an implementation detail, not a contract to depend on.)
             apiKey = cachedApiKey
         }
 

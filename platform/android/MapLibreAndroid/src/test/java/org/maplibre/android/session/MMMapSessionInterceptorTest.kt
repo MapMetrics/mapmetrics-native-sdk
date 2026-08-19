@@ -394,6 +394,27 @@ class MMMapSessionInterceptorTest {
         assertNull(chain.proceeded!!.url.queryParameter("sig"))
     }
 
+    /**
+     * Apps commonly call `MapLibre.getInstance` from every Activity's `onCreate`, and
+     * `getApplicationInfo` is a binder round trip on the UI thread. The manifest cannot change
+     * while the process lives, so the read must happen once.
+     */
+    @Test
+    fun theManifestIsReadOnlyOnce() {
+        setGatewayMetaData("https://first.example.com")
+        MMMapSessionInterceptor.install(RuntimeEnvironment.getApplication())
+        assertEquals("first.example.com", MMMapSession.originForTesting()!!.host)
+
+        setGatewayMetaData("https://second.example.com")
+        MMMapSessionInterceptor.install(RuntimeEnvironment.getApplication())
+
+        assertEquals(
+            "a second getInstance must not re-read the manifest",
+            "first.example.com",
+            MMMapSession.originForTesting()!!.host
+        )
+    }
+
     @Test
     fun installWithoutMetaDataLeavesTheOriginToBeLearned() {
         setGatewayMetaData(null)
@@ -477,6 +498,31 @@ class MMMapSessionInterceptorTest {
 
         assertTrue(
             "a rotation must not re-arm the refresh loop",
+            MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    /**
+     * TWO pending configuration-change restarts. A boolean guard collapses them: the second
+     * restart is counted, the started-activity count sits permanently one too high, the app never
+     * looks backgrounded again, and foreground recovery — the only escape from a blank map — is
+     * dead for the life of the process. Upward drift does not self-heal the way downward does.
+     */
+    @Test
+    fun twoPendingConfigChangeRestartsDoNotDriftTheCounter() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting(isChangingConfigurations = true)
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting(isChangingConfigurations = true)
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        // A genuine background/foreground round trip must still be seen as one.
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertFalse(
+            "two collapsed config-change restarts would strand the counter above zero forever",
             MMMapSession.hasGivenUpForTesting()
         )
     }

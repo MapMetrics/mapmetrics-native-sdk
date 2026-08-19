@@ -94,6 +94,7 @@ class MMMapSessionInterceptor : Interceptor {
         const val GATEWAY_ORIGIN_META_DATA = "org.maplibre.android.MapSessionOrigin"
 
         private val installed = AtomicBoolean(false)
+        private val originPinAttempted = AtomicBoolean(false)
         private val foregroundInstalled = AtomicBoolean(false)
 
         @Volatile
@@ -103,10 +104,18 @@ class MMMapSessionInterceptor : Interceptor {
         private val startedActivities = AtomicInteger(0)
 
         /**
-         * Set when an activity stops FOR A CONFIGURATION CHANGE, so the matching restart is not
-         * counted as a new foreground entry. See [activityStarted].
+         * How many activity restarts are owed to a configuration change, so the matching restarts
+         * are not counted as new foreground entries. See [activityStarted].
+         *
+         * A COUNTER, not a flag. A boolean cannot represent two pending restarts: two sets would
+         * collapse into one, the second restart would be counted, and [startedActivities] would
+         * sit permanently one too high — the app would never look backgrounded again and
+         * foreground recovery, the feature's only escape from a blank map, would be dead for the
+         * life of the process. Upward drift does not self-heal the way downward drift does.
+         * `ActivityThread` relaunches each activity as one synchronous transaction so this is
+         * unlikely, but a counter makes it impossible rather than improbable.
          */
-        private val recreatingForConfigChange = AtomicBoolean(false)
+        private val pendingConfigChangeRestarts = AtomicInteger(0)
 
         /**
          * Pins the gateway origin from the manifest, registers a client carrying
@@ -135,6 +144,10 @@ class MMMapSessionInterceptor : Interceptor {
          */
         private fun pinOriginFromManifest(context: Context?) {
             if (context == null) return
+            // Once per process. Apps commonly call MapLibre.getInstance from every Activity's
+            // onCreate, and getApplicationInfo is a binder round trip on the UI thread; the
+            // manifest cannot change while the process is alive, so reading it again is pure cost.
+            if (!originPinAttempted.compareAndSet(false, true)) return
             try {
                 val appContext = context.applicationContext ?: context
                 val info = appContext.packageManager.getApplicationInfo(
@@ -198,8 +211,12 @@ class MMMapSessionInterceptor : Interceptor {
             // A restart that is only the other half of a configuration change is not a foreground
             // entry, and the matching stop already declined to decrement, so this must not
             // increment either — otherwise the count drifts up by one per rotation and the app
-            // never looks backgrounded again.
-            if (recreatingForConfigChange.compareAndSet(true, false)) return
+            // never looks backgrounded again. Claim one pending restart if there is one.
+            while (true) {
+                val pending = pendingConfigChangeRestarts.get()
+                if (pending <= 0) break
+                if (pendingConfigChangeRestarts.compareAndSet(pending, pending - 1)) return
+            }
 
             // Only the 0 -> 1 edge is a foreground transition; every later activity start within
             // the same session is just navigation and must not re-arm anything.
@@ -215,7 +232,7 @@ class MMMapSessionInterceptor : Interceptor {
             // would defeat the three-failure give-up guard entirely and resume hammering a key the
             // gateway will never accept. This is what ProcessLifecycleOwner's debounce exists for.
             if (isChangingConfigurations) {
-                recreatingForConfigChange.set(true)
+                pendingConfigChangeRestarts.incrementAndGet()
                 return
             }
             if (startedActivities.decrementAndGet() < 0) startedActivities.set(0)
@@ -234,9 +251,10 @@ class MMMapSessionInterceptor : Interceptor {
         @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
         fun resetInstallStateForTesting() {
             installed.set(false)
+            originPinAttempted.set(false)
             foregroundInstalled.set(false)
             startedActivities.set(0)
-            recreatingForConfigChange.set(false)
+            pendingConfigChangeRestarts.set(0)
             installedClient = null
             HttpRequestUtil.setOkHttpClient(null)
         }
