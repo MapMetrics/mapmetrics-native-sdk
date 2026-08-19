@@ -1,5 +1,6 @@
 package org.maplibre.android.session
 
+import android.os.Bundle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -16,16 +17,20 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.maplibre.android.MapLibre
 import org.maplibre.android.MapLibreInjector
 import org.maplibre.android.module.http.MMHttpClients
 import org.maplibre.android.utils.ConfigUtils
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 
 /**
  * The interceptor is the only place v2 sessions touch the network, so these tests pin the four
@@ -65,6 +70,18 @@ class MMMapSessionInterceptorTest {
 
     private fun now() = System.currentTimeMillis() / 1000L
 
+    /** Writes (or clears) the gateway-origin `<meta-data>` the host app would declare. */
+    private fun setGatewayMetaData(value: String?) {
+        val application = RuntimeEnvironment.getApplication()
+        val packageInfo = shadowOf(application.packageManager)
+            .getInternalMutablePackageInfo(application.packageName)
+        packageInfo.applicationInfo!!.metaData = if (value == null) {
+            null
+        } else {
+            Bundle().apply { putString(MMMapSessionInterceptor.GATEWAY_ORIGIN_META_DATA, value) }
+        }
+    }
+
     private fun seed(session: String = "S1") = MMMapSession.seedCredentialForTesting(
         "acct-1",
         session,
@@ -82,7 +99,13 @@ class MMMapSessionInterceptorTest {
         private val code: Int = 200,
         private val headers: Headers = Headers.headersOf(),
         /** Runs between signing and the response, so a test can rotate the credential in flight. */
-        private val onProceed: () -> Unit = {}
+        private val onProceed: () -> Unit = {},
+        /**
+         * The request the response reports as its own. Differs from the one we sent exactly when
+         * OkHttp followed a redirect, which is what makes `response.request.url` the only URL that
+         * can be trusted to have produced the response headers.
+         */
+        private val respondingRequest: Request? = null
     ) : Interceptor.Chain {
 
         var proceeded: Request? = null
@@ -93,7 +116,7 @@ class MMMapSessionInterceptorTest {
             proceeded = request
             onProceed()
             return Response.Builder()
-                .request(request)
+                .request(respondingRequest ?: request)
                 .protocol(Protocol.HTTP_1_1)
                 .code(code)
                 .message("test")
@@ -154,8 +177,9 @@ class MMMapSessionInterceptorTest {
         val chain = FakeChain(original)
         interceptor.intercept(chain)
 
-        // Same instance, not merely an equal URL: the interceptor must not rebuild the request.
-        assertEquals(original.url, chain.proceeded!!.url)
+        // The same Request instance, not merely an equal URL: the interceptor must not rebuild a
+        // request it has nothing to add to, or it would drop tags and headers set upstream.
+        assertSame(original, chain.proceeded)
         assertNull(chain.proceeded!!.url.queryParameter("sig"))
     }
 
@@ -189,6 +213,69 @@ class MMMapSessionInterceptorTest {
 
         val next = MMMapSession.signedUrl(tileUrl().toHttpUrl())
         assertEquals("a foreign host must not own our credential", "S1", next.queryParameter("s"))
+    }
+
+    /**
+     * This is an APPLICATION interceptor, so `chain.request()` is the pre-redirect URL while
+     * `response.request.url` is the one that actually answered. Adopting against the former would
+     * let a cross-host redirect target's headers pass an origin check they never satisfied.
+     */
+    @Test
+    fun rolloverFromARedirectTargetOffOriginIsRefused() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val chain = FakeChain(
+            request(tileUrl()),
+            code = 200,
+            headers = rollover(),
+            respondingRequest = request("https://evil.example.com/v2/tiles/streets/1/2/3.pbf")
+        )
+        interceptor.intercept(chain)
+
+        val next = MMMapSession.signedUrl(tileUrl().toHttpUrl())
+        assertEquals(
+            "the host that actually answered, not the one we asked, decides adoption",
+            "S1",
+            next.queryParameter("s")
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // The SHIPPED path: no manifest meta-data, so the origin is learned from traffic
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    fun unpinnedInterceptorLearnsTheOriginAndSignsTheNextTile() {
+        // No pinConfiguredOrigin: this is what an app without the meta-data actually does.
+        MMMapSession.seedAccountForTesting("acct-1")
+        val first = FakeChain(request(tileUrl()))
+        interceptor.intercept(first)
+        // Nothing to sign with yet, but the origin is now known.
+        assertNull(first.proceeded!!.url.queryParameter("sig"))
+        assertEquals(gateway, MMMapSession.originForTesting()!!.host)
+
+        seed()
+        val second = FakeChain(request(tileUrl()))
+        interceptor.intercept(second)
+        assertEquals("S1", second.proceeded!!.url.queryParameter("s"))
+    }
+
+    @Test
+    fun aSecondHostCannotRePointALearnedOrigin() {
+        MMMapSession.seedAccountForTesting("acct-1")
+        interceptor.intercept(FakeChain(request(tileUrl())))
+        assertEquals(gateway, MMMapSession.originForTesting()!!.host)
+
+        // A style document naming another tile host must not move the origin: refreshNow POSTs
+        // the permanent API key there.
+        interceptor.intercept(
+            FakeChain(request("https://evil.example.com/v2/tiles/streets/1/2/3.pbf"))
+        )
+        assertEquals(
+            "the origin is learned once and never re-pointed",
+            gateway,
+            MMMapSession.originForTesting()!!.host
+        )
     }
 
     // ---------------------------------------------------------------------------------
@@ -283,6 +370,132 @@ class MMMapSessionInterceptorTest {
         )
         assertSame(default.dispatcher, installed.dispatcher)
         assertTrue(installed.interceptors.any { it is MMMapSessionInterceptor })
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Configured origin (invariant 3) and key rotation
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    fun installPinsTheOriginFromTheManifestMetaData() {
+        setGatewayMetaData("https://pinned.example.com")
+        MMMapSessionInterceptor.install(RuntimeEnvironment.getApplication())
+
+        assertEquals(
+            "the manifest, not traffic, must decide where the API key is POSTed",
+            "pinned.example.com",
+            MMMapSession.originForTesting()!!.host
+        )
+
+        // And a pinned origin refuses to sign for anybody else, however many tiles arrive.
+        seed()
+        val chain = FakeChain(request(tileUrl()))
+        interceptor.intercept(chain)
+        assertNull(chain.proceeded!!.url.queryParameter("sig"))
+    }
+
+    @Test
+    fun installWithoutMetaDataLeavesTheOriginToBeLearned() {
+        setGatewayMetaData(null)
+        MMMapSessionInterceptor.install(RuntimeEnvironment.getApplication())
+
+        assertNull(
+            "an absent meta-data must not pin anything, or the fallback path breaks",
+            MMMapSession.originForTesting()
+        )
+    }
+
+    @Test
+    fun setApiKeyUpdatesTheSessionCache() {
+        MMMapSession.cacheApiKey("old-key")
+        try {
+            MapLibre.setApiKey("new-key")
+        } catch (throwable: Throwable) {
+            // FileSource.getInstance loads the native libs, which unit tests do not have. The
+            // cache update deliberately happens BEFORE that call, so it has already run.
+        }
+
+        assertEquals(
+            "a rotated key must reach the session layer, or every create sends a dead token",
+            "new-key",
+            MMMapSession.cachedApiKeyForTesting()
+        )
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Foreground recovery — the only escape from a permanently blank map
+    // ---------------------------------------------------------------------------------
+
+    /** Drives the give-up state the way three spaced hard failures would. */
+    private fun giveUp() {
+        repeat(MMMapSession.MAX_CONSECUTIVE_HARD_FAILURES) {
+            MMMapSession.handleRefreshFailure(401)
+            MMMapSession.rewindFailureClocksForTesting(
+                MMMapSession.MIN_HARD_FAILURE_SPACING_SECONDS + 1
+            )
+        }
+        assertTrue("precondition: the session must have given up", MMMapSession.hasGivenUpForTesting())
+    }
+
+    @Test
+    fun enteringTheForegroundClearsTheGiveUpState() {
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertFalse(
+            "without this the app is blank until the process restarts",
+            MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    @Test
+    fun navigatingBetweenActivitiesDoesNotClearTheGiveUpState() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting() // A starts: foreground
+        giveUp()
+        // A -> B: B starts before A stops, so the count never returns to zero.
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+
+        assertTrue(
+            "plain navigation is not a foreground entry",
+            MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    /**
+     * THE ROTATION GUARD. A configuration change runs stop -> destroy -> create -> start. A naive
+     * counter goes 1 -> 0 -> 1 and fires the foreground edge, so a user rotating the device
+     * repeatedly would clear gaveUp/hardFailures every time and defeat the three-failure guard,
+     * hammering a key the gateway will never accept.
+     */
+    @Test
+    fun rotatingTheDeviceDoesNotClearTheGiveUpState() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting(isChangingConfigurations = true)
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertTrue(
+            "a rotation must not re-arm the refresh loop",
+            MMMapSession.hasGivenUpForTesting()
+        )
+    }
+
+    @Test
+    fun aRealBackgroundReturnAfterARotationStillRecovers() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting(isChangingConfigurations = true)
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        // If the rotation guard leaked a count, the app would never look backgrounded again and
+        // recovery would be dead for the life of the process.
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+
+        assertFalse(
+            "the rotation guard must not leave the counter drifted",
+            MMMapSession.hasGivenUpForTesting()
+        )
     }
 
     @Test

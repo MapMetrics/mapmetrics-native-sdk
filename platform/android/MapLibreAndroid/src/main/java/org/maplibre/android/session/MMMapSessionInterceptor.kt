@@ -3,7 +3,9 @@ package org.maplibre.android.session
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
+import androidx.annotation.RestrictTo
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -37,11 +39,15 @@ class MMMapSessionInterceptor : Interceptor {
         val response = chain.proceed(request)
 
         // X-Map-Session-* arrive ONLY from a rollover: the credential had expired, the gateway
-        // minted a replacement AND CHARGED for it. The responding URL is passed so adoption can
-        // verify the credential came from the pinned gateway origin and not from some host named
-        // in a style document.
+        // minted a replacement AND CHARGED for it.
+        //
+        // The URL passed to adoption is `response.request.url`, NOT `request.url`. This is an
+        // application interceptor, so `request.url` is the URL BEFORE any redirect, while
+        // `response.request.url` is the one that actually produced these headers. If the gateway
+        // ever 3xx'd cross-host, using the pre-redirect URL would let the redirect TARGET's
+        // headers pass an origin check they never actually satisfied.
         val adopted = if (response.header(SESSION_SIG_HEADER) != null) {
-            MMMapSession.applyCredentialFromHeaders(response.headers, request.url)
+            MMMapSession.applyCredentialFromHeaders(response.headers, response.request.url)
         } else {
             false
         }
@@ -50,6 +56,11 @@ class MMMapSessionInterceptor : Interceptor {
         // then REFUSE (unknown account, not newer, wrong host) would otherwise consume the header
         // branch and never trigger recovery, leaving the session machine with no usable credential
         // and nothing scheduled — a permanently blank map.
+        //
+        // This gate reads `request.url`, not `response.request.url`, and the difference is
+        // deliberate: it asks "is this 401 about the credential WE SENT", and what we sent is the
+        // URL we signed. A redirect that dropped the query would make the post-redirect URL look
+        // unsigned and wrongly suppress recovery.
         if (!adopted &&
             response.code == 401 &&
             MMMapSession.shouldRefreshForResponseUrl(request.url)
@@ -67,6 +78,21 @@ class MMMapSessionInterceptor : Interceptor {
         /** The rollover marker header. Its presence is what makes adoption worth attempting. */
         const val SESSION_SIG_HEADER = "X-Map-Session-Sig"
 
+        /**
+         * `AndroidManifest.xml` `<meta-data>` naming the gateway origin, for example:
+         *
+         * ```xml
+         * <meta-data
+         *     android:name="org.maplibre.android.MapSessionOrigin"
+         *     android:value="https://gateway.example.com" />
+         * ```
+         *
+         * This is the configuration channel for invariant 3. Without it the origin is learned from
+         * the first https tile URL, and [MMMapSession.refreshNow] POSTs the customer's permanent
+         * API key to whatever that turned out to be.
+         */
+        const val GATEWAY_ORIGIN_META_DATA = "org.maplibre.android.MapSessionOrigin"
+
         private val installed = AtomicBoolean(false)
         private val foregroundInstalled = AtomicBoolean(false)
 
@@ -77,19 +103,53 @@ class MMMapSessionInterceptor : Interceptor {
         private val startedActivities = AtomicInteger(0)
 
         /**
-         * Registers a client carrying [MMMapSessionInterceptor] as the SDK's HTTP client, and
-         * wires the foreground hook if an [Application] can be reached from [context].
+         * Set when an activity stops FOR A CONFIGURATION CHANGE, so the matching restart is not
+         * counted as a new foreground entry. See [activityStarted].
+         */
+        private val recreatingForConfigChange = AtomicBoolean(false)
+
+        /**
+         * Pins the gateway origin from the manifest, registers a client carrying
+         * [MMMapSessionInterceptor] as the SDK's HTTP client, and wires the foreground hook.
          *
          * Idempotent: safe to call from every `MapLibre.getInstance` overload on every call.
          *
-         * @param context any context; its application context is used, and null simply skips the
-         * foreground hook.
+         * @param context any context; its application context is used. Null skips the manifest
+         * lookup and the foreground hook, leaving only the interceptor.
          */
         @JvmStatic
         @JvmOverloads
         fun install(context: Context? = null) {
+            pinOriginFromManifest(context)
             installClient()
             installForegroundHook(context)
+        }
+
+        /**
+         * Reads [GATEWAY_ORIGIN_META_DATA] and pins it as the gateway origin (invariant 3).
+         *
+         * Absent meta-data is not an error: the SDK falls back to learning the origin from the
+         * first https tile URL, which is what every app does today and what keeps staging and
+         * production working with no setup. That fallback is weaker — see
+         * [MMMapSession.pinConfiguredOrigin] — which is exactly why this channel exists.
+         */
+        private fun pinOriginFromManifest(context: Context?) {
+            if (context == null) return
+            try {
+                val appContext = context.applicationContext ?: context
+                val info = appContext.packageManager.getApplicationInfo(
+                    appContext.packageName,
+                    PackageManager.GET_META_DATA
+                )
+                val configured = info.metaData?.getString(GATEWAY_ORIGIN_META_DATA)?.trim()
+                if (!configured.isNullOrEmpty()) {
+                    MMMapSession.pinConfiguredOrigin(configured)
+                }
+            } catch (throwable: Throwable) {
+                // A manifest we cannot read must not take getInstance down; the learn-once
+                // fallback still produces a working map.
+                Logger.e(TAG, "could not read $GATEWAY_ORIGIN_META_DATA from the manifest", throwable)
+            }
         }
 
         private fun installClient() {
@@ -134,29 +194,13 @@ class MMMapSessionInterceptor : Interceptor {
             }
         }
 
-        /** Test seam: the client [install] registered, or null if it has not run. */
-        @JvmStatic
-        fun installedClientForTesting(): OkHttpClient? = installedClient
-
-        /** Test seam: lets a test install again against a fresh client. */
-        @JvmStatic
-        fun resetInstallStateForTesting() {
-            installed.set(false)
-            foregroundInstalled.set(false)
-            startedActivities.set(0)
-            installedClient = null
-            HttpRequestUtil.setOkHttpClient(null)
-        }
-
-        /** Test seam: drives the foreground transition without an Activity. */
-        @JvmStatic
-        fun notifyActivityStartedForTesting() = activityStarted()
-
-        /** Test seam: drives the background transition without an Activity. */
-        @JvmStatic
-        fun notifyActivityStoppedForTesting() = activityStopped()
-
         private fun activityStarted() {
+            // A restart that is only the other half of a configuration change is not a foreground
+            // entry, and the matching stop already declined to decrement, so this must not
+            // increment either — otherwise the count drifts up by one per rotation and the app
+            // never looks backgrounded again.
+            if (recreatingForConfigChange.compareAndSet(true, false)) return
+
             // Only the 0 -> 1 edge is a foreground transition; every later activity start within
             // the same session is just navigation and must not re-arm anything.
             if (startedActivities.incrementAndGet() == 1) {
@@ -164,15 +208,57 @@ class MMMapSessionInterceptor : Interceptor {
             }
         }
 
-        private fun activityStopped() {
+        private fun activityStopped(isChangingConfigurations: Boolean) {
+            // THE ROTATION GUARD. A configuration change runs stop -> destroy -> create -> start,
+            // so a naive counter goes 1 -> 0 -> 1 and fires the foreground edge. onEnterForeground
+            // clears gaveUp, hardFailures and lastCountedFailureAt, so a user rotating the device
+            // would defeat the three-failure give-up guard entirely and resume hammering a key the
+            // gateway will never accept. This is what ProcessLifecycleOwner's debounce exists for.
+            if (isChangingConfigurations) {
+                recreatingForConfigChange.set(true)
+                return
+            }
             if (startedActivities.decrementAndGet() < 0) startedActivities.set(0)
         }
+
+        /** Test seam: the client [install] registered, or null if it has not run. */
+        @JvmStatic
+        @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+        fun installedClientForTesting(): OkHttpClient? = installedClient
+
+        /**
+         * Test seam: lets a test install again against a fresh client. Restricted because calling
+         * it from an app would unhook signing and blank every v2 map in the process.
+         */
+        @JvmStatic
+        @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+        fun resetInstallStateForTesting() {
+            installed.set(false)
+            foregroundInstalled.set(false)
+            startedActivities.set(0)
+            recreatingForConfigChange.set(false)
+            installedClient = null
+            HttpRequestUtil.setOkHttpClient(null)
+        }
+
+        /** Test seam: drives an activity start without an Activity. */
+        @JvmStatic
+        @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+        fun notifyActivityStartedForTesting() = activityStarted()
+
+        /** Test seam: drives an activity stop, optionally as half of a configuration change. */
+        @JvmStatic
+        @JvmOverloads
+        @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+        fun notifyActivityStoppedForTesting(isChangingConfigurations: Boolean = false) =
+            activityStopped(isChangingConfigurations)
 
         private object ForegroundCallbacks : Application.ActivityLifecycleCallbacks {
 
             override fun onActivityStarted(activity: Activity) = activityStarted()
 
-            override fun onActivityStopped(activity: Activity) = activityStopped()
+            override fun onActivityStopped(activity: Activity) =
+                activityStopped(activity.isChangingConfigurations)
 
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
             override fun onActivityResumed(activity: Activity) = Unit

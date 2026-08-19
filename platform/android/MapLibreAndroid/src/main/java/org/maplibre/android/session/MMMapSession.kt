@@ -117,10 +117,17 @@ object MMMapSession {
     // ---------------------------------------------------------------------------------
 
     /**
-     * Caches the API key. MANDATORY: `MapLibre.getApiKey()` goes through
-     * `ThreadUtils.checkThread`, which THROWS `CalledFromWorkerThreadException` off the main
-     * thread in a debug build — and [refreshNow] runs on OkHttp dispatcher threads. So the key
-     * is captured once on the UI thread (from `MapLibre.getInstance`) and never read back here.
+     * Caches the API key, pushed in from `MapLibre.getInstance` and `MapLibre.setApiKey`.
+     *
+     * The key is PUSHED rather than pulled so that [refreshNow] — which runs on OkHttp dispatcher
+     * threads — never reaches back into `MapLibre`'s static state. `MapLibre` is annotated
+     * `@UiThread` and is documented to be configured from the UI thread, so reading it from a
+     * network thread would be using it outside its contract. (`MapLibre.getApiKey()` happens to
+     * be a plain field read today and does NOT throw off the main thread — but nothing keeps it
+     * that way, and depending on that is what this avoids.)
+     *
+     * Both callers must be kept in step: a key rotated through `setApiKey` and not pushed here
+     * leaves every create sending a dead token, which 401s until the give-up guard trips.
      */
     @JvmStatic
     fun cacheApiKey(apiKey: String?) = lock.withLock {
@@ -140,6 +147,21 @@ object MMMapSession {
      * API key to this origin, so letting an arbitrary URL seen in a style document decide where
      * that goes would hand the customer's key to whoever wrote the style. Once configured the
      * origin is never learned from traffic.
+     *
+     * WHAT PRODUCTION ACTUALLY DOES, both cases:
+     *
+     * `MMMapSessionInterceptor.install` reads the
+     * `org.maplibre.android.MapSessionOrigin` `<meta-data>` from the host app's
+     * `AndroidManifest.xml` during `MapLibre.getInstance` and calls this when it is present. That
+     * is the strong case: the origin comes from the app's own manifest and no response can move
+     * it.
+     *
+     * When the meta-data is ABSENT — the default, since `WellKnownTileServer` has no MapMetrics
+     * entry and the native `TileServerOptions` carry no gateway host — this is never called and
+     * [signedUrl] learns the origin instead, from the first https `/v2/tiles/` URL it sees, once
+     * and irrevocably. That is weaker: whichever host serves the first v2 tile is the host the
+     * API key is later POSTed to. It is https-only and one-shot, so a later style cannot re-point
+     * it, but an app that cares about invariant 3 must set the meta-data.
      */
     @JvmStatic
     fun pinConfiguredOrigin(baseUrl: String?) {

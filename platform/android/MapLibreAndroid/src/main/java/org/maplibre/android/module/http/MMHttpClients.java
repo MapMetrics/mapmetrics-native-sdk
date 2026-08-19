@@ -1,6 +1,7 @@
 package org.maplibre.android.module.http;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RestrictTo;
 
 import okhttp3.OkHttpClient;
 
@@ -23,6 +24,7 @@ import okhttp3.OkHttpClient;
  * a re-vendor.
  * </p>
  */
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public final class MMHttpClients {
 
   private MMHttpClients() {

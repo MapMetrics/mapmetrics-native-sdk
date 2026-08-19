@@ -71,9 +71,9 @@ public final class MapLibre {
     fileSource.setTileServerOptions(tileServerOptions);
     fileSource.setApiKey(null);
 
-    // MAPMETRICS PATCH -- v2 map sessions. Capture the API key HERE: MapLibre.getApiKey() calls
-    // ThreadUtils.checkThread and throws CalledFromWorkerThreadException off the UI thread on
-    // debug builds, and the session refresh runs on OkHttp dispatcher threads.
+    // MAPMETRICS PATCH -- v2 map sessions. The key is handed to the session layer here rather
+    // than read back from MapLibre later, so the refresh path -- which runs on OkHttp dispatcher
+    // threads -- never reaches into MapLibre's static state. MapLibre is @UiThread by contract.
     MMMapSession.cacheApiKey(null);
     MMMapSessionInterceptor.install(INSTANCE.context);
 
@@ -116,9 +116,9 @@ public final class MapLibre {
     fileSource.setTileServerOptions(tileServerOptions);
     fileSource.setApiKey(apiKey);
 
-    // MAPMETRICS PATCH -- v2 map sessions. Capture the API key HERE: MapLibre.getApiKey() calls
-    // ThreadUtils.checkThread and throws CalledFromWorkerThreadException off the UI thread on
-    // debug builds, and the session refresh runs on OkHttp dispatcher threads.
+    // MAPMETRICS PATCH -- v2 map sessions. The key is handed to the session layer here rather
+    // than read back from MapLibre later, so the refresh path -- which runs on OkHttp dispatcher
+    // threads -- never reaches into MapLibre's static state. MapLibre is @UiThread by contract.
     MMMapSession.cacheApiKey(apiKey);
     MMMapSessionInterceptor.install(INSTANCE.context);
 
@@ -154,6 +154,9 @@ public final class MapLibre {
     validateMapLibre();
     throwIfApiKeyInvalid(apiKey);
     INSTANCE.apiKey = apiKey;
+    // MAPMETRICS PATCH -- v2 map sessions. An app rotating its key would otherwise leave the
+    // session layer holding the old one, so every create sends a dead token, 401s, and gives up.
+    MMMapSession.cacheApiKey(apiKey);
     FileSource.getInstance(getApplicationContext()).setApiKey(apiKey);
   }
 
