@@ -132,6 +132,18 @@ class MMMapSessionIntegrationTest {
             RegexOption.DOT_MATCHES_ALL
         ).find(code)
 
+        // The regex anchors the branch close on `} else`, so a file whose final `else` arm was
+        // removed would not match either — a different fault with the same symptom. Say which,
+        // rather than reporting "no branch" for a branch that is plainly there.
+        if (branch == null && Regex("""code\s*==\s*40[13]""").containsMatchIn(code)) {
+            throw AssertionError(
+                "http_file_source.cpp still mentions 401/403 but this guard could not parse the " +
+                    "branch around it — most likely onResponse's if/else chain was restructured " +
+                    "(the guard expects the 401/403 arm to be followed by a final `else`). " +
+                    "CHECK BY HAND that 401 and 403 still map to Error::Reason::Server, then fix " +
+                    "this regex. Do not delete this test."
+            )
+        }
         assertNotNull(
             "http_file_source.cpp has no `else if (... code == 401/403 ...)` branch at all. " +
                 "Without it a 401 falls through to Error::Reason::Other, which " +
@@ -142,6 +154,17 @@ class MMMapSessionIntegrationTest {
         )
         val condition = branch!!.groupValues[1]
         val body = branch.groupValues[2]
+
+        // Comment-stripping is line-based, so a `//`-bearing string literal in this file would
+        // truncate the body and could turn the Reason::Server check below into a false RED (or,
+        // worse, hide a Reason::Other that sat past the truncation point). No such literal exists
+        // today; this makes the day one appears fail with the reason rather than a puzzle.
+        assertTrue(
+            "the parsed 401/403 branch body does not contain the `response.error` assignment " +
+                "(body: \"$body\"). The body was probably truncated by comment-stripping — check " +
+                "for a string literal containing \"//\" in http_file_source.cpp.",
+            body.contains("response.error")
+        )
 
         // Both codes, in either order and with or without parentheses — the branch is what
         // matters, not how someone chose to punctuate it.
