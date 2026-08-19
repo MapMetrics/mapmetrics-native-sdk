@@ -84,8 +84,22 @@ class MMMapSessionTest {
 
     private fun now() = System.currentTimeMillis() / 1000L
 
+    /**
+     * The `/v2/tiles/` form. Real, not invented: `{z}/{x}/{y}.mvt` under the v2 prefix is exactly
+     * what the staging gateway serves. An earlier draft used `/v2/tiles/streets/1/2/3.pbf`, which
+     * is not a shape any MapMetrics gateway ever emits — it passed only because the matcher was a
+     * prefix test and looked at nothing after `/v2/tiles/`.
+     */
     private fun tileUrl(host: String = gateway, query: String = ""): HttpUrl =
-        "https://$host/v2/tiles/streets/1/2/3.pbf$query".toHttpUrl()
+        "https://$host/v2/tiles/1/2/3.mvt$query".toHttpUrl()
+
+    /**
+     * The v1 form a REAL style hands out today — no `/v2/` anywhere, and already carrying a
+     * `token` JWT. Signing this is the whole point of the shape matcher: the customer moves to
+     * session billing with no style change.
+     */
+    private fun v1TileUrl(host: String = gateway, query: String = ""): HttpUrl =
+        "https://$host/planet20251013/12/2094/1362.mvt$query".toHttpUrl()
 
     private fun seed(exp: Long = now() + 3600, sae: Long = now() + 86400, session: String = "S1") =
         MMMapSession.seedCredentialForTesting("acct-1", session, "SIG1", exp, sae)
@@ -817,7 +831,7 @@ class MMMapSessionTest {
     fun aPlaintextTileOnThePinnedHostIsNotSigned() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed()
-        val plaintext = "http://$gateway/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+        val plaintext = "http://$gateway/v2/tiles/1/2/3.mvt".toHttpUrl()
         assertSame(
             "signing http would put sig on the wire in cleartext",
             plaintext,
@@ -837,7 +851,7 @@ class MMMapSessionTest {
             "anyone on the path can forge headers on a plaintext response",
             MMMapSession.applyCredentialFromHeaders(
                 rollover(),
-                "http://$gateway/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+                "http://$gateway/v2/tiles/1/2/3.mvt".toHttpUrl()
             )
         )
         assertEquals("S1", MMMapSession.signedUrl(tileUrl()).queryParameter("s"))
@@ -847,21 +861,135 @@ class MMMapSessionTest {
     fun aTileOnADifferentPortIsNotSigned() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed()
-        val otherPort = "https://$gateway:8443/v2/tiles/streets/1/2/3.pbf".toHttpUrl()
+        val otherPort = "https://$gateway:8443/v2/tiles/1/2/3.mvt".toHttpUrl()
         assertSame(otherPort, MMMapSession.signedUrl(otherPort))
     }
 
     // -----------------------------------------------------------------------------
-    // M4: the tile-path match is anchored
+    // M6: the tile match is a SHAPE — {z}/{x}/{y}.mvt — not a /v2/tiles/ prefix
     // -----------------------------------------------------------------------------
 
+    /**
+     * THE POINT OF THE WIDENING. The gateway now honours a v2 session signature on the EXISTING v1
+     * tile path, so a new SDK can sign the URL the style ALREADY gave it and the customer moves to
+     * session billing with no style change and no coordination. Under the old
+     * `startsWith("/v2/tiles/")` test this URL was ignored and the feature never engaged at all.
+     */
     @Test
-    fun aForeignPathThatMerelyContainsTheTileMarkerIsNotATile() {
-        val proxied = "https://cdn.example.com/proxy/v2/tiles/index.json".toHttpUrl()
-        assertSame(proxied, MMMapSession.signedUrl(proxied))
+    fun aV1ShapedTileUrlIsSigned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        val exp = now() + 3600
+        val sae = now() + 86400
+        seed(exp = exp, sae = sae)
+        val signed = MMMapSession.signedUrl(v1TileUrl())
+        assertEquals("acct-1", signed.queryParameter("u"))
+        assertEquals("S1", signed.queryParameter("s"))
+        assertEquals(exp.toString(), signed.queryParameter("e"))
+        assertEquals(sae.toString(), signed.queryParameter("a"))
+        assertEquals("1", signed.queryParameter("k"))
+        assertEquals("SIG1", signed.queryParameter("sig"))
+        assertTrue(
+            "a request the SDK could actually sign is billable use",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+    }
+
+    /** And the form that already worked must not regress on the way. */
+    @Test
+    fun theV2TilesFormIsStillSigned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val signed = MMMapSession.signedUrl(tileUrl())
+        assertEquals("S1", signed.queryParameter("s"))
+        assertEquals("SIG1", signed.queryParameter("sig"))
+    }
+
+    /**
+     * Invariant 5 on the URL that actually matters. A v1 tile URL arrives carrying `?token=<JWT>`,
+     * which is what makes it work TODAY. Replacing the query instead of merging into it would
+     * strip the token, and a customer mid-migration would go dark. The gateway sees `sig` and
+     * takes the session path; the token riding along is harmless.
+     */
+    @Test
+    fun aV1TokenQueryParamSurvivesSigning() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val signed = MMMapSession.signedUrl(v1TileUrl(query = "?token=JWT-123"))
+        assertEquals(
+            "the style's token must survive alongside the credential params",
+            "JWT-123",
+            signed.queryParameter("token")
+        )
+        for (name in listOf("u", "s", "e", "a", "k", "sig")) {
+            assertEquals(
+                "all six credential params must ride alongside the token; $name is missing",
+                1,
+                signed.queryParameterValues(name).size
+            )
+        }
+    }
+
+    /**
+     * M4, restated for the shape matcher. `startsWith` used to make this impossible; a suffix
+     * shape does not, so the cases have to be asserted directly. Nothing here is tile-SHAPED, so
+     * none of it may be signed and — the part that actually matters — none of it may teach us the
+     * origin the permanent API key is later POSTed to.
+     */
+    @Test
+    fun nonTileShapedUrlsAreUntouchedAndTeachNoOrigin() {
+        seed()
+        val notTiles = listOf(
+            // A style document.
+            "https://cdn.example.com/planet20251013/style.json",
+            // Adjacent to a real tile: same three numeric segments, wrong extension.
+            "https://cdn.example.com/planet20251013/12/2094/1362.json",
+            // .mvt, but nothing like three numeric segments in front of it.
+            "https://cdn.example.com/planet20251013/streets/tiles.mvt",
+            // Only two numeric segments.
+            "https://cdn.example.com/planet/2094/1362.mvt",
+            // The M4 case verbatim: a foreign CDN proxying something under /v2/tiles/.
+            "https://cdn.example.com/proxy/v2/tiles/index.json"
+        )
+        for (raw in notTiles) {
+            val url = raw.toHttpUrl()
+            assertSame("$raw must not be signed", url, MMMapSession.signedUrl(url))
+        }
         assertNull(
-            "a proxied path must not become the host the API key is POSTed to",
+            "nothing non-tile-shaped may become the host the API key is POSTed to",
             MMMapSession.originForTesting()
+        )
+        assertFalse(
+            "a request we never signed is not billable use",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+    }
+
+    /**
+     * The widened matcher decides only what MIGHT be looked at. The ORIGIN check still decides
+     * what is trusted, and it now carries more of the weight — so it is asserted on the newly
+     * matched shape specifically, not just on the v2 one.
+     */
+    @Test
+    fun aV1ShapedTileOnAForeignHostIsRefusedAndLoggedExactlyOnce() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        repeat(100) {
+            val url = v1TileUrl(host = "evil.example.com", query = "?token=JWT-123")
+            assertSame(url, MMMapSession.signedUrl(url))
+        }
+        assertEquals(
+            "a map view issues hundreds of tiles; the diagnostic must be logged once",
+            1,
+            MMMapSession.originMismatchLogCountForTesting()
+        )
+        assertFalse(
+            "a tile we refused to sign is not billable use",
+            MMMapSession.hasActivitySinceCredentialIssued
+        )
+        assertEquals(
+            "a foreign tile-shaped URL must not re-point the pinned origin",
+            gateway,
+            MMMapSession.originForTesting()?.host
         )
     }
 

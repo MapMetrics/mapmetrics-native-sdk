@@ -34,8 +34,38 @@ object MMMapSession {
 
     private const val TAG = "Mbgl-MMMapSession"
 
-    /** The path fragment that identifies a v2 tile request. */
-    const val TILE_PATH_MARKER = "/v2/tiles/"
+    /**
+     * The SHAPE of a tile path: its last three segments are `{z}/{x}/{y}.mvt`.
+     *
+     * WHY A SHAPE AND NOT A PREFIX. The gateway now accepts a v2 session signature on the
+     * EXISTING v1 tile path, not only on `/v2/tiles/...`. That inverts the migration story: a new
+     * SDK can sign the tile URL the style ALREADY gave it, and the customer moves to session
+     * billing with no style change and no coordination. A `startsWith("/v2/tiles/")` test would
+     * ignore every real style's tile URLs and the feature would never engage. Both real forms —
+     *
+     *     https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt?token=<JWT>
+     *     https://gateway-mapatlas-staging.jim9710.workers.dev/v2/tiles/12/2094/1362.mvt
+     *
+     * — satisfy this one predicate, and no list of known prefixes has to be maintained.
+     *
+     * THE COST, stated plainly. This partly reverses M4, which anchored the match with
+     * `startsWith` so that `/proxy/v2/tiles/index.json` on a foreign CDN could not be mistaken for
+     * a tile and so could not become the LEARNED origin the permanent API key is later POSTed to.
+     * A suffix-shape match reopens that surface: any host serving something shaped like
+     * `.../3/4/5.mvt` now qualifies. What actually contains it is the ORIGIN check, which is
+     * unchanged and now carries more weight — learning is https-only and happens exactly ONCE,
+     * a configured `<meta-data>` origin is never learned from traffic at all, and signing and
+     * credential adoption both require scheme+host+port to match the pin. The widened matcher
+     * decides only what MIGHT be looked at; the origin rules still decide what is trusted.
+     *
+     * `\z`, not `$`: `$` in Java's regex also matches before a trailing line terminator.
+     */
+    @JvmField
+    val TILE_PATH_PATTERN: Regex = Regex("""/\d+/\d+/\d+\.mvt\z""")
+
+    /** True if [url]'s path has the `{z}/{x}/{y}.mvt` tile shape. See [TILE_PATH_PATTERN]. */
+    @JvmStatic
+    fun isTileUrl(url: HttpUrl): Boolean = TILE_PATH_PATTERN.containsMatchIn(url.encodedPath)
 
     /** The six short-form credential parameters carried on a signed tile URL. */
     private val CREDENTIAL_PARAMS = listOf("u", "s", "e", "a", "k", "sig")
@@ -207,10 +237,12 @@ object MMMapSession {
      *
      * When the meta-data is ABSENT — the default, since `WellKnownTileServer` has no MapMetrics
      * entry and the native `TileServerOptions` carry no gateway host — this is never called and
-     * [signedUrl] learns the origin instead, from the first https `/v2/tiles/` URL it sees, once
-     * and irrevocably. That is weaker: whichever host serves the first v2 tile is the host the
-     * API key is later POSTed to. It is https-only and one-shot, so a later style cannot re-point
-     * it, but an app that cares about invariant 3 must set the meta-data.
+     * [signedUrl] learns the origin instead, from the first https TILE-SHAPED URL it sees (see
+     * [TILE_PATH_PATTERN]), once and irrevocably. That is weaker: whichever host serves the first
+     * tile is the host the API key is later POSTed to, and since the matcher is a shape rather
+     * than a `/v2/tiles/` prefix, more URLs can play that role. It is https-only and one-shot, so
+     * a later style cannot re-point it, but an app that cares about invariant 3 must set the
+     * meta-data.
      */
     @JvmStatic
     fun pinConfiguredOrigin(baseUrl: String?) {
@@ -253,17 +285,19 @@ object MMMapSession {
     // ---------------------------------------------------------------------------------
 
     /**
-     * Appends `u/s/e/a/k/sig` if this is a v2 tile URL AND a credential with a known account is
+     * Appends `u/s/e/a/k/sig` if this is a tile URL ([TILE_PATH_PATTERN]) AND a credential with a
+     * known account is
      * held AND the host matches the pinned origin. Returns the input unchanged otherwise, and
      * never throws — an unsigned tile 401s and recovers, a thrown exception kills the request.
      */
     @JvmStatic
     fun signedUrl(url: HttpUrl): HttpUrl {
         try {
-            // ANCHORED, not `contains`. A foreign CDN serving `/proxy/v2/tiles/index.json` is not
-            // a MapMetrics tile: matching it loose would let that host become the LEARNED origin
-            // and so decide where the permanent API key is POSTed.
-            if (!url.encodedPath.startsWith(TILE_PATH_MARKER)) return url
+            // A tile is decided by SHAPE — {z}/{x}/{y}.mvt — so the v1 path a real style already
+            // hands out is signed alongside /v2/tiles/. Still a shape test and not a `contains`:
+            // a foreign CDN serving `/proxy/v2/tiles/index.json` is not a tile. See
+            // [TILE_PATH_PATTERN] for what that widening does and does not expose.
+            if (!isTileUrl(url)) return url
 
             var logMismatch = false
             var logLearned = false

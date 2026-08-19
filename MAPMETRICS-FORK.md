@@ -49,11 +49,25 @@ Reproduce the divergence with:
    KNOWN LIMITATION — gateway origin. `MMMapSessionInterceptor` pins the origin from the host
    app's `AndroidManifest.xml` `<meta-data android:name="org.maplibre.android.MapSessionOrigin"
    android:value="https://..."/>`. When that meta-data is absent the origin is instead LEARNED
-   from the first https `/v2/tiles/` URL seen, and `refreshNow` later POSTs the customer's
+   from the first https TILE-SHAPED URL seen, and `refreshNow` later POSTs the customer's
    permanent API key to that host. Learning is https-only and one-shot, so no later response can
    re-point it, but it is weaker than configuration. `WellKnownTileServer` has no MapMetrics
    entry and the native `TileServerOptions` carry no gateway host, so there is no other
    configured source to pin from; adding one would remove the fallback's reason to exist.
+
+   WHAT COUNTS AS A TILE — `MMMapSession.TILE_PATH_PATTERN`, the single shared definition, used by
+   `signedUrl` and referenced (never re-spelt as a literal) by `MMMapSessionInterceptor`. It is a
+   SHAPE, `/\d+/\d+/\d+\.mvt\z`, not a `/v2/tiles/` prefix. The gateway's universal tile endpoint
+   accepts a v2 session signature on the EXISTING v1 tile path
+   (`/{planet}/{z}/{x}/{y}.mvt?token=<JWT>`), so a new SDK signs the URL the style already gave it
+   and the customer moves to session billing with no style change and no coordination; a prefix
+   test would ignore every real style's tile URLs and the feature would never engage. This widens
+   what could become the LEARNED origin above, which is why the origin rules must not be relaxed
+   further. Covered by `MMMapSessionTest.aV1ShapedTileUrlIsSigned`,
+   `theV2TilesFormIsStillSigned`, `aV1TokenQueryParamSurvivesSigning`,
+   `nonTileShapedUrlsAreUntouchedAndTeachNoOrigin`,
+   `aV1ShapedTileOnAForeignHostIsRefusedAndLoggedExactlyOnce`, their interceptor-level siblings,
+   and end to end by the live `coldStartRecoversFrom401AndServesTilesOnOneCredential`.
 4. **Branding**: `maplibre_mapmetrics_map_logo` in `MapView.java` and `MapSnapshotter.kt`,
    the PNG, ~25 `res/values-*/strings.xml`, and `res-public/values/public.xml`.
    NOT REPLAYABLE FROM THIS DOCUMENT, and NOTHING TURNS RED IF IT IS DROPPED. There is no marker

@@ -147,8 +147,13 @@ class MMMapSessionInterceptorTest {
 
     private fun request(url: String) = Request.Builder().url(url).build()
 
+    /** The `/v2/tiles/` form, in the `{z}/{x}/{y}.mvt` shape the gateway actually serves. */
     private fun tileUrl(query: String = "") =
-        "https://$gateway/v2/tiles/streets/1/2/3.pbf$query"
+        "https://$gateway/v2/tiles/1/2/3.mvt$query"
+
+    /** The v1 form a real style hands out today, with its `token` JWT already on it. */
+    private fun v1TileUrl(host: String = gateway, query: String = "") =
+        "https://$host/planet20251013/12/2094/1362.mvt$query"
 
     private fun rollover(
         sid: String = "S2",
@@ -177,6 +182,50 @@ class MMMapSessionInterceptorTest {
         assertEquals("acct-1", sent.queryParameter("u"))
         assertEquals("S1", sent.queryParameter("s"))
         assertEquals("SIG1", sent.queryParameter("sig"))
+    }
+
+    /**
+     * THE MIGRATION PATH, through the shipped code rather than through `signedUrl` directly. The
+     * gateway now honours a v2 session signature on the EXISTING v1 tile path, so the URL the
+     * style ALREADY hands out — `token` JWT and all — is signed with no style change and no
+     * coordination. Under the old `startsWith("/v2/tiles/")` matcher this went out untouched and
+     * the feature never engaged for any real customer.
+     */
+    @Test
+    fun aV1ShapedTileRequestIsSignedAndKeepsItsToken() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val chain = FakeChain(request(v1TileUrl(query = "?token=JWT-123")))
+        interceptor.intercept(chain)
+
+        val sent: HttpUrl = chain.proceeded!!.url
+        assertEquals("acct-1", sent.queryParameter("u"))
+        assertEquals("S1", sent.queryParameter("s"))
+        assertEquals("SIG1", sent.queryParameter("sig"))
+        assertEquals(
+            "the style's token must survive: the gateway takes the session path on `sig` and the " +
+                "token riding along is harmless, but stripping it would break the fallback",
+            "JWT-123",
+            sent.queryParameter("token")
+        )
+    }
+
+    /** The widened matcher must not weaken the origin pin on the newly matched shape. */
+    @Test
+    fun aV1ShapedTileOnAForeignHostIsNotSigned() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val original = request(v1TileUrl(host = "evil.example.com", query = "?token=JWT-123"))
+        val chain = FakeChain(original)
+        interceptor.intercept(chain)
+
+        assertSame(original, chain.proceeded)
+        assertNull(chain.proceeded!!.url.queryParameter("sig"))
+        assertEquals(
+            "a foreign tile-shaped URL must not re-point the pinned origin",
+            gateway,
+            MMMapSession.originForTesting()!!.host
+        )
     }
 
     @Test
@@ -215,7 +264,7 @@ class MMMapSessionInterceptorTest {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         seed()
         val chain = FakeChain(
-            request("https://evil.example.com/v2/tiles/streets/1/2/3.pbf"),
+            request("https://evil.example.com/v2/tiles/1/2/3.mvt"),
             code = 200,
             headers = rollover()
         )
@@ -238,7 +287,7 @@ class MMMapSessionInterceptorTest {
             request(tileUrl()),
             code = 200,
             headers = rollover(),
-            respondingRequest = request("https://evil.example.com/v2/tiles/streets/1/2/3.pbf")
+            respondingRequest = request("https://evil.example.com/v2/tiles/1/2/3.mvt")
         )
         interceptor.intercept(chain)
 
@@ -279,7 +328,7 @@ class MMMapSessionInterceptorTest {
         // A style document naming another tile host must not move the origin: refreshNow POSTs
         // the permanent API key there.
         interceptor.intercept(
-            FakeChain(request("https://evil.example.com/v2/tiles/streets/1/2/3.pbf"))
+            FakeChain(request("https://evil.example.com/v2/tiles/1/2/3.mvt"))
         )
         assertEquals(
             "the origin is learned once and never re-pointed",

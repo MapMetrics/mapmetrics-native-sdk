@@ -27,8 +27,11 @@ class MMMapSessionInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
 
-        // Signing is a no-op for anything that is not a v2 tile URL on the pinned origin, and
-        // signedUrl never throws — an unsigned tile 401s and recovers below.
+        // Signing is a no-op for anything that is not tile-shaped ([MMMapSession.isTileUrl] /
+        // [MMMapSession.TILE_PATH_PATTERN], the ONE shared definition — never a literal path here)
+        // on the pinned origin, and signedUrl never throws: an unsigned tile 401s and recovers
+        // below. Since the gateway now honours a v2 signature on the v1 tile path too, the URL a
+        // real style already hands out is signed without the style changing at all.
         val signed = MMMapSession.signedUrl(original.url)
         val wasSigned = signed != original.url
         val request = if (wasSigned) {

@@ -62,6 +62,23 @@ class MMMapSessionIntegrationTest {
             "5/16/11", "5/16/10", "4/8/5", "4/8/6"
         )
 
+        /** One more real tile, fetched over the v1-shaped path. Not in [TILES]. */
+        const val V1_TILE = "5/17/11"
+
+        /**
+         * The `{planet}` segment of the v1 tile path. The gateway matches it as `[^/]+` and
+         * rewrites to its own canonical planet, so the exact value does not decide the response —
+         * it is here to make the URL look like what a style really emits.
+         */
+        const val V1_PLANET = "planet20251013"
+
+        /**
+         * A stand-in for the style's `token` JWT. NOT a credential and not secret: the point is
+         * only that a query param the SDK did not put there survives signing. The gateway takes
+         * the session path on `sig` and never looks at it.
+         */
+        const val V1_TOKEN = "style-token-placeholder"
+
         const val CREDENTIAL_WAIT_MILLIS = 15_000L
 
         /** The string `MAPMETRICS-FORK.md` tells a re-vendorer to grep for. */
@@ -281,7 +298,44 @@ class MMMapSessionIntegrationTest {
         val sessionIdBefore = signedSessionId()
         assertNotNull("a credential must sign a session id", sessionIdBefore)
 
-        // --- 3. tiles are then served, all on that one credential ---------------------------
+        // --- 3. THE UNIVERSAL ENDPOINT: the v1-shaped path takes the v2 signature ------------
+        // This is the whole reason the matcher is a SHAPE rather than a `/v2/tiles/` prefix. The
+        // gateway accepts a session signature on the path every shipped style already names, so a
+        // new SDK signs the URL it was given and that customer is on session billing with no style
+        // change and no coordination. Proven here end to end against the real gateway: the URL
+        // still carries the style's own `token`, the interceptor still signs it, and the tile is
+        // served FREE against the window already bought above.
+        val v1Tile = v1TileUrl(V1_TILE)
+        val v1Response = client.newCall(Request.Builder().url(v1Tile).build()).execute()
+        val v1Code = v1Response.code
+        val v1Sent = v1Response.request.url
+        val v1Bytes = v1Response.body?.bytes()?.size ?: 0
+        v1Response.close()
+
+        assertEquals("the v1-shaped tile should have been served", 200, v1Code)
+        assertTrue(
+            "a v1-shaped tile URL must be signed; under a `/v2/tiles/` prefix matcher it would " +
+                "have gone out untouched and the feature would never engage for a real style",
+            v1Sent.queryParameterNames.contains("sig")
+        )
+        assertEquals(
+            "the style's own token must survive alongside the credential params",
+            V1_TOKEN,
+            v1Sent.queryParameter("token")
+        )
+        assertEquals(
+            "the v1-shaped tile must ride the credential we already bought",
+            sessionIdBefore,
+            v1Sent.queryParameter("s")
+        )
+        assertTrue("the v1-shaped tile came back empty ($v1Bytes bytes)", v1Bytes > 1000)
+        assertEquals(
+            "signing the v1 path must not buy a second window; it is the SAME session",
+            1,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+
+        // --- 4. tiles are then served, all on that one credential ---------------------------
         var served = 0
         for (tile in TILES) {
             val response = client.newCall(Request.Builder().url(tileUrl(tile)).build()).execute()
@@ -305,7 +359,7 @@ class MMMapSessionIntegrationTest {
         }
         assertEquals(TILES.size, served)
 
-        // --- 4. one credential, many tiles ---------------------------------------------------
+        // --- 5. one credential, many tiles ---------------------------------------------------
         // Without this, a mid-test rollover would leave everything above green while quietly
         // measuring the rollover path instead of the property we came to assert.
         assertEquals(
@@ -325,6 +379,14 @@ class MMMapSessionIntegrationTest {
     }
 
     private fun tileUrl(tile: String): HttpUrl = "$STAGING_BASE/v2/tiles/$tile.mvt".toHttpUrl()
+
+    /**
+     * The v1 tile path — `/{planet}/{z}/{x}/{y}.mvt` — carrying the style's own `token`, exactly
+     * as a shipped style hands it out. The gateway's universal endpoint accepts either credential
+     * form here; `sig` wins and the tile is free.
+     */
+    private fun v1TileUrl(tile: String): HttpUrl =
+        "$STAGING_BASE/$V1_PLANET/$tile.mvt?token=$V1_TOKEN".toHttpUrl()
 
     /** The `s` parameter the SDK would sign onto a tile right now, or null if it cannot sign. */
     private fun signedSessionId(): String? =
