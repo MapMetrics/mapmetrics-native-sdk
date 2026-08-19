@@ -189,7 +189,7 @@ void HTTPRequest::onResponse(jni::JNIEnv& env,
     } else if (code >= 500 && code < 600) {
         response.error = std::make_unique<Error>(Error::Reason::Server,
                                                  std::string{"HTTP status code "} + util::toString(code));
-    } else if (code == 401 || code == 403) {
+    } else if ((code == 401 || code == 403) && resource.kind == Resource::Kind::Tile) {
         // MAPMETRICS PATCH -- v2 map sessions.
         //
         // Reason::Other is terminal: the shared src/mbgl/util/http_timeout.cpp returns
@@ -204,6 +204,17 @@ void HTTPRequest::onResponse(jni::JNIEnv& env,
         // Reason::Server gets exponential backoff, which is what we want while
         // MMMapSession re-authenticates. The iOS port maps these codes identically
         // (platform/darwin/core/http_file_source.mm) so both platforms agree.
+        //
+        // SCOPED TO TILES ON PURPOSE. Unconditional, this branch swallowed EVERY 401/403 the
+        // SDK sees -- styles, sprites, glyphs, v1 tiles, third-party hosts -- and turned each
+        // into an unbounded retry instead of a terminal error. An app with a revoked or
+        // unscoped key then gets a permanently blank map with NO error delivered to
+        // onDidFailLoadingMap, which is the same silent-failure class this branch exists to
+        // remove. Only tiles participate in the v2 session recovery loop, so only tiles need
+        // the retry; everything else keeps upstream's terminal Reason::Other and stays
+        // reportable. TRADE-OFF: a 401 on the STYLE document of a v2 session app is now
+        // terminal again -- correct, because no amount of retrying fixes it and the app can
+        // only react to an error it is actually told about.
         response.error = std::make_unique<Error>(Error::Reason::Server,
                                                  std::string{"HTTP status code "} + util::toString(code));
     } else {
