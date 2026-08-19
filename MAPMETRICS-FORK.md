@@ -15,9 +15,18 @@ Reproduce the divergence with:
 2. **401/403 -> Error::Reason::Server** in `platform/android/.../src/cpp/http_file_source.cpp`.
    Upstream maps them to Reason::Other, which the shared http_timeout.cpp never retries.
    Search for "MAPMETRICS PATCH -- v2 map sessions".
-3. **Branding**: `maplibre_mapmetrics_map_logo` in `MapView.java` and `MapSnapshotter.kt`,
+3. **v2 map-session install hook** in `platform/android/.../MapLibre.java`.
+   Two lines in EACH `getInstance` overload, after the API key is known and before `return`:
+   `MMMapSession.cacheApiKey(apiKey); MMMapSessionInterceptor.install(INSTANCE.context);`
+   plus the two imports. Search for "MAPMETRICS PATCH -- v2 map sessions".
+   Without it nothing signs tiles: v2 requests 401 forever and the map is blank.
+   The API key MUST be captured here — `MapLibre.getApiKey()` goes through
+   `ThreadUtils.checkThread` and throws off the UI thread, and refresh runs on OkHttp
+   dispatcher threads. Everything else v2 lives in new files
+   (`org/maplibre/android/session/*`, `module/http/MMHttpClients.java`) and replays for free.
+4. **Branding**: `maplibre_mapmetrics_map_logo` in `MapView.java` and `MapSnapshotter.kt`,
    the PNG, ~25 `res/values-*/strings.xml`, and `res-public/values/public.xml`.
-4. **Build/publishing**: `build.gradle.kts`, `gradle.properties`.
+5. **Build/publishing**: `build.gradle.kts`, `gradle.properties`.
 
 ## Verification — REQUIRED, do not skip
 

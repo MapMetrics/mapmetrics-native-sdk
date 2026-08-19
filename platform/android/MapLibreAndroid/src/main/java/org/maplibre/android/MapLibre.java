@@ -13,6 +13,8 @@ import timber.log.Timber;
 import org.maplibre.android.constants.MapLibreConstants;
 import org.maplibre.android.exceptions.MapLibreConfigurationException;
 import org.maplibre.android.net.ConnectivityReceiver;
+import org.maplibre.android.session.MMMapSession;
+import org.maplibre.android.session.MMMapSessionInterceptor;
 import org.maplibre.android.storage.FileSource;
 import org.maplibre.android.util.DefaultStyle;
 import org.maplibre.android.util.TileServerOptions;
@@ -69,6 +71,12 @@ public final class MapLibre {
     fileSource.setTileServerOptions(tileServerOptions);
     fileSource.setApiKey(null);
 
+    // MAPMETRICS PATCH -- v2 map sessions. Capture the API key HERE: MapLibre.getApiKey() calls
+    // ThreadUtils.checkThread and throws CalledFromWorkerThreadException off the UI thread on
+    // debug builds, and the session refresh runs on OkHttp dispatcher threads.
+    MMMapSession.cacheApiKey(null);
+    MMMapSessionInterceptor.install(INSTANCE.context);
+
     return INSTANCE;
   }
 
@@ -107,6 +115,13 @@ public final class MapLibre {
     FileSource fileSource = FileSource.getInstance(context);
     fileSource.setTileServerOptions(tileServerOptions);
     fileSource.setApiKey(apiKey);
+
+    // MAPMETRICS PATCH -- v2 map sessions. Capture the API key HERE: MapLibre.getApiKey() calls
+    // ThreadUtils.checkThread and throws CalledFromWorkerThreadException off the UI thread on
+    // debug builds, and the session refresh runs on OkHttp dispatcher threads.
+    MMMapSession.cacheApiKey(apiKey);
+    MMMapSessionInterceptor.install(INSTANCE.context);
+
     return INSTANCE;
   }
 
