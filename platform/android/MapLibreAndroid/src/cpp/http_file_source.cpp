@@ -189,6 +189,23 @@ void HTTPRequest::onResponse(jni::JNIEnv& env,
     } else if (code >= 500 && code < 600) {
         response.error = std::make_unique<Error>(Error::Reason::Server,
                                                  std::string{"HTTP status code "} + util::toString(code));
+    } else if (code == 401 || code == 403) {
+        // MAPMETRICS PATCH -- v2 map sessions.
+        //
+        // Reason::Other is terminal: the shared src/mbgl/util/http_timeout.cpp returns
+        // Duration::max() for it, so the request is never retried and the tile stays
+        // blank forever with no error surfaced to the app.
+        //
+        // Two recoverable cases produce a 401 and both must retry:
+        //   - the very first tile request, sent before MMMapSession holds a credential
+        //     (the OkHttp interceptor is synchronous and cannot await a session create);
+        //   - a signing-key rotation, which invalidates every live credential at once.
+        //
+        // Reason::Server gets exponential backoff, which is what we want while
+        // MMMapSession re-authenticates. The iOS port maps these codes identically
+        // (platform/darwin/core/http_file_source.mm) so both platforms agree.
+        response.error = std::make_unique<Error>(Error::Reason::Server,
+                                                 std::string{"HTTP status code "} + util::toString(code));
     } else {
         response.error = std::make_unique<Error>(Error::Reason::Other,
                                                  std::string{"HTTP status code "} + util::toString(code));
