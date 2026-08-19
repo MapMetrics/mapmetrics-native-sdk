@@ -4,10 +4,15 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -29,19 +34,39 @@ class MMMapSessionTest {
 
     private val gateway = "gw.example.com"
     private lateinit var requests: MutableList<Request>
+    private lateinit var callbacks: MutableList<Callback>
 
     @Before
     fun setUp() {
         MMMapSession.resetForTesting()
         MMMapSession.resetOriginForTesting()
         requests = mutableListOf()
-        val slot = slot<Request>()
+        callbacks = mutableListOf()
+        val requestSlot = slot<Request>()
+        val callbackSlot = slot<Callback>()
         val factory = mockk<Call.Factory>()
-        every { factory.newCall(capture(slot)) } answers {
-            requests.add(slot.captured)
-            mockk<Call>(relaxed = true)
+        every { factory.newCall(capture(requestSlot)) } answers {
+            requests.add(requestSlot.captured)
+            val call = mockk<Call>(relaxed = true)
+            every { call.enqueue(capture(callbackSlot)) } answers {
+                callbacks.add(callbackSlot.captured)
+            }
+            call
         }
         MMMapSession.callFactory = factory
+    }
+
+    /** Delivers a response to the callback the n-th refresh handed to OkHttp. */
+    private fun deliver(index: Int, code: Int, body: String) {
+        val request = requests[index]
+        val response = Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(code)
+            .message("test")
+            .body(body.toResponseBody("application/json".toMediaType()))
+            .build()
+        callbacks[index].onResponse(mockk(relaxed = true), response)
     }
 
     @After
@@ -154,8 +179,11 @@ class MMMapSessionTest {
     @Test
     fun rolloverWithoutAKnownAccountIsRejected() {
         // No account: signing `u=` is malformed at the gateway, 401s, and (401 now being
-        // retryable) retries forever.
+        // retryable) retries forever. Asserted through the unvalidated seam so this pins the
+        // ACCOUNT gate specifically, independently of the host gate.
+        assertFalse(MMMapSession.applyCredentialFromHeadersUnvalidatedForTesting(rollover()))
         assertFalse(MMMapSession.applyCredentialFromHeaders(rollover(), tileUrl()))
+        assertFalse(MMMapSession.hasCredentialForTesting())
     }
 
     @Test
@@ -302,6 +330,45 @@ class MMMapSessionTest {
         assertEquals(sae.toString(), url.queryParameter("a"))
         assertEquals("SIG1", url.queryParameter("sig"))
         assertNull("the API key must never ride on a renew", url.queryParameter("token"))
+    }
+
+    // -----------------------------------------------------------------------------
+    // Coalescing: concurrent callers ride one request
+    // -----------------------------------------------------------------------------
+
+    @Test
+    fun concurrentRefreshesCoalesceOntoOneRequest() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        // The cold-start case: several unsigned tiles 401 at once and each drives a refresh.
+        repeat(8) { MMMapSession.refreshNow() }
+        assertEquals(
+            "8 cold-start 401s must buy exactly one session, not eight",
+            1,
+            requests.size
+        )
+    }
+
+    @Test
+    fun aFailedRefreshReleasesTheInFlightFlagRatherThanWedgingForever() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.refreshNow()
+        assertEquals(1, requests.size)
+        // A 200 whose body is not a usable credential routes to handleRefreshFailure.
+        deliver(0, 200, "this is not json")
+        assertFalse(MMMapSession.hasCredentialForTesting())
+        MMMapSession.refreshNow()
+        assertEquals(
+            "the in-flight flag must be released on the failure path, or the SDK never " +
+                "refreshes again for the life of the process",
+            2,
+            requests.size
+        )
+        // And the happy path releases it too.
+        deliver(1, 200, body().toString())
+        assertTrue(MMMapSession.hasCredentialForTesting())
+        MMMapSession.handleRefreshFailure(401) // drop it so the next refresh is a create
+        MMMapSession.refreshNow()
+        assertEquals(3, requests.size)
     }
 
     // -----------------------------------------------------------------------------

@@ -266,12 +266,26 @@ object MMMapSession {
      * only if the header set is complete, the credential is newer, the responding host is the
      * pinned origin, and the account is already known.
      *
-     * @param responseUrl the URL that produced these headers. Production ALWAYS passes it — a
-     * host named in a style document could otherwise inject a credential. Null is a test seam.
+     * @param responseUrl the URL that produced these headers. REQUIRED, and deliberately not
+     * defaulted: a host named in a style document could otherwise return `X-Map-Session-*`
+     * headers and own the SDK's credential. The only way to skip the check is to call
+     * [applyCredentialFromHeadersUnvalidatedForTesting], which is impossible to reach by accident.
      */
     @JvmStatic
-    @JvmOverloads
-    fun applyCredentialFromHeaders(headers: Headers, responseUrl: HttpUrl? = null): Boolean {
+    fun applyCredentialFromHeaders(headers: Headers, responseUrl: HttpUrl): Boolean =
+        applyCredentialFromHeadersInternal(headers, responseUrl)
+
+    /**
+     * Adoption with NO origin validation. Test seam only — never call this from production code.
+     */
+    @JvmStatic
+    fun applyCredentialFromHeadersUnvalidatedForTesting(headers: Headers): Boolean =
+        applyCredentialFromHeadersInternal(headers, null)
+
+    private fun applyCredentialFromHeadersInternal(
+        headers: Headers,
+        responseUrl: HttpUrl?
+    ): Boolean {
         val sid = headers["X-Map-Session-Id"]
         val newSig = headers["X-Map-Session-Sig"]
         val newExp = headers["X-Map-Session-Exp"]
@@ -421,16 +435,25 @@ object MMMapSession {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    val status = response.code
-                    val json = try {
-                        response.body?.string()?.takeIf { it.isNotEmpty() }?.let { JSONObject(it) }
+                    // Belt and braces: ANY escape from this callback that skips
+                    // handleRefreshFailure leaves refreshInFlight true, which wedges every
+                    // future refresh for the life of the process.
+                    try {
+                        val status = response.code
+                        val json = try {
+                            response.body?.string()?.takeIf { it.isNotEmpty() }
+                                ?.let { JSONObject(it) }
+                        } catch (throwable: Throwable) {
+                            null
+                        } finally {
+                            response.close()
+                        }
+                        if (status == 200 && adoptRefreshResponse(json)) return
+                        handleRefreshFailure(status)
                     } catch (throwable: Throwable) {
-                        null
-                    } finally {
-                        response.close()
+                        Logger.e(TAG, "map-session refresh response could not be handled", throwable)
+                        handleRefreshFailure(0)
                     }
-                    if (status == 200 && adoptRefreshResponse(json)) return
-                    handleRefreshFailure(status)
                 }
             })
         } catch (throwable: Throwable) {
