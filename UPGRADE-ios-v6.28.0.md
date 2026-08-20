@@ -187,3 +187,15 @@ not disable it in a way that leaves the source text intact.
    are phase-2 prerequisites.
 6. **Phase 2 (porting the iOS work) is unblocked**: the darwin/ios/macos/src/include trees now
    match the iOS fork's baseline exactly.
+7. **Run `git submodule update --init --recursive`** before any native build. `git status` shows
+   `vendor/PMTiles`, `vendor/Vulkan-Headers` and `vendor/boost` as modified: the committed gitlinks
+   are correct and match the tag, but the on-disk working copies are still at the old commits.
+
+## Commits on this branch (local only — nothing pushed)
+
+    cbd8d7cf37 fix(vendor): re-align submodules to ios-v6.28.0
+    8f647db009 feat(android): finish the ios-v6.28.0 upgrade and re-verify every fork patch
+    d4a055b72f merge: upgrade to upstream MapLibre Native ios-v6.28.0
+    7d0cdc31ce docs(upgrade): record pre-upgrade state and correct the stale fork manifest
+
+Branch `feat/upgrade-ios-v6.28.0`, off `feat/v2-map-sessions` at `f7946bcc99`.
