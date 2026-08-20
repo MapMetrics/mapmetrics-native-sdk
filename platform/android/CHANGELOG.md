@@ -1,5 +1,33 @@
 # Changelog MapLibre Native for Android
 
+## MapMetrics 2.0.0
+
+Upgrades the fork onto MapLibre Android 13.x. Two breaking changes for anyone
+coming from MapMetrics 1.0.2.
+
+### ⚠️ Breaking changes
+
+- **The default renderer is now Vulkan, not OpenGL ES.** MapLibre made Vulkan
+  the default in 13.0.0, and the unsuffixed `mapmetrics-native-sdk` artifact
+  follows it. MapMetrics 1.0.2 shipped the OpenGL/drawable AAR, so upgrading
+  changes the rendering backend. There is no automatic fallback: a device with a
+  missing or broken Vulkan driver fails to render rather than degrading. To stay
+  on OpenGL ES, depend on `mapmetrics-native-sdk-opengl` instead. See
+  [Rendering Backends](../../docs/mdbook/src/platforms/android/android-rendering-backends.md).
+- **`minSdk` raised from 23 to 24.** Vulkan 1.0 first shipped in Android 7.0, so
+  the previous floor advertised devices the default artifact cannot render on.
+  API 23 consumers must move to the `-opengl` artifact. Vulkan driver quality on
+  budget Adreno and Mali parts is uneven below API 26; API 26+ is recommended.
+
+### 🐞 Bug fixes
+
+- session: `MMHttpClients.currentClient()` returned the raw `volatile` client
+  field, which is only populated on the first map request. `MapLibre.getInstance`
+  → `MMMapSessionInterceptor.install` runs before any tile is fetched, so it
+  returned null on every cold start and took down `getInstance`. It now goes
+  through the lazy initializer, which also restores the `InMemoryCookieJar` that
+  the upgrade had dropped from the signing client.
+
 ## 13.4.1
 
 ### 🐞 Bug fixes

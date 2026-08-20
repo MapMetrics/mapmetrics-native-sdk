@@ -23,7 +23,8 @@ android {
 
     defaultConfig {
         applicationId = "org.maplibre.android.testapp"
-        minSdk = 23
+        // Tracks the library floor; see MapLibreAndroid/build.gradle.kts.
+        minSdk = 24
         targetSdk = 33
         versionCode = 14
         testInstrumentationRunner = "org.maplibre.android.InstrumentationRunner"
