@@ -52,6 +52,10 @@ ios_unit_test(
     name = "ios_test",
     timeout = "long",
     minimum_os_version = "12.0",
+    # MAPMETRICS PATCH -- without this the staging key never reaches the simulator
+    # process, MMMapSessionIntegrationTests XCTSkips, and the suite still reports
+    # green. --test_env alone does NOT substitute for it under ios_unit_test.
+    env_inherit = ["MM_STAGING_KEY"],
     runner = "@rules_apple//apple/testing/default_runner:ios_xctestrun_ordered_runner",
     visibility = [
         "@rules_xcodeproj//xcodeproj:generated",

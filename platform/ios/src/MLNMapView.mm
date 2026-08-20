@@ -536,6 +536,85 @@ public:
   return self;
 }
 
+/// Info.plist keys used by `-initWithFrame:isDarkMode:`.
+///
+/// The style URLs and the access token are supplied by the host application
+/// rather than compiled into the SDK. An earlier revision hardcoded a
+/// non-expiring JWT and two style URLs directly in this file; the token was
+/// readable by anyone with the binary or the repository, and the hosts it
+/// pointed at no longer resolve. Configuration belongs to the app.
+static NSString *const MLNMapMetricsLightStyleURLInfoPlistKey = @"MLNMapMetricsLightStyleURL";
+static NSString *const MLNMapMetricsDarkStyleURLInfoPlistKey = @"MLNMapMetricsDarkStyleURL";
+
+/// Reads a style URL for the requested appearance from the main bundle's
+/// Info.plist, appending the configured API key as a `token` query item when the
+/// URL does not already carry one.
+///
+/// Returns `nil` when the key is absent or unusable, in which case the caller
+/// falls back to the default style so the map still renders something.
+static NSURL *MLNMapMetricsConfiguredStyleURL(BOOL isDarkMode) {
+  NSString *key =
+      isDarkMode ? MLNMapMetricsDarkStyleURLInfoPlistKey : MLNMapMetricsLightStyleURLInfoPlistKey;
+  id rawValue = [[NSBundle mainBundle] objectForInfoDictionaryKey:key];
+
+  if (![rawValue isKindOfClass:[NSString class]] || ![(NSString *)rawValue length]) {
+    MLNLogWarning(@"Info.plist key %@ is missing or not a string; falling back to the default "
+                  @"style. Set it to the style URL you want %@ to load.",
+                  key, isDarkMode ? @"in dark mode" : @"in light mode");
+    return nil;
+  }
+
+  NSURLComponents *components = [NSURLComponents componentsWithString:(NSString *)rawValue];
+  if (!components) {
+    MLNLogError(@"Info.plist key %@ is not a valid URL (%@); falling back to the default style.",
+                key, rawValue);
+    return nil;
+  }
+
+  // Only attach the API key if the app has one and the URL does not already
+  // specify a token, so an app can embed a pre-signed style URL instead.
+  NSString *apiKey = [MLNSettings apiKey];
+  if (apiKey.length) {
+    NSArray<NSURLQueryItem *> *existingItems = components.queryItems ?: @[];
+    BOOL hasToken = NO;
+    for (NSURLQueryItem *item in existingItems) {
+      if ([item.name caseInsensitiveCompare:@"token"] == NSOrderedSame) {
+        hasToken = YES;
+        break;
+      }
+    }
+    if (!hasToken) {
+      components.queryItems = [existingItems
+          arrayByAddingObject:[NSURLQueryItem queryItemWithName:@"token" value:apiKey]];
+    }
+  }
+
+  NSURL *url = components.URL;
+  if (!url) {
+    MLNLogError(@"Could not build a URL from Info.plist key %@ (%@); falling back to the default "
+                @"style.",
+                key, rawValue);
+  }
+  return url;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame isDarkMode:(BOOL)isDarkMode {
+  if (self = [super initWithFrame:frame]) {
+    MLNLogInfo(@"Starting %@ initialization.", NSStringFromClass([self class]));
+    MLNLogDebug(@"Initializing frame: %@ isDarkMode: %@", NSStringFromCGRect(frame),
+                isDarkMode ? @"YES" : @"NO");
+    [self commonInitWithOptions:nil];
+
+    NSURL *styleURL = MLNMapMetricsConfiguredStyleURL(isDarkMode);
+    // A nil styleURL makes -setStyleURL: fall back to the default style, which
+    // is the behaviour we want when the app has not configured one.
+    self.styleURL = styleURL;
+
+    MLNLogInfo(@"Finalizing %@ initialization.", NSStringFromClass([self class]));
+  }
+  return self;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame styleJSON:(NSString *)styleJSON {
   if (self = [super initWithFrame:frame]) {
     MLNLogInfo(@"Starting %@ initialization.", NSStringFromClass([self class]));

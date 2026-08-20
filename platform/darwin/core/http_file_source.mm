@@ -409,6 +409,23 @@ std::unique_ptr<AsyncRequest> HTTPFileSource::request(const Resource &resource,
                 response.error = std::make_unique<Error>(
                     Error::Reason::Server,
                     std::string{"HTTP status code "} + std::to_string(responseCode));
+              } else if (responseCode == 401 || responseCode == 403) {
+                // MAPMETRICS PATCH -- v2 map sessions.
+                //
+                // Reason::Other is terminal: http_timeout.cpp returns Duration::max() for
+                // it, and OnlineFileRequest::schedule then never retries. A 401 tile would
+                // stay blank forever with no error surfaced to the app.
+                //
+                // Two cases produce a 401 and BOTH are recoverable:
+                //   - the very first request, sent before MMMapSession has a credential
+                //     (willSendRequest: is synchronous and cannot await the create call);
+                //   - a signing-key rotation, which invalidates every live credential at once.
+                //
+                // Reason::Server gets exponential backoff, which is exactly the behaviour
+                // we want while MMMapSession re-authenticates.
+                response.error = std::make_unique<Error>(
+                    Error::Reason::Server,
+                    std::string{"HTTP status code "} + std::to_string(responseCode));
               } else {
                 response.error =
                     std::make_unique<Error>(Error::Reason::Other, std::string{"HTTP status code "} +

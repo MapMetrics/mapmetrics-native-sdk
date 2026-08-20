@@ -210,6 +210,36 @@ MLN_EXPORT
 - (instancetype)initWithFrame:(CGRect)frame styleURL:(nullable NSURL *)styleURL;
 
 /**
+ Initializes and returns a newly allocated map view that loads the MapMetrics
+ light or dark style configured by the host application.
+
+ The style URLs are read from the application's Info.plist, not compiled into the
+ SDK:
+
+ | Info.plist key               | Used when            |
+ |------------------------------|----------------------|
+ | `MLNMapMetricsLightStyleURL` | `isDarkMode` is `NO`  |
+ | `MLNMapMetricsDarkStyleURL`  | `isDarkMode` is `YES` |
+
+ If `MLNApiKey` is also set and the configured URL has no `token` query item, the
+ API key is appended as `token`. Supply a pre-signed URL instead if you would
+ rather manage the credential yourself.
+
+ If the relevant key is missing or malformed, a warning is logged and the default
+ style is loaded, so the map still renders.
+
+ @note `isDarkMode` selects the *map style*, which is independent of the system
+    light/dark appearance. Pass the value that matches the basemap you want; do
+    not assume it tracks `UITraitCollection`.
+
+ @param frame The frame for the view, measured in points.
+ @param isDarkMode Whether to load the configured dark style rather than the
+    light one.
+ @return An initialized map view.
+ */
+- (instancetype)initWithFrame:(CGRect)frame isDarkMode:(BOOL)isDarkMode;
+
+/**
  * Initializes and returns a newly allocated map view with the specified frame
  * and style JSON.
  *
