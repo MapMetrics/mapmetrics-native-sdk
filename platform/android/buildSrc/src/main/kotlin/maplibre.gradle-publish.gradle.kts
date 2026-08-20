@@ -24,10 +24,24 @@ androidLibrary.publishing {
     singleVariant("openglDebug")
 }
 
+// Signing is required for Maven Central but must not block a local build.
+// `publishToMavenLocal` on a dev machine has no GPG signatory configured, and
+// signAllPublications() would otherwise fail the whole build.
+val hasSigningKey = providers.gradleProperty("signingInMemoryKey").isPresent ||
+    providers.gradleProperty("signing.keyId").isPresent ||
+    providers.environmentVariable("ORG_GRADLE_PROJECT_signingInMemoryKey").isPresent
+
 afterEvaluate {
     mavenPublishing {
         publishToMavenCentral(true)
-        signAllPublications()
+        if (hasSigningKey) {
+            signAllPublications()
+        } else {
+            logger.lifecycle(
+                "No signing key configured - publications will NOT be signed. " +
+                    "This is fine for publishToMavenLocal, but Maven Central will reject them."
+            )
+        }
     }
 }
 

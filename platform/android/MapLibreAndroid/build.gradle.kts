@@ -242,29 +242,10 @@ configurations {
     }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("release") {
-            groupId = "org.mapmetrics"
-            artifactId = "mapmetrics"
-            version = "1.0.2"
-            artifact("/Users/macbook/Desktop/maplibre-native/platform/android/MapLibreAndroid/build/outputs/aar/MapLibreAndroid-drawable-release.aar")
-        }
-    }
-
-
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/MapMetrics/mapmetrics-native-sdk")
-            credentials {
-                // Replace this securely via CI or environment variable
-                username = "mranawaqas"
-                password = "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"
-            }
-        }
-    }
-}
+// Publishing is configured by `maplibre.gradle-publish` (vanniktech maven-publish base).
+// Coordinates come from `maplibre.artifact-settings`:
+//   org.mapmetrics.android-sdk : mapmetrics-native-sdk : <platform/android/VERSION>
+// Do not re-declare publications here.
 
 // apply<DownloadVulkanValidationPlugin>()
 
