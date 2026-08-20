@@ -222,11 +222,6 @@ class MMMapSessionIntegrationTest {
             .callTimeout(20, TimeUnit.SECONDS)
             .build()
 
-        // Renew at exp-5s rather than the production exp-60s. With a 20s staging ttl the default
-        // lead is already past, which would leave renewal permanently due; a 5s lead keeps the
-        // renewal timer parked beyond the end of this test so we measure one window only.
-        MMMapSession.renewLeadTimeSeconds = 5
-
         MMMapSession.cacheApiKey(apiKey)
 
         // Real traffic goes through the INTERCEPTOR, not through hand-rolled calls to signedUrl.

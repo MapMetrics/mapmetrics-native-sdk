@@ -241,9 +241,8 @@ class MMMapSessionInterceptor : Interceptor {
         }
 
         /**
-         * [MMMapSession.onEnterForeground] clears the give-up state and re-arms the renewal timer.
-         * Without a caller, a transient auth failure becomes a permanently blank map until the
-         * process restarts.
+         * [MMMapSession.onEnterForeground] clears the give-up state. Without a caller, a
+         * transient auth failure becomes a permanently blank map until the process restarts.
          *
          * `ProcessLifecycleOwner` would be the natural signal, but `androidx.lifecycle:
          * lifecycle-process` is not a dependency of this module and adding one is out of scope,
@@ -301,11 +300,6 @@ class MMMapSessionInterceptor : Interceptor {
                 // fires. That kills the only fast escape from the give-up state. By the time
                 // nothing is started there is no restart still owed to anyone.
                 pendingConfigChangeRestarts.set(0)
-                // THE IDLE GATE, across a background/foreground cycle. Without this, `activity`
-                // stays true from the last map the user looked at, and merely reopening the app
-                // to ANY screen buys a BILLED window for a map that is not on screen. See
-                // MMMapSession.onEnterBackground.
-                MMMapSession.onEnterBackground()
             }
         }
 

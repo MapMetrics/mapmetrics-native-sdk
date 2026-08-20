@@ -477,96 +477,55 @@ class MMMapSessionTest {
     }
 
     // -----------------------------------------------------------------------------
-    // Invariant 1: never renew an idle map
+    // Invariant 1: never bill a map nobody is looking at
     // -----------------------------------------------------------------------------
 
-    @Test
-    fun freshCredentialReportsNoActivityAndDoesNotRenew() {
-        seed()
-        assertFalse(MMMapSession.hasActivitySinceCredentialIssued)
-        assertFalse(MMMapSession.shouldRenewNow())
-    }
+    // With the renewal timer gone this invariant is STRUCTURAL rather than guarded. Nothing in
+    // the session machine initiates a purchase; the only refresh in normal operation is rollover,
+    // which the gateway performs on a tile request the client actually made. These tests pin that
+    // the ordinary lifecycle events — adopting, signing, lapsing, foregrounding — buy nothing.
+    // Every refreshDecisionCountForTesting increment is a BILLED map load in production.
 
     @Test
-    fun signingATileRecordsActivity() {
+    fun adoptingACredentialBuysNothing() {
         seed()
-        MMMapSession.signedUrl(tileUrl())
-        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
-        assertTrue(MMMapSession.shouldRenewNow())
-    }
-
-    @Test
-    fun aRequestWeCouldNotSignIsNotBillableUse() {
-        // No credential at all: the tile goes out unsigned, which is not use of a window.
-        MMMapSession.signedUrl(tileUrl())
-        assertFalse(MMMapSession.hasActivitySinceCredentialIssued)
-
-        // Host mismatch: refused, and equally not use.
-        MMMapSession.resetForTesting()
-        MMMapSession.resetOriginForTesting()
-        MMMapSession.pinConfiguredOrigin("https://$gateway")
-        seed()
-        MMMapSession.signedUrl(tileUrl(host = "evil.example.com"))
-        assertFalse(MMMapSession.hasActivitySinceCredentialIssued)
-    }
-
-    @Test
-    fun adoptingARolloverResetsActivity() {
-        seed()
-        MMMapSession.signedUrl(tileUrl())
-        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
         assertTrue(MMMapSession.applyCredentialFromHeaders(rollover(), tileUrl()))
-        assertFalse(
-            "one pan must not authorise renewing forever",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
+        assertEquals(0, MMMapSession.refreshDecisionCountForTesting())
     }
 
     @Test
-    fun adoptingARefreshResponseResetsActivity() {
+    fun signingATileBuysNothing() {
         seed()
-        MMMapSession.signedUrl(tileUrl())
-        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
-        assertTrue(MMMapSession.adoptRefreshResponse(body()))
-        assertFalse(MMMapSession.hasActivitySinceCredentialIssued)
-    }
-
-    @Test
-    fun anIdleExpiredCredentialSchedulesNothingAndBillsNothing() {
-        // No origin is established here, so refreshNow counts the decision without traffic.
-        seed(exp = now() + 10) // already inside the 60s renew lead
-        MMMapSession.scheduleRenewal()
-        assertFalse(MMMapSession.hasPendingTimerForTesting())
+        val signed = MMMapSession.signedUrl(tileUrl())
+        assertTrue("the tile must still be signed", signed.queryParameterNames.contains("sig"))
         assertEquals(
-            "an idle map must never buy a window",
+            "signing rides the window already held; it must not buy another",
             0,
             MMMapSession.refreshDecisionCountForTesting()
         )
     }
 
     @Test
-    fun aUsedExpiredCredentialRenewsImmediatelyRatherThanOnATimer() {
-        seed(exp = now() + 10)
-        MMMapSession.signedUrl(tileUrl()) // records activity, learns origin
-        MMMapSession.resetOriginForTesting() // keep the assertion traffic-free
-        MMMapSession.scheduleRenewal()
-        assertFalse(MMMapSession.hasPendingTimerForTesting())
-        assertEquals(1, MMMapSession.refreshDecisionCountForTesting())
+    fun anIdleExpiredCredentialBillsNothing() {
+        // The overnight-on-a-desk case. Under the timer this was ~16 billed windows for zero tile
+        // requests, held off only by the activity gate. Now there is nothing to hold off.
+        seed(exp = now() - 1)
+        assertEquals(0, MMMapSession.secondsUntilExpiry)
+        assertEquals(
+            "a lapsed credential must lapse; the next real tile rolls it over and is billed then",
+            0,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
     }
 
     @Test
-    fun aLiveCredentialArmsATimerAndEveryPathCancelsThePreviousOne() {
-        seed(exp = now() + 3600)
-        MMMapSession.scheduleRenewal()
-        assertTrue(MMMapSession.hasPendingTimerForTesting())
-        MMMapSession.scheduleRenewal()
-        assertTrue(MMMapSession.hasPendingTimerForTesting())
-        // The immediate branch must cancel too, or a superseded timer fires later and bills.
-        seed(exp = now() + 10)
-        MMMapSession.scheduleRenewal()
-        assertFalse(
-            "the renew-immediately path must cancel the armed timer",
-            MMMapSession.hasPendingTimerForTesting()
+    fun aUsedExpiredCredentialStillBillsNothingUntilATileAsksForOne() {
+        seed(exp = now() - 1)
+        MMMapSession.signedUrl(tileUrl()) // a map that WAS in use, with a dead credential
+        assertEquals(
+            "use does not authorise a purchase; a tile request is what triggers rollover",
+            0,
+            MMMapSession.refreshDecisionCountForTesting()
         )
     }
 
@@ -671,69 +630,43 @@ class MMMapSessionTest {
     }
 
     // -----------------------------------------------------------------------------
-    // C2: backgrounding stops the clock on "activity"
+    // C2: reopening the app must not bill a map that is not on screen
     // -----------------------------------------------------------------------------
 
     /**
-     * View a map, background the app, come back HOURS LATER TO ANY SCREEN. `activity` was cleared
-     * only on successful adoption, so the foreground hook read a stale `true`, found the delay at
-     * zero, and bought a BILLED window for a map that is not on screen and has requested nothing.
+     * View a map, background the app, come back HOURS LATER TO ANY SCREEN. The foreground hook
+     * re-armed the renewal, read an `activity` flag left true by the last map the user looked at,
+     * found the delay already at zero, and bought a BILLED window for a map that is not on screen
+     * and has requested nothing. Once per background/foreground cycle.
+     *
+     * The hook is KEPT — it is the fast escape from the give-up state and the point at which the
+     * signing client is re-asserted — but it no longer refreshes, so there is nothing left for a
+     * stale flag to authorise.
      */
     @Test
-    fun foregroundingAfterBackgroundingDoesNotBillAnIdleMap() {
+    fun foregroundingDoesNotBillAnIdleMap() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         MMMapSession.cacheApiKey("KEY")
-        seed(exp = now() + 10) // inside the 60s renew lead, so the delay is already zero
-        MMMapSession.signedUrl(tileUrl()) // the user looked at a map: activity = true
-        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
+        seed(exp = now() + 10) // a credential the old lead time would have called due
+        MMMapSession.signedUrl(tileUrl()) // the user looked at a map
 
-        MMMapSession.onEnterBackground()
-        assertFalse(
-            "backgrounding is exactly when use stops",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
-
-        val before = MMMapSession.refreshDecisionCountForTesting()
         MMMapSession.onEnterForeground()
+
         assertEquals(
             "reopening the app to a screen with no map must not buy a window",
-            before,
+            0,
             MMMapSession.refreshDecisionCountForTesting()
         )
         assertEquals(0, requests.size)
     }
 
-    // -----------------------------------------------------------------------------
-    // I1: the timer must not buy a second window for a rollover already paid for
-    // -----------------------------------------------------------------------------
-
-    /**
-     * The timer tests `shouldRenewNow()` at fire time, but between that and taking the lock in
-     * `refreshNow` an OkHttp thread can adopt a rollover credential — which the gateway has
-     * ALREADY charged for — and reset `activity`. Firing anyway buys a second window for one use.
-     */
+    /** The give-up escape the hook actually exists for must still work. */
     @Test
-    fun aTimerFiringAfterARolloverDoesNotBuyASecondWindow() {
-        MMMapSession.pinConfiguredOrigin("https://$gateway")
-        MMMapSession.cacheApiKey("KEY")
-        seed(exp = now() + 3600)
-        MMMapSession.signedUrl(tileUrl())
-        // The rollover lands: a fresh, already-billed credential with plenty of time on it.
-        assertTrue(MMMapSession.applyCredentialFromHeaders(rollover(), tileUrl()))
-
-        val before = MMMapSession.refreshDecisionCountForTesting()
-        MMMapSession.refreshNowFromTimerForTesting()
-        assertEquals(
-            "a credential with time still on the clock does not need a timer-driven renewal",
-            before,
-            MMMapSession.refreshDecisionCountForTesting()
-        )
-
-        // The same call against a credential that really is due still goes through.
-        seed(exp = now() + 10)
-        MMMapSession.signedUrl(tileUrl())
-        MMMapSession.refreshNowFromTimerForTesting()
-        assertEquals(before + 1, MMMapSession.refreshDecisionCountForTesting())
+    fun foregroundingStillClearsGiveUp() {
+        giveUp()
+        assertTrue(MMMapSession.hasGivenUpForTesting())
+        MMMapSession.onEnterForeground()
+        assertFalse(MMMapSession.hasGivenUpForTesting())
     }
 
     // -----------------------------------------------------------------------------
@@ -837,10 +770,6 @@ class MMMapSessionTest {
             plaintext,
             MMMapSession.signedUrl(plaintext)
         )
-        assertFalse(
-            "a request we refused to sign is not billable use",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
     }
 
     @Test
@@ -888,10 +817,6 @@ class MMMapSessionTest {
         assertEquals(sae.toString(), signed.queryParameter("a"))
         assertEquals("1", signed.queryParameter("k"))
         assertEquals("SIG1", signed.queryParameter("sig"))
-        assertTrue(
-            "a request the SDK could actually sign is billable use",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
     }
 
     /** And the form that already worked must not regress on the way. */
@@ -958,10 +883,6 @@ class MMMapSessionTest {
             "nothing non-tile-shaped may become the host the API key is POSTed to",
             MMMapSession.originForTesting()
         )
-        assertFalse(
-            "a request we never signed is not billable use",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
     }
 
     /**
@@ -981,10 +902,6 @@ class MMMapSessionTest {
             "a map view issues hundreds of tiles; the diagnostic must be logged once",
             1,
             MMMapSession.originMismatchLogCountForTesting()
-        )
-        assertFalse(
-            "a tile we refused to sign is not billable use",
-            MMMapSession.hasActivitySinceCredentialIssued
         )
         assertEquals(
             "a foreign tile-shaped URL must not re-point the pinned origin",

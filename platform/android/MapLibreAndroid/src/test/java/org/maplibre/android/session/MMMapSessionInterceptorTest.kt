@@ -713,30 +713,29 @@ class MMMapSessionInterceptorTest {
     }
 
     // ---------------------------------------------------------------------------------
-    // C2 / I9: backgrounding resets the things that would otherwise leak across the cycle
+    // C2 / I9: the foreground edge must recover the session without buying a window
     // ---------------------------------------------------------------------------------
 
     /**
-     * View a map, background, come back hours later TO ANY SCREEN. `activity` survived the
-     * background, so the foreground hook found "there was use" and bought a BILLED window for a
-     * map that is not on screen and has requested nothing.
+     * View a map, background, come back hours later TO ANY SCREEN. The foreground hook re-armed
+     * the renewal, found "there was use" left over from the last map, and bought a BILLED window
+     * for a map that is not on screen and has requested nothing.
+     *
+     * With no renewal timer the hook cannot buy anything at all — it only clears the give-up
+     * state and re-asserts the signing client — so the whole failure mode is gone by
+     * construction rather than held off by clearing a flag at the right moment.
      */
     @Test
-    fun backgroundingClearsActivitySoForegroundingDoesNotBillAnIdleMap() {
+    fun foregroundingDoesNotBillAnIdleMap() {
         MMMapSession.pinConfiguredOrigin("https://$gateway")
         MMMapSession.cacheApiKey("KEY")
-        // Inside the renew lead, so the foreground path takes the renew-immediately branch.
+        // A credential the old renew lead would have called due the moment the app came back.
         MMMapSession.seedCredentialForTesting("acct-1", "S1", "SIG1", now() + 10, now() + 86400)
 
         MMMapSessionInterceptor.notifyActivityStartedForTesting()
         interceptor.intercept(FakeChain(request(tileUrl()))) // the user looks at a map
-        assertTrue(MMMapSession.hasActivitySinceCredentialIssued)
 
         MMMapSessionInterceptor.notifyActivityStoppedForTesting()
-        assertFalse(
-            "backgrounding is exactly when use stops",
-            MMMapSession.hasActivitySinceCredentialIssued
-        )
 
         val before = MMMapSession.refreshDecisionCountForTesting()
         MMMapSessionInterceptor.notifyActivityStartedForTesting()
@@ -744,6 +743,19 @@ class MMMapSessionInterceptorTest {
             "reopening the app to a screen with no map must not buy a window",
             before,
             MMMapSession.refreshDecisionCountForTesting()
+        )
+    }
+
+    /** The give-up escape the foreground edge actually exists for must still work. */
+    @Test
+    fun theForegroundEdgeStillClearsGiveUp() {
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        MMMapSessionInterceptor.notifyActivityStoppedForTesting()
+        giveUp()
+        MMMapSessionInterceptor.notifyActivityStartedForTesting()
+        assertFalse(
+            "the foreground edge is the only fast escape from a blank map",
+            MMMapSession.hasGivenUpForTesting()
         )
     }
 

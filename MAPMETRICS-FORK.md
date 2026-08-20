@@ -46,6 +46,24 @@ Reproduce the divergence with:
    Everything else v2 lives in new files (`org/maplibre/android/session/*`,
    `module/http/MMHttpClients.java`) and replays for free.
 
+   NO RENEWAL TIMER — and a re-vendor must not reintroduce one. A credential is refreshed two
+   ways and no other: ROLLOVER, where a tile carrying an expired-but-MAC-valid credential is
+   served inline (HTTP 200, tile in the body) and the replacement arrives in `X-Map-Session-*`
+   for `MMMapSession.applyCredentialFromHeaders`; and the spaced, budgeted 401 path via
+   `refreshNow`, which is the way back from a credential the gateway REJECTS rather than one
+   that merely lapsed. The gateway bills exactly 1 per window on rollover however many
+   dead-credential tiles arrive at once. Rollover is demand-driven BY CONSTRUCTION — it fires
+   only when a tile is actually requested — so "never bill an idle map" and "reopening the app
+   must not bill" are facts about the shape of the system rather than gates that can be got
+   wrong, and both had been got wrong at least once when they were gates. Anything that
+   initiates a refresh on a clock, a lifecycle callback or a recorded-activity flag brings both
+   bugs back. `MMMapSession.onEnterForeground` is kept but MUST NOT refresh: it exists for the
+   give-up escape, and `MMMapSessionInterceptor` re-asserts the signing client on the same edge.
+   Covered by `MMMapSessionTest.adoptingACredentialBuysNothing`, `signingATileBuysNothing`,
+   `anIdleExpiredCredentialBillsNothing`,
+   `aUsedExpiredCredentialStillBillsNothingUntilATileAsksForOne`, `foregroundingDoesNotBillAnIdleMap`,
+   and `MMMapSessionInterceptorTest.foregroundingDoesNotBillAnIdleMap`.
+
    KNOWN LIMITATION — gateway origin. `MMMapSessionInterceptor` pins the origin from the host
    app's `AndroidManifest.xml` `<meta-data android:name="org.maplibre.android.MapSessionOrigin"
    android:value="https://..."/>`. When that meta-data is absent the origin is instead LEARNED
