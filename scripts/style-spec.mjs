@@ -73,7 +73,7 @@ modifiedReferenceSpec["paint_location-indicator"] = {
               "zoom"
           ]
       },
-      "doc": "The displacement off the center of the top image and the shadow image when the pitch of the map is greater than 0. This helps producing a three-dimensional appearence."
+      "doc": "The displacement off the center of the top image and the shadow image when the pitch of the map is greater than 0. This helps producing a three-dimensional appearance."
   },
   "bearing": {
       "type": "number",
@@ -188,6 +188,14 @@ modifiedReferenceSpec["paint_location-indicator"] = {
       "transition": true,
       "doc": "The color for drawing the accuracy radius border. To adjust transparency, set the alpha component of the color accordingly."
   }
+};
+
+// internal use
+modifiedReferenceSpec["layout_symbol"]["symbol-screen-space"] = {
+    "type": "boolean",
+    "default": false,
+    "property-type": "data-constant",
+    "doc": "Internal use only"
 };
 
 export default modifiedReferenceSpec;

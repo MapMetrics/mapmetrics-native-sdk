@@ -25,7 +25,7 @@ git clone --recurse-submodules git@github.com:maplibre/maplibre-native.git
 Make sure the following Homebrew packages are installed:
 
 ```sh
-brew install bazelisk webp libuv webp icu4c jpeg-turbo glfw
+brew install bazelisk webp libuv webp icu4c jpeg-turbo glfw libuv
 brew link icu4c --force
 ```
 
@@ -57,30 +57,30 @@ xed platform/macos/MapLibre.xcodeproj
 Configure CMake:
 
 ```sh
-cmake --preset macos
+cmake --preset macos-metal
 ```
 
 Build and run the render tests:
 
 ```sh
-cmake --build build-macos --target mbgl-render-test-runner
-build-macos/mbgl-render-test-runner --manifestPath=metrics/macos-xcode11-release-style.json
+cmake --build build-macos-metal --target mbgl-render-test-runner
+build-macos-metal/mbgl-render-test-runner --manifestPath=metrics/macos-xcode11-release-style.json
 ```
 
 Build and run the C++ Tests:
 
 ```sh
-cmake --build build-macos --target mbgl-test-runner
+cmake --build build-macos-metal --target mbgl-test-runner
 npm install && node test/storage/server.js  # required test server
 # in another terminal
-build-macos/mbgl-test-runner
+build-macos-metal/mbgl-test-runner
 ```
 
 Create and open an Xcode project with CMake:
 
 ```sh
-cmake --preset macos-xcode
-xed build-macos-xcode/MapLibre\ Native.xcodeproj
+cmake --preset macos-metal-xcode
+xed build-macos-metal-xcode/MapLibre\ Native.xcodeproj
 ```
 
 Configure project for Vulkan (make sure [MoltenVK](https://github.com/KhronosGroup/MoltenVK) is installed):

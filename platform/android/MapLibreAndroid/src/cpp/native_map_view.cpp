@@ -16,6 +16,7 @@
 #include <mbgl/map/map.hpp>
 #include <mbgl/map/map_options.hpp>
 #include <mbgl/math/minmax.hpp>
+#include <mbgl/util/action_journal.hpp>
 #include <mbgl/util/constants.hpp>
 #include <mbgl/util/event.hpp>
 #include <mbgl/util/exception.hpp>
@@ -39,6 +40,8 @@
 #include "conversion/collection.hpp"
 #include "style/conversion/filter.hpp"
 #include "geojson/feature.hpp"
+#include "gson/json_object.hpp"
+#include "rendering_stats.hpp"
 
 #include "android_renderer_frontend.hpp"
 #include "attach_env.hpp"
@@ -62,19 +65,20 @@ NativeMapView::NativeMapView(jni::JNIEnv& _env,
                              const jni::Object<NativeMapView>& _obj,
                              const jni::Object<FileSource>& jFileSource,
                              const jni::Object<MapRenderer>& jMapRenderer,
-                             jni::jfloat pixelRatio_,
-                             jni::jboolean crossSourceCollisions_)
+                             const jni::Object<NativeMapOptions>& jNativeMapOptions)
     : javaPeer(_env, _obj),
       mapRenderer(MapRenderer::getNativePeer(_env, jMapRenderer)),
-      pixelRatio(pixelRatio_) {
+      pixelRatio(NativeMapOptions::pixelRatio(_env, jNativeMapOptions)) {
     // Get a reference to the JavaVM for callbacks
     if (_env.GetJavaVM(&vm) < 0) {
         _env.ExceptionDescribe();
         return;
     }
 
+    mapRenderer.SetAsyncRendererCleanup(NativeMapOptions::asyncRendererCleanup(_env, jNativeMapOptions));
+
     // Create a renderer frontend
-    rendererFrontend = std::make_unique<AndroidRendererFrontend>(mapRenderer);
+    rendererFrontend = AndroidRendererFrontend::create(_env, jMapRenderer);
 
     // Create Map options
     MapOptions options;
@@ -83,14 +87,17 @@ NativeMapView::NativeMapView(jni::JNIEnv& _env,
         .withPixelRatio(pixelRatio)
         .withConstrainMode(ConstrainMode::HeightOnly)
         .withViewportMode(ViewportMode::Default)
-        .withCrossSourceCollisions(crossSourceCollisions_);
+        .withCrossSourceCollisions(NativeMapOptions::crossSourceCollisions(_env, jNativeMapOptions))
+        .withFastPFOREnabled(NativeMapOptions::fastPFOREnabled(_env, jNativeMapOptions));
 
     // Create the core map
-    map = std::make_unique<mbgl::Map>(*rendererFrontend,
-                                      *this,
-                                      options,
-                                      mbgl::android::FileSource::getSharedResourceOptions(_env, jFileSource),
-                                      mbgl::android::FileSource::getSharedClientOptions(_env, jFileSource));
+    map = std::make_unique<mbgl::Map>(
+        *rendererFrontend,
+        *this,
+        options,
+        mbgl::android::FileSource::getSharedResourceOptions(_env, jFileSource),
+        mbgl::android::FileSource::getSharedClientOptions(_env, jFileSource),
+        mbgl::android::NativeMapOptions::getActionJournalOptions(_env, jNativeMapOptions));
 }
 
 /**
@@ -185,20 +192,25 @@ void NativeMapView::onWillStartRenderingFrame() {
     }
 }
 
-void NativeMapView::onDidFinishRenderingFrame(MapObserver::RenderFrameStatus status) {
+void NativeMapView::onDidFinishRenderingFrame(const MapObserver::RenderFrameStatus& status) {
     assert(vm != nullptr);
 
     android::UniqueEnv _env = android::AttachEnv();
     static auto& javaClass = jni::Class<NativeMapView>::Singleton(*_env);
-    static auto onDidFinishRenderingFrame = javaClass.GetMethod<void(jboolean, jdouble, jdouble)>(
+    static auto onDidFinishRenderingFrame = javaClass.GetMethod<void(jboolean, jni::Object<RenderingStats>)>(
         *_env, "onDidFinishRenderingFrame");
     auto weakReference = javaPeer.get(*_env);
     if (weakReference) {
+        if (!renderingStats) {
+            renderingStats = jni::NewGlobal(*_env, RenderingStats::Create(*_env));
+        }
+
+        RenderingStats::Update(*_env, renderingStats, status.renderingStats);
+
         weakReference.Call(*_env,
                            onDidFinishRenderingFrame,
                            (jboolean)(status.mode != MapObserver::RenderMode::Partial),
-                           (jdouble)status.frameEncodingTime,
-                           (jdouble)status.frameRenderingTime);
+                           renderingStats);
     }
 }
 
@@ -693,6 +705,47 @@ jni::jboolean NativeMapView::getDebug(JNIEnv&) {
     return map->getDebug() != DebugOptions::NoDebug;
 }
 
+jni::Local<jni::Array<jni::String>> NativeMapView::getActionJournalLogFiles(JNIEnv& env) {
+    const auto& actionJournal = map->getActionJournal();
+    if (!actionJournal) {
+        return jni::Local<jni::Array<jni::String>>();
+    }
+
+    const auto& files = actionJournal->getLogFiles();
+    auto jFiles = jni::Array<jni::String>::New(env, files.size());
+
+    uint32_t index = 0;
+    for (const auto& file : files) {
+        jFiles.Set(env, index++, jni::Make<jni::String>(env, file));
+    }
+
+    return jFiles;
+}
+
+jni::Local<jni::Array<jni::String>> NativeMapView::getActionJournalLog(JNIEnv& env) {
+    const auto& actionJournal = map->getActionJournal();
+    if (!actionJournal) {
+        return jni::Local<jni::Array<jni::String>>();
+    }
+
+    const auto& events = actionJournal->getLog();
+    auto jEvents = jni::Array<jni::String>::New(env, events.size());
+
+    uint32_t index = 0;
+    for (const auto& event : events) {
+        jEvents.Set(env, index++, jni::Make<jni::String>(env, event));
+    }
+
+    return jEvents;
+}
+
+void NativeMapView::clearActionJournalLog(JNIEnv&) {
+    const auto& actionJournal = map->getActionJournal();
+    if (actionJournal) {
+        actionJournal->clearLog();
+    }
+}
+
 jni::jboolean NativeMapView::isFullyLoaded(JNIEnv&) {
     return map->isFullyLoaded();
 }
@@ -895,7 +948,7 @@ jni::Local<jni::Array<jlong>> NativeMapView::queryPointAnnotations(JNIEnv& env, 
     };
 
     // Assume only points for now
-    mbgl::AnnotationIDs ids = rendererFrontend->queryPointAnnotations(box);
+    mbgl::AnnotationIDs ids = rendererFrontend->queryPointAnnotations(box, annotationRequestTimeout);
 
     // Convert result
     std::vector<jlong> longIds(ids.begin(), ids.end());
@@ -915,7 +968,7 @@ jni::Local<jni::Array<jlong>> NativeMapView::queryShapeAnnotations(JNIEnv& env, 
         {RectF::getRight(env, rect), RectF::getBottom(env, rect)},
     };
 
-    mbgl::AnnotationIDs ids = rendererFrontend->queryShapeAnnotations(box);
+    mbgl::AnnotationIDs ids = rendererFrontend->queryShapeAnnotations(box, annotationRequestTimeout);
 
     // Convert result
     std::vector<jlong> longIds(ids.begin(), ids.end());
@@ -962,6 +1015,59 @@ jni::Local<jni::Array<jni::Object<geojson::Feature>>> NativeMapView::queryRender
                                          mapbox::geometry::point<double>{right, bottom}};
 
     return Feature::convert(env, rendererFrontend->queryRenderedFeatures(box, {layers, toFilter(env, jfilter)}));
+}
+
+void NativeMapView::setFeatureState(JNIEnv& env,
+                                    const jni::String& sourceId,
+                                    const jni::String& sourceLayerId,
+                                    const jni::String& featureId,
+                                    const jni::Object<gson::JsonObject>& state) {
+    if (!sourceId || !featureId || !state) {
+        return;
+    }
+
+    rendererFrontend->setFeatureState(
+        jni::Make<std::string>(env, sourceId),
+        sourceLayerId ? std::optional<std::string>(jni::Make<std::string>(env, sourceLayerId)) : std::nullopt,
+        jni::Make<std::string>(env, featureId),
+        gson::JsonObject::convert(env, state));
+    map->triggerRepaint();
+}
+
+jni::Local<jni::Object<gson::JsonObject>> NativeMapView::getFeatureState(JNIEnv& env,
+                                                                         const jni::String& sourceId,
+                                                                         const jni::String& sourceLayerId,
+                                                                         const jni::String& featureId) {
+    if (!sourceId || !featureId) {
+        return jni::Local<jni::Object<gson::JsonObject>>();
+    }
+
+    const auto state = rendererFrontend->getFeatureState(
+        jni::Make<std::string>(env, sourceId),
+        sourceLayerId ? std::optional<std::string>(jni::Make<std::string>(env, sourceLayerId)) : std::nullopt,
+        jni::Make<std::string>(env, featureId));
+    if (state.empty()) {
+        return jni::Local<jni::Object<gson::JsonObject>>();
+    }
+
+    return gson::JsonObject::New(env, state);
+}
+
+void NativeMapView::removeFeatureState(JNIEnv& env,
+                                       const jni::String& sourceId,
+                                       const jni::String& sourceLayerId,
+                                       const jni::String& featureId,
+                                       const jni::String& stateKey) {
+    if (!sourceId) {
+        return;
+    }
+
+    rendererFrontend->removeFeatureState(
+        jni::Make<std::string>(env, sourceId),
+        sourceLayerId ? std::optional<std::string>(jni::Make<std::string>(env, sourceLayerId)) : std::nullopt,
+        featureId ? std::optional<std::string>(jni::Make<std::string>(env, featureId)) : std::nullopt,
+        stateKey ? std::optional<std::string>(jni::Make<std::string>(env, stateKey)) : std::nullopt);
+    map->triggerRepaint();
 }
 
 jni::Local<jni::Object<Light>> NativeMapView::getLight(JNIEnv& env) {
@@ -1103,11 +1209,20 @@ jni::jboolean NativeMapView::removeLayerAt(JNIEnv& env, jni::jint index) {
 /**
  * Remove with wrapper object id. Ownership is transferred back to the wrapper
  */
-jni::jboolean NativeMapView::removeLayer(JNIEnv&, jlong layerPtr) {
-    assert(layerPtr != 0);
+jni::jboolean NativeMapView::removeLayer(JNIEnv& env, jlong layerPtr) {
+    if (layerPtr == 0) {
+        Log::Warning(Event::JNI, "Cannot remove layer: native layer pointer is null");
+        return jni::jni_false;
+    }
 
     mbgl::android::Layer* layer = reinterpret_cast<mbgl::android::Layer*>(layerPtr);
-    std::unique_ptr<mbgl::style::Layer> coreLayer = map->getStyle().removeLayer(layer->get().getID());
+    const auto layerId = jni::Make<std::string>(env, layer->getId(env));
+    if (layerId.empty()) {
+        Log::Warning(Event::JNI, "Cannot remove layer: layer reference is detached or invalid");
+        return jni::jni_false;
+    }
+
+    std::unique_ptr<mbgl::style::Layer> coreLayer = map->getStyle().removeLayer(layerId);
     if (coreLayer) {
         layer->setLayer(std::move(coreLayer));
         return jni::jni_true;
@@ -1123,7 +1238,7 @@ jni::Local<jni::Array<jni::Object<Source>>> NativeMapView::getSources(JNIEnv& en
     auto jSources = jni::Array<jni::Object<Source>>::New(env, sources.size());
     int index = 0;
     for (auto source : sources) {
-        jSources.Set(env, index, Source::peerForCoreSource(env, *source, *rendererFrontend));
+        jSources.Set(env, index, Source::peerForCoreSource(env, *source, *rendererFrontend, *map));
         index++;
     }
 
@@ -1139,7 +1254,7 @@ jni::Local<jni::Object<Source>> NativeMapView::getSource(JNIEnv& env, const jni:
     }
 
     // Create and return the source's native peer
-    return jni::NewLocal(env, Source::peerForCoreSource(env, *coreSource, *rendererFrontend));
+    return jni::NewLocal(env, Source::peerForCoreSource(env, *coreSource, *rendererFrontend, *map));
 }
 
 void NativeMapView::addSource(JNIEnv& env, const jni::Object<Source>& obj, jlong sourcePtr) {
@@ -1220,6 +1335,38 @@ jni::jboolean NativeMapView::getTileCacheEnabled(JNIEnv&) {
     return jni::jboolean(rendererFrontend->getTileCacheEnabled());
 }
 
+void NativeMapView::setTileLodMinRadius(JNIEnv&, jni::jdouble radius) {
+    map->setTileLodMinRadius(radius);
+}
+
+jni::jdouble NativeMapView::getTileLodMinRadius(JNIEnv&) {
+    return jni::jdouble(map->getTileLodMinRadius());
+}
+
+void NativeMapView::setTileLodScale(JNIEnv&, jni::jdouble scale) {
+    map->setTileLodScale(scale);
+}
+
+jni::jdouble NativeMapView::getTileLodScale(JNIEnv&) {
+    return jni::jdouble(map->getTileLodScale());
+}
+
+void NativeMapView::setTileLodPitchThreshold(JNIEnv&, jni::jdouble threshold) {
+    map->setTileLodPitchThreshold(threshold);
+}
+
+jni::jdouble NativeMapView::getTileLodPitchThreshold(JNIEnv&) {
+    return jni::jdouble(map->getTileLodPitchThreshold());
+}
+
+void NativeMapView::setTileLodZoomShift(JNIEnv&, jni::jdouble shift) {
+    map->setTileLodZoomShift(shift);
+}
+
+jni::jdouble NativeMapView::getTileLodZoomShift(JNIEnv&) {
+    return jni::jdouble(map->getTileLodZoomShift());
+}
+
 mbgl::Map& NativeMapView::getMap() {
     return *map;
 }
@@ -1227,6 +1374,24 @@ mbgl::Map& NativeMapView::getMap() {
 void NativeMapView::triggerRepaint(JNIEnv&) {
     assert(map);
     map->triggerRepaint();
+}
+
+jni::jboolean NativeMapView::isRenderingStatsViewEnabled(JNIEnv&) {
+    assert(map);
+    return jni::jboolean(map->isRenderingStatsViewEnabled());
+}
+
+void NativeMapView::enableRenderingStatsView(JNIEnv&, jni::jboolean value) {
+    assert(map);
+    map->enableRenderingStatsView(value);
+}
+
+void NativeMapView::setFrustumOffset(JNIEnv& env, const jni::Object<RectF>& padding) {
+    mbgl::EdgeInsets offset = {RectF::getTop(env, padding),
+                               RectF::getLeft(env, padding),
+                               RectF::getBottom(env, padding),
+                               RectF::getRight(env, padding)};
+    map->setFrustumOffset(offset);
 }
 
 // Static methods //
@@ -1246,8 +1411,7 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
                       const jni::Object<NativeMapView>&,
                       const jni::Object<FileSource>&,
                       const jni::Object<MapRenderer>&,
-                      jni::jfloat,
-                      jni::jboolean>,
+                      const jni::Object<NativeMapOptions>&>,
         "nativeInitialize",
         "nativeDestroy",
         METHOD(&NativeMapView::resizeView, "nativeResizeView"),
@@ -1292,6 +1456,9 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::addMarkers, "nativeAddMarkers"),
         METHOD(&NativeMapView::setDebug, "nativeSetDebug"),
         METHOD(&NativeMapView::getDebug, "nativeGetDebug"),
+        METHOD(&NativeMapView::getActionJournalLogFiles, "nativeGetActionJournalLogFiles"),
+        METHOD(&NativeMapView::getActionJournalLog, "nativeGetActionJournalLog"),
+        METHOD(&NativeMapView::clearActionJournalLog, "nativeClearActionJournalLog"),
         METHOD(&NativeMapView::isFullyLoaded, "nativeIsFullyLoaded"),
         METHOD(&NativeMapView::onLowMemory, "nativeOnLowMemory"),
         METHOD(&NativeMapView::getMetersPerPixelAtLatitude, "nativeGetMetersPerPixelAtLatitude"),
@@ -1316,6 +1483,9 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::queryShapeAnnotations, "nativeQueryShapeAnnotations"),
         METHOD(&NativeMapView::queryRenderedFeaturesForPoint, "nativeQueryRenderedFeaturesForPoint"),
         METHOD(&NativeMapView::queryRenderedFeaturesForBox, "nativeQueryRenderedFeaturesForBox"),
+        METHOD(&NativeMapView::setFeatureState, "nativeSetFeatureState"),
+        METHOD(&NativeMapView::getFeatureState, "nativeGetFeatureState"),
+        METHOD(&NativeMapView::removeFeatureState, "nativeRemoveFeatureState"),
         METHOD(&NativeMapView::getLight, "nativeGetLight"),
         METHOD(&NativeMapView::getLayers, "nativeGetLayers"),
         METHOD(&NativeMapView::getLayer, "nativeGetLayer"),
@@ -1339,7 +1509,18 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::getPrefetchZoomDelta, "nativeGetPrefetchZoomDelta"),
         METHOD(&NativeMapView::setTileCacheEnabled, "nativeSetTileCacheEnabled"),
         METHOD(&NativeMapView::getTileCacheEnabled, "nativeGetTileCacheEnabled"),
-        METHOD(&NativeMapView::triggerRepaint, "nativeTriggerRepaint"));
+        METHOD(&NativeMapView::setTileLodMinRadius, "nativeSetTileLodMinRadius"),
+        METHOD(&NativeMapView::getTileLodMinRadius, "nativeGetTileLodMinRadius"),
+        METHOD(&NativeMapView::setTileLodScale, "nativeSetTileLodScale"),
+        METHOD(&NativeMapView::getTileLodScale, "nativeGetTileLodScale"),
+        METHOD(&NativeMapView::setTileLodPitchThreshold, "nativeSetTileLodPitchThreshold"),
+        METHOD(&NativeMapView::getTileLodPitchThreshold, "nativeGetTileLodPitchThreshold"),
+        METHOD(&NativeMapView::setTileLodZoomShift, "nativeSetTileLodZoomShift"),
+        METHOD(&NativeMapView::getTileLodZoomShift, "nativeGetTileLodZoomShift"),
+        METHOD(&NativeMapView::triggerRepaint, "nativeTriggerRepaint"),
+        METHOD(&NativeMapView::isRenderingStatsViewEnabled, "nativeIsRenderingStatsViewEnabled"),
+        METHOD(&NativeMapView::enableRenderingStatsView, "nativeEnableRenderingStatsView"),
+        METHOD(&NativeMapView::setFrustumOffset, "nativeSetFrustumOffset"));
 }
 
 void NativeMapView::onRegisterShaders(gfx::ShaderRegistry&) {};
@@ -1491,13 +1672,16 @@ void NativeMapView::onSpriteLoaded(const std::optional<style::Sprite>& sprite) {
     static auto& javaClass = jni::Class<NativeMapView>::Singleton(*_env);
     static auto onSpriteLoaded = javaClass.GetMethod<void(jni::String, jni::String)>(*_env, "onSpriteLoaded");
     auto weakReference = javaPeer.get(*_env);
-    if (weakReference && sprite) {
-        weakReference.Call(*_env,
-                           onSpriteLoaded,
-                           jni::Make<jni::String>(*_env, sprite->id),
-                           jni::Make<jni::String>(*_env, sprite->spriteURL));
-    } else {
-        weakReference.Call(*_env, onSpriteLoaded, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+    if (weakReference) {
+        if (sprite) {
+            weakReference.Call(*_env,
+                               onSpriteLoaded,
+                               jni::Make<jni::String>(*_env, sprite->id),
+                               jni::Make<jni::String>(*_env, sprite->spriteURL));
+        } else {
+            weakReference.Call(
+                *_env, onSpriteLoaded, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+        }
     }
 }
 
@@ -1508,13 +1692,16 @@ void NativeMapView::onSpriteError(const std::optional<style::Sprite>& sprite, st
     static auto& javaClass = jni::Class<NativeMapView>::Singleton(*_env);
     static auto onSpriteError = javaClass.GetMethod<void(jni::String, jni::String)>(*_env, "onSpriteError");
     auto weakReference = javaPeer.get(*_env);
-    if (weakReference && sprite) {
-        weakReference.Call(*_env,
-                           onSpriteError,
-                           jni::Make<jni::String>(*_env, sprite->id),
-                           jni::Make<jni::String>(*_env, sprite->spriteURL));
-    } else {
-        weakReference.Call(*_env, onSpriteError, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+    if (weakReference) {
+        if (sprite) {
+            weakReference.Call(*_env,
+                               onSpriteError,
+                               jni::Make<jni::String>(*_env, sprite->id),
+                               jni::Make<jni::String>(*_env, sprite->spriteURL));
+        } else {
+            weakReference.Call(
+                *_env, onSpriteError, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+        }
     }
 }
 
@@ -1525,14 +1712,28 @@ void NativeMapView::onSpriteRequested(const std::optional<style::Sprite>& sprite
     static auto& javaClass = jni::Class<NativeMapView>::Singleton(*_env);
     static auto onSpriteRequested = javaClass.GetMethod<void(jni::String, jni::String)>(*_env, "onSpriteRequested");
     auto weakReference = javaPeer.get(*_env);
-    if (weakReference && sprite) {
-        weakReference.Call(*_env,
-                           onSpriteRequested,
-                           jni::Make<jni::String>(*_env, sprite->id),
-                           jni::Make<jni::String>(*_env, sprite->spriteURL));
-    } else {
-        weakReference.Call(
-            *_env, onSpriteRequested, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+    if (weakReference) {
+        if (sprite) {
+            weakReference.Call(*_env,
+                               onSpriteRequested,
+                               jni::Make<jni::String>(*_env, sprite->id),
+                               jni::Make<jni::String>(*_env, sprite->spriteURL));
+        } else {
+            weakReference.Call(
+                *_env, onSpriteRequested, jni::Make<jni::String>(*_env, ""), jni::Make<jni::String>(*_env, ""));
+        }
+    }
+}
+
+void NativeMapView::onRenderError(std::exception_ptr) {
+    assert(vm != nullptr);
+
+    android::UniqueEnv _env = android::AttachEnv();
+    static auto& javaClass = jni::Class<NativeMapView>::Singleton(*_env);
+    static auto onRenderError = javaClass.GetMethod<void()>(*_env, "onRenderError");
+    auto weakReference = javaPeer.get(*_env);
+    if (weakReference) {
+        weakReference.Call(*_env, onRenderError);
     }
 }
 

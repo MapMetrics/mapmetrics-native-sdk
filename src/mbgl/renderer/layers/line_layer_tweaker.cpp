@@ -4,8 +4,7 @@
 #include <mbgl/gfx/drawable.hpp>
 #include <mbgl/gfx/line_drawable_data.hpp>
 #include <mbgl/geometry/line_atlas.hpp>
-#include <mbgl/programs/line_program.hpp>
-#include <mbgl/renderer/image_atlas.hpp>
+#include <mbgl/renderer/buckets/line_bucket.hpp>
 #include <mbgl/renderer/layer_group.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/render_tile.hpp>
@@ -139,6 +138,40 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
                                                                             : evaluate<LineFloorWidth>(parameters),
             .expressionMask = expressionMask,
             .pad1 = 0};
+#elif MLN_RENDER_BACKEND_WEBGPU
+        expressionMask = LineExpressionMask::None;
+        if (evaluated.get<LineColor>().isConstant()) {
+            expressionMask |= LineExpressionMask::Color;
+        }
+        if (evaluated.get<LineBlur>().isConstant()) {
+            expressionMask |= LineExpressionMask::Blur;
+        }
+        if (evaluated.get<LineOpacity>().isConstant()) {
+            expressionMask |= LineExpressionMask::Opacity;
+        }
+        if (evaluated.get<LineGapWidth>().isConstant()) {
+            expressionMask |= LineExpressionMask::GapWidth;
+        }
+        if (evaluated.get<LineOffset>().isConstant()) {
+            expressionMask |= LineExpressionMask::Offset;
+        }
+        if (evaluated.get<LineWidth>().isConstant()) {
+            expressionMask |= LineExpressionMask::Width;
+        }
+        if (evaluated.get<LineFloorWidth>().isConstant()) {
+            expressionMask |= LineExpressionMask::FloorWidth;
+        }
+
+        const LineEvaluatedPropsUBO propsUBO{
+            .color = evaluated.get<LineColor>().constantOr(LineColor::defaultValue()),
+            .blur = evaluated.get<LineBlur>().constantOr(LineBlur::defaultValue()),
+            .opacity = evaluated.get<LineOpacity>().constantOr(LineOpacity::defaultValue()),
+            .gapwidth = evaluated.get<LineGapWidth>().constantOr(LineGapWidth::defaultValue()),
+            .offset = evaluated.get<LineOffset>().constantOr(LineOffset::defaultValue()),
+            .width = evaluated.get<LineWidth>().constantOr(LineWidth::defaultValue()),
+            .floorwidth = evaluated.get<LineFloorWidth>().constantOr(LineFloorWidth::defaultValue()),
+            .expressionMask = expressionMask,
+            .pad1 = 0};
 #else
         const LineEvaluatedPropsUBO propsUBO{/*color =*/evaluate<LineColor>(parameters),
                                              /*blur =*/evaluate<LineBlur>(parameters),
@@ -176,7 +209,7 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
 
         const UnwrappedTileID tileID = drawable.getTileID()->toUnwrapped();
 
-        auto* binders = static_cast<LineProgram::Binders*>(drawable.getBinders());
+        auto* binders = static_cast<LineBinders*>(drawable.getBinders());
         const auto* tile = drawable.getRenderTile();
         if (!binders || !tile) {
             assert(false);
@@ -260,8 +293,8 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
 
                     .blur_t = std::get<0>(binders->get<LineBlur>()->interpolationFactor(zoom)),
                     .opacity_t = std::get<0>(binders->get<LineOpacity>()->interpolationFactor(zoom)),
-                    .gapwidth_t = std::get<0>(binders->get<LineOffset>()->interpolationFactor(zoom)),
-                    .offset_t = std::get<0>(binders->get<LineGapWidth>()->interpolationFactor(zoom)),
+                    .gapwidth_t = std::get<0>(binders->get<LineGapWidth>()->interpolationFactor(zoom)),
+                    .offset_t = std::get<0>(binders->get<LineOffset>()->interpolationFactor(zoom)),
                     .width_t = std::get<0>(binders->get<LineWidth>()->interpolationFactor(zoom)),
                     .pattern_from_t = std::get<0>(binders->get<LinePattern>()->interpolationFactor(zoom)),
                     .pattern_to_t = std::get<1>(binders->get<LinePattern>()->interpolationFactor(zoom))

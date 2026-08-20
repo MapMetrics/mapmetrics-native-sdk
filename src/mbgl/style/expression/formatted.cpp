@@ -57,7 +57,6 @@ mbgl::Value Formatted::toObject() const {
             serializedSection.emplace("scale", NullValue());
         }
         if (section.fontStack) {
-            std::string fontStackString;
             serializedSection.emplace("fontStack", fontStackToString(*section.fontStack));
         } else {
             serializedSection.emplace("fontStack", NullValue());
@@ -113,7 +112,7 @@ std::optional<Formatted> Converter<Formatted>::operator()(const Convertible& val
                 std::optional<std::string> imageArg = toString(arrayMember(firstElement, 1));
                 if (!imageArg) {
                     error.message =
-                        "Serialized image section agument has to be of a "
+                        "Serialized image section argument has to be of a "
                         "String type.";
                     return std::nullopt;
                 }

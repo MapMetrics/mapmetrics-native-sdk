@@ -13,6 +13,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.gson.JsonObject;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.Geometry;
 import org.maplibre.android.LibraryLoader;
@@ -91,23 +92,29 @@ final class NativeMapView implements NativeMap {
   // Constructors
   //
 
-  public NativeMapView(@NonNull final Context context, final boolean crossSourceCollisions,
+  public NativeMapView(@NonNull final Context context,
                        final ViewCallback viewCallback, final StateCallback stateCallback,
                        final MapRenderer mapRenderer) {
-    this(context, context.getResources().getDisplayMetrics().density, crossSourceCollisions, viewCallback,
-      stateCallback, mapRenderer);
+    this(context, new NativeMapOptions(context.getResources().getDisplayMetrics().density, false),
+            viewCallback, stateCallback, mapRenderer);
   }
 
-  public NativeMapView(final Context context, final float pixelRatio, final boolean crossSourceCollisions,
+  public NativeMapView(@NonNull final Context context, final MapLibreMapOptions options,
+                       final ViewCallback viewCallback, final StateCallback stateCallback,
+                       final MapRenderer mapRenderer) {
+    this(context, new NativeMapOptions(options), viewCallback, stateCallback, mapRenderer);
+  }
+
+  public NativeMapView(@NonNull final Context context, final NativeMapOptions nativeOptions,
                        final ViewCallback viewCallback, final StateCallback stateCallback,
                        final MapRenderer mapRenderer) {
     this.mapRenderer = mapRenderer;
     this.viewCallback = viewCallback;
     this.fileSource = FileSource.getInstance(context);
-    this.pixelRatio = pixelRatio;
+    this.pixelRatio = nativeOptions.pixelRatio();
     this.thread = Thread.currentThread();
     this.stateCallback = stateCallback;
-    nativeInitialize(this, fileSource, mapRenderer, pixelRatio, crossSourceCollisions);
+    nativeInitialize(this, fileSource, mapRenderer, nativeOptions);
   }
 
   //
@@ -647,6 +654,30 @@ final class NativeMapView implements NativeMap {
   }
 
   @Override
+  public String[] getActionJournalLogFiles() {
+    if (checkState("getActionJournalLogFiles")) {
+      return null;
+    }
+    return nativeGetActionJournalLogFiles();
+  }
+
+  @Override
+  public String[] getActionJournalLog() {
+    if (checkState("getActionJournalLog")) {
+      return null;
+    }
+    return nativeGetActionJournalLog();
+  }
+
+  @Override
+  public void clearActionJournalLog() {
+    if (checkState("clearActionJournalLog")) {
+      return;
+    }
+    nativeClearActionJournalLog();
+  }
+
+  @Override
   public boolean isFullyLoaded() {
     if (checkState("isFullyLoaded")) {
       return false;
@@ -825,6 +856,70 @@ final class NativeMapView implements NativeMap {
     }
     return nativeGetTileCacheEnabled();
   }
+
+  @Override
+  public void setTileLodMinRadius(double radius) {
+    if (checkState("setTileLodMinRadius")) {
+      return;
+    }
+    nativeSetTileLodMinRadius(radius);
+  }
+
+  @Override
+  public double getTileLodMinRadius() {
+    if (checkState("getTileLodMinRadius")) {
+      return 0;
+    }
+    return nativeGetTileLodMinRadius();
+  }
+
+  @Override
+  public void setTileLodScale(double scale) {
+    if (checkState("setTileLodScale")) {
+      return;
+    }
+    nativeSetTileLodScale(scale);
+  }
+
+  @Override
+  public double getTileLodScale() {
+    if (checkState("getTileLodScale")) {
+      return 0;
+    }
+    return nativeGetTileLodScale();
+  }
+
+  @Override
+  public void setTileLodPitchThreshold(double threshold) {
+    if (checkState("setTileLodPitchThreshold")) {
+      return;
+    }
+    nativeSetTileLodPitchThreshold(threshold);
+  }
+
+  @Override
+  public double getTileLodPitchThreshold() {
+    if (checkState("getTileLodPitchThreshold")) {
+      return 0;
+    }
+    return nativeGetTileLodPitchThreshold();
+  }
+
+  @Override
+  public void setTileLodZoomShift(double shift) {
+    if (checkState("setTileLodZoomShift")) {
+      return;
+    }
+    nativeSetTileLodZoomShift(shift);
+  }
+
+  @Override
+  public double getTileLodZoomShift() {
+    if (checkState("getTileLodZoomShift")) {
+      return 0;
+    }
+    return nativeGetTileLodZoomShift();
+  }
   // Runtime style Api
 
   @Override
@@ -906,7 +1001,17 @@ final class NativeMapView implements NativeMap {
     if (checkState("removeLayer")) {
       return false;
     }
-    return nativeRemoveLayer(layer.getNativePtr());
+    if (layer.isDetached()) {
+      Logger.w(TAG, "Ignoring removeLayer() call on detached layer reference.");
+      return false;
+    }
+
+    final long nativePtr = layer.getNativePtr();
+    if (nativePtr == 0L) {
+      Logger.w(TAG, "Ignoring removeLayer() call on released layer pointer.");
+      return false;
+    }
+    return nativeRemoveLayer(nativePtr);
   }
 
   @Override
@@ -1020,6 +1125,39 @@ final class NativeMapView implements NativeMap {
   }
 
   @Override
+  public void setFeatureState(@NonNull String sourceId,
+                              @Nullable String sourceLayerId,
+                              @NonNull String featureId,
+                              @NonNull JsonObject state) {
+    if (checkState("setFeatureState")) {
+      return;
+    }
+    nativeSetFeatureState(sourceId, sourceLayerId, featureId, state);
+  }
+
+  @Override
+  @Nullable
+  public JsonObject getFeatureState(@NonNull String sourceId,
+                                    @Nullable String sourceLayerId,
+                                    @NonNull String featureId) {
+    if (checkState("getFeatureState")) {
+      return null;
+    }
+    return nativeGetFeatureState(sourceId, sourceLayerId, featureId);
+  }
+
+  @Override
+  public void removeFeatureState(@NonNull String sourceId,
+                                 @Nullable String sourceLayerId,
+                                 @Nullable String featureId,
+                                 @Nullable String stateKey) {
+    if (checkState("removeFeatureState")) {
+      return;
+    }
+    nativeRemoveFeatureState(sourceId, sourceLayerId, featureId, stateKey);
+  }
+
+  @Override
   public void setApiBaseUrl(String baseUrl) {
     if (checkState("setApiBaseUrl")) {
       return;
@@ -1043,6 +1181,24 @@ final class NativeMapView implements NativeMap {
   @Override
   public void triggerRepaint() {
     nativeTriggerRepaint();
+  }
+
+  @Override
+  public boolean isRenderingStatsViewEnabled() {
+    return nativeIsRenderingStatsViewEnabled();
+  }
+
+  @Override
+  public void enableRenderingStatsView(boolean value) {
+    nativeEnableRenderingStatsView(value);
+  }
+
+  @Override
+  public void setFrustumOffset(RectF offset) {
+    if (checkState("setFrustumOffset")) {
+      return;
+    }
+    nativeSetFrustumOffset(offset);
   }
 
   @Override
@@ -1115,9 +1271,9 @@ final class NativeMapView implements NativeMap {
   }
 
   @Keep
-  private void onDidFinishRenderingFrame(boolean fully, double frameEncodingTime, double frameRenderingTime) {
+  private void onDidFinishRenderingFrame(boolean fully, RenderingStats stats) {
     if (stateCallback != null) {
-      stateCallback.onDidFinishRenderingFrame(fully, frameEncodingTime, frameRenderingTime);
+      stateCallback.onDidFinishRenderingFrame(fully, stats);
     }
   }
 
@@ -1267,6 +1423,13 @@ final class NativeMapView implements NativeMap {
     }
   }
 
+  @Keep
+  private void onRenderError() {
+    if (stateCallback != null) {
+      stateCallback.onRenderError();
+    }
+  }
+
   //
   // JNI methods
   //
@@ -1275,8 +1438,7 @@ final class NativeMapView implements NativeMap {
   private native void nativeInitialize(NativeMapView nativeMap,
                                        FileSource fileSource,
                                        MapRenderer mapRenderer,
-                                       float pixelRatio,
-                                       boolean crossSourceCollisions);
+                                       NativeMapOptions nativeOptions);
 
   @Keep
   private native void nativeDestroy();
@@ -1430,6 +1592,15 @@ final class NativeMapView implements NativeMap {
   private native boolean nativeGetDebug();
 
   @Keep
+  private native String[] nativeGetActionJournalLogFiles();
+
+  @Keep
+  private native String[] nativeGetActionJournalLog();
+
+  @Keep
+  private native void nativeClearActionJournalLog();
+
+  @Keep
   private native boolean nativeIsFullyLoaded();
 
   @Keep
@@ -1574,6 +1745,24 @@ final class NativeMapView implements NativeMap {
                                                              String[] layerIds,
                                                              Object[] filter);
 
+  @Keep
+  private native void nativeSetFeatureState(String sourceId,
+                                            String sourceLayerId,
+                                            String featureId,
+                                            JsonObject state);
+
+  @Nullable
+  @Keep
+  private native JsonObject nativeGetFeatureState(String sourceId,
+                                                  String sourceLayerId,
+                                                  String featureId);
+
+  @Keep
+  private native void nativeRemoveFeatureState(String sourceId,
+                                               String sourceLayerId,
+                                               String featureId,
+                                               String stateKey);
+
   @NonNull
   @Keep
   private native Light nativeGetLight();
@@ -1596,6 +1785,30 @@ final class NativeMapView implements NativeMap {
   @Keep
   private native int nativeGetPrefetchZoomDelta();
 
+  @Keep
+  private native void nativeSetTileLodMinRadius(double radius);
+
+  @Keep
+  private native double nativeGetTileLodMinRadius();
+
+  @Keep
+  private native void nativeSetTileLodScale(double scale);
+
+  @Keep
+  private native double nativeGetTileLodScale();
+
+  @Keep
+  private native void nativeSetTileLodPitchThreshold(double threshold);
+
+  @Keep
+  private native double nativeGetTileLodPitchThreshold();
+
+  @Keep
+  private native void nativeSetTileLodZoomShift(double shift);
+
+  @Keep
+  private native double nativeGetTileLodZoomShift();
+
   @Override
   public long getNativePtr() {
     return nativePtr;
@@ -1603,6 +1816,15 @@ final class NativeMapView implements NativeMap {
 
   @Keep
   private native void nativeTriggerRepaint();
+
+  @Keep
+  private native boolean nativeIsRenderingStatsViewEnabled();
+
+  @Keep
+  private native void nativeEnableRenderingStatsView(boolean enabled);
+
+  @Keep
+  private native void nativeSetFrustumOffset(RectF offsset);
 
   //
   // Snapshot
@@ -1681,7 +1903,7 @@ final class NativeMapView implements NativeMap {
 
     void onWillStartRenderingFrame();
 
-    void onDidFinishRenderingFrame(boolean fully, double frameEncodingTime, double frameRenderingTime);
+    void onDidFinishRenderingFrame(boolean fully, RenderingStats stats);
 
     void onWillStartRenderingMap();
 
@@ -1714,5 +1936,7 @@ final class NativeMapView implements NativeMap {
     void onSpriteError(String id, String url);
 
     void onSpriteRequested(String id, String url);
+
+    void onRenderError();
   }
 }

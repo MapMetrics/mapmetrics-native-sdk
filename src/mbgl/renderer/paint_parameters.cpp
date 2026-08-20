@@ -11,6 +11,16 @@
 #include <mbgl/util/convert.hpp>
 #include <mbgl/util/logging.hpp>
 
+#if MLN_RENDER_BACKEND_OPENGL
+#include <mbgl/gl/context.hpp>
+#include <mbgl/shaders/gl/legacy/clipping_mask_program.hpp>
+#endif
+
+#if MLN_RENDER_BACKEND_WEBGPU
+#include <mbgl/webgpu/context.hpp>
+#include <mbgl/shaders/webgpu/clipping_mask.hpp>
+#endif
+
 #if MLN_RENDER_BACKEND_METAL
 #include <mbgl/mtl/context.hpp>
 #include <mbgl/shaders/mtl/clipping_mask.hpp>
@@ -51,7 +61,12 @@ PaintParameters::PaintParameters(gfx::Context& context_,
                                  RenderStaticData& staticData_,
                                  LineAtlas& lineAtlas_,
                                  PatternAtlas& patternAtlas_,
-                                 uint64_t frameCount_)
+                                 uint64_t frameCount_,
+                                 double tileLodMinRadius_,
+                                 double tileLodScale_,
+                                 double tileLodPitchThreshold_,
+                                 TileLodMode tileLodMode_,
+                                 const gfx::ScissorRect& scissorRect_)
     : context(context_),
       backend(backend_),
       encoder(context.createCommandEncoder()),
@@ -65,13 +80,13 @@ PaintParameters::PaintParameters(gfx::Context& context_,
       debugOptions(debugOptions_),
       timePoint(timePoint_),
       pixelRatio(pixelRatio_),
-#ifndef NDEBUG
-      programs((debugOptions & MapDebugOptions::Overdraw) ? staticData_.overdrawPrograms : staticData_.programs),
-#else
-      programs(staticData_.programs),
-#endif
       shaders(*staticData_.shaders),
-      frameCount(frameCount_) {
+      frameCount(frameCount_),
+      tileLodMinRadius(tileLodMinRadius_),
+      tileLodScale(tileLodScale_),
+      tileLodPitchThreshold(tileLodPitchThreshold_),
+      tileLodMode(tileLodMode_),
+      scissorRect(scissorRect_) {
     pixelsToGLUnits = {{2.0f / state.getSize().width, -2.0f / state.getSize().height}};
 
     if (state.getViewportMode() == ViewportMode::FlippedY) {
@@ -80,6 +95,18 @@ PaintParameters::PaintParameters(gfx::Context& context_,
 }
 
 PaintParameters::~PaintParameters() = default;
+
+#if MLN_RENDER_BACKEND_OPENGL
+void PaintParameters::updateStencilBufferAvailability() {
+    auto& glContext = static_cast<gl::Context&>(context);
+    renderTargetHasStencilBuffer = glContext.hasStencilBuffer();
+    stencilClippingAvailable = renderTargetHasStencilBuffer;
+
+    if (!stencilClippingAvailable) {
+        glContext.setStencilMode(gfx::StencilMode::disabled());
+    }
+}
+#endif
 
 mat4 PaintParameters::matrixForTile(const UnwrappedTileID& tileID, bool aligned) const {
     mat4 matrix;
@@ -97,7 +124,7 @@ gfx::DepthMode PaintParameters::depthModeForSublayer([[maybe_unused]] uint8_t n,
     float depth = depthRangeSize + ((1 + currentLayer) * numSublayers + n) * depthEpsilon;
     return gfx::DepthMode{gfx::DepthFunctionType::LessEqual, mask, {depth, depth}};
 #else
-    return gfx::DepthMode{gfx::DepthFunctionType::LessEqual, mask};
+    return gfx::DepthMode{.func = gfx::DepthFunctionType::LessEqual, .mask = mask};
 #endif
 }
 
@@ -105,7 +132,7 @@ gfx::DepthMode PaintParameters::depthModeFor3D() const {
 #if MLN_RENDER_BACKEND_OPENGL
     return gfx::DepthMode{gfx::DepthFunctionType::LessEqual, gfx::DepthMaskType::ReadWrite, {0.0, depthRangeSize}};
 #else
-    return gfx::DepthMode{gfx::DepthFunctionType::LessEqual, gfx::DepthMaskType::ReadWrite};
+    return gfx::DepthMode{.func = gfx::DepthFunctionType::LessEqual, .mask = gfx::DepthMaskType::ReadWrite};
 #endif
 }
 
@@ -138,12 +165,8 @@ void PaintParameters::clearStencil() {
     const auto debugGroup = renderPass->createDebugGroup("tile-clip-mask-clear");
 #endif
 
-    const std::vector<shaders::ClipUBO> tileUBO = {
-        shaders::ClipUBO{/* .matrix = */ util::cast<float>(matrixForTile({0, 0, 0})),
-                         /* .stencil_ref = */ 0,
-                         /* .pad1 = */ 0,
-                         /* .pad2 = */ 0,
-                         /* .pad3 = */ 0}};
+    const std::vector<shaders::ClipUBO> tileUBO = {shaders::ClipUBO{
+        .matrix = util::cast<float>(matrixForTile({0, 0, 0})), .stencil_ref = 0, .pad1 = 0, .pad2 = 0, .pad3 = 0}};
     mtlContext.renderTileClippingMasks(*renderPass, staticData, tileUBO);
     context.renderingStats().stencilClears++;
 #elif MLN_RENDER_BACKEND_VULKAN
@@ -151,15 +174,22 @@ void PaintParameters::clearStencil() {
     vulkanRenderPass.clearStencil();
 
     context.renderingStats().stencilClears++;
-#else // !MLN_RENDER_BACKEND_METAL
+#elif MLN_RENDER_BACKEND_WEBGPU
+    // WebGPU clears stencil through render pass descriptor
+    context.renderingStats().stencilClears++;
+#elif MLN_RENDER_BACKEND_OPENGL
     context.clearStencilBuffer(0b00000000);
 #endif
 }
 
-void PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
+bool PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
     // We can avoid updating the mask if it already contains the same set of tiles.
-    if (!renderTiles || !renderPass || tileIDsCovered(renderTiles, tileClippingMaskIDs)) {
-        return;
+    if (!renderTiles || tileIDsCovered(renderTiles, tileClippingMaskIDs)) {
+        return true;
+    }
+
+    if (!renderPass) {
+        return false;
     }
 
     tileClippingMaskIDs.clear();
@@ -171,7 +201,40 @@ void PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
         clearStencil();
     }
 
-#if MLN_RENDER_BACKEND_METAL
+#if MLN_RENDER_BACKEND_WEBGPU
+    std::vector<shaders::ClipUBO> tileUBOs;
+    for (const auto& tileRef : *renderTiles) {
+        const auto& tileID = tileRef.get().id;
+
+        const int32_t stencilID = nextStencilID;
+        const auto result = tileClippingMaskIDs.insert(std::make_pair(tileID, stencilID));
+        if (result.second) {
+            nextStencilID++;
+        } else {
+            continue;
+        }
+
+        if (tileUBOs.empty()) {
+            tileUBOs.reserve(count);
+        }
+
+        tileUBOs.emplace_back(shaders::ClipUBO{/* .matrix = */ util::cast<float>(matrixForTile(tileID)),
+                                               /* .stencil_ref = */ static_cast<uint32_t>(stencilID),
+                                               /* .pad1 = */ 0,
+                                               /* .pad2 = */ 0,
+                                               /* .pad3 = */ 0});
+    }
+
+    if (!tileUBOs.empty()) {
+#if !defined(NDEBUG)
+        const auto debugGroup = renderPass->createDebugGroup("tile-clip-masks");
+#endif
+
+        auto& webgpuContext = static_cast<webgpu::Context&>(context);
+        webgpuContext.renderTileClippingMasks(*renderPass, staticData, tileUBOs);
+        webgpuContext.renderingStats().stencilUpdates++;
+    }
+#elif MLN_RENDER_BACKEND_METAL
     // Assign a stencil ID and build a UBO for each tile in the set
     std::vector<shaders::ClipUBO> tileUBOs;
     for (const auto& tileRef : *renderTiles) {
@@ -191,11 +254,11 @@ void PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
             tileUBOs.reserve(count);
         }
 
-        tileUBOs.emplace_back(shaders::ClipUBO{/* .matrix = */ util::cast<float>(matrixForTile(tileID)),
-                                               /* .stencil_ref = */ static_cast<uint32_t>(stencilID),
-                                               /* .pad1 = */ 0,
-                                               /* .pad2 = */ 0,
-                                               /* .pad3 = */ 0});
+        tileUBOs.emplace_back(shaders::ClipUBO{.matrix = util::cast<float>(matrixForTile(tileID)),
+                                               .stencil_ref = static_cast<uint32_t>(stencilID),
+                                               .pad1 = 0,
+                                               .pad2 = 0,
+                                               .pad3 = 0});
     }
 
     if (!tileUBOs.empty()) {
@@ -242,14 +305,12 @@ void PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
         vulkanContext.renderingStats().stencilUpdates++;
     }
 
-#else  // !MLN_RENDER_BACKEND_METAL
+#elif MLN_RENDER_BACKEND_OPENGL
     auto program = staticData.shaders->getLegacyGroup().get<ClippingMaskProgram>();
 
     if (!program) {
-        return;
+        return false;
     }
-
-    static_cast<gl::Context&>(context).renderingStats().stencilUpdates++;
 
     const style::Properties<>::PossiblyEvaluated properties{};
     const ClippingMaskProgram::Binders paintAttributeData(properties, 0);
@@ -267,45 +328,50 @@ void PaintParameters::renderTileClippingMasks(const RenderTiles& renderTiles) {
             continue;
         }
 
-        program->draw(context,
-                      *renderPass,
-                      gfx::Triangles(),
-                      gfx::DepthMode::disabled(),
-                      gfx::StencilMode{gfx::StencilMode::Always{},
-                                       stencilID,
-                                       0b11111111,
-                                       gfx::StencilOpType::Keep,
-                                       gfx::StencilOpType::Keep,
-                                       gfx::StencilOpType::Replace},
-                      gfx::ColorMode::disabled(),
-                      gfx::CullFaceMode::disabled(),
-                      *staticData.quadTriangleIndexBuffer,
-                      staticData.clippingMaskSegments,
-                      ClippingMaskProgram::computeAllUniformValues(
-                          ClippingMaskProgram::LayoutUniformValues{
-                              uniforms::matrix::Value(matrixForTile(tileID)),
-                          },
-                          paintAttributeData,
-                          properties,
-                          static_cast<float>(state.getZoom())),
-                      ClippingMaskProgram::computeAllAttributeBindings(
-                          *staticData.tileVertexBuffer, paintAttributeData, properties),
-                      ClippingMaskProgram::TextureBindings{},
-                      "clipping/" + util::toString(stencilID));
+        if (!program->draw(context,
+                           *renderPass,
+                           gfx::Triangles(),
+                           gfx::DepthMode::disabled(),
+                           gfx::StencilMode{gfx::StencilMode::Always{},
+                                            stencilID,
+                                            0b11111111,
+                                            gfx::StencilOpType::Keep,
+                                            gfx::StencilOpType::Keep,
+                                            gfx::StencilOpType::Replace},
+                           gfx::ColorMode::disabled(),
+                           gfx::CullFaceMode::disabled(),
+                           *staticData.quadTriangleIndexBuffer,
+                           staticData.clippingMaskSegments,
+                           ClippingMaskProgram::computeAllUniformValues(
+                               ClippingMaskProgram::LayoutUniformValues{
+                                   uniforms::matrix::Value(matrixForTile(tileID)),
+                               },
+                               paintAttributeData,
+                               properties,
+                               static_cast<float>(state.getZoom())),
+                           ClippingMaskProgram::computeAllAttributeBindings(
+                               *staticData.tileVertexBuffer, paintAttributeData, properties),
+                           "clipping/" + util::toString(stencilID))) {
+            tileClippingMaskIDs.clear();
+            return false;
+        }
     }
-#endif // MLN_RENDER_BACKEND_METAL
+    static_cast<gl::Context&>(context).renderingStats().stencilUpdates++;
+#endif // MLN_RENDER_BACKEND_OPENGL
+
+    return true;
 }
 
 gfx::StencilMode PaintParameters::stencilModeForClipping(const UnwrappedTileID& tileID) const {
     auto it = tileClippingMaskIDs.find(tileID);
     assert(it != tileClippingMaskIDs.end());
     const int32_t id = it != tileClippingMaskIDs.end() ? it->second : 0b00000000;
-    return gfx::StencilMode{gfx::StencilMode::Equal{0b11111111},
-                            id,
-                            0b00000000,
-                            gfx::StencilOpType::Keep,
-                            gfx::StencilOpType::Keep,
-                            gfx::StencilOpType::Replace};
+    return gfx::StencilMode{.test = gfx::StencilMode::Equal{0b11111111},
+                            .ref = id,
+                            .mask = 0b00000000,
+                            .fail = gfx::StencilOpType::Keep,
+                            .depthFail = gfx::StencilOpType::Keep,
+                            .pass = gfx::StencilOpType::Replace};
 }
 
 gfx::StencilMode PaintParameters::stencilModeFor3D() {
@@ -318,21 +384,21 @@ gfx::StencilMode PaintParameters::stencilModeFor3D() {
     tileClippingMaskIDs.clear();
 
     const int32_t id = nextStencilID++;
-    return gfx::StencilMode{gfx::StencilMode::NotEqual{0b11111111},
-                            id,
-                            0b11111111,
-                            gfx::StencilOpType::Keep,
-                            gfx::StencilOpType::Keep,
-                            gfx::StencilOpType::Replace};
+    return gfx::StencilMode{.test = gfx::StencilMode::NotEqual{0b11111111},
+                            .ref = id,
+                            .mask = 0b11111111,
+                            .fail = gfx::StencilOpType::Keep,
+                            .depthFail = gfx::StencilOpType::Keep,
+                            .pass = gfx::StencilOpType::Replace};
 }
 
 gfx::ColorMode PaintParameters::colorModeForRenderPass() const {
     if (debugOptions & MapDebugOptions::Overdraw) {
         constexpr float overdraw = 1.0f / 8.0f;
-        return gfx::ColorMode{
-            gfx::ColorMode::Add{gfx::ColorBlendFactorType::ConstantColor, gfx::ColorBlendFactorType::One},
-            Color{overdraw, overdraw, overdraw, 0.0f},
-            gfx::ColorMode::Mask{true, true, true, true}};
+        return gfx::ColorMode{.blendFunction = gfx::ColorMode::Add{gfx::ColorBlendFactorType::ConstantColor,
+                                                                   gfx::ColorBlendFactorType::One},
+                              .blendColor = Color{overdraw, overdraw, overdraw, 0.0f},
+                              .mask = gfx::ColorMode::Mask{.r = true, .g = true, .b = true, .a = true}};
     } else if (pass == RenderPass::Translucent) {
         return gfx::ColorMode::alphaBlended();
     } else {

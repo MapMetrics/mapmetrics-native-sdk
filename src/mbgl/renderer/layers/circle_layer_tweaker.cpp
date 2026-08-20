@@ -2,7 +2,7 @@
 
 #include <mbgl/gfx/context.hpp>
 #include <mbgl/gfx/drawable.hpp>
-#include <mbgl/programs/circle_program.hpp>
+#include <mbgl/renderer/buckets/circle_bucket.hpp>
 #include <mbgl/renderer/layer_group.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/render_tree.hpp>
@@ -30,7 +30,7 @@ void CircleLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
     auto& context = parameters.context;
     const auto& evaluated = static_cast<const CircleLayerProperties&>(*evaluatedProperties).evaluated;
 
-#if !defined(NDEBUG)
+#ifndef NDEBUG
     const auto label = layerGroup.getName() + "-update-uniforms";
     const auto debugGroup = parameters.encoder->createDebugGroup(label.c_str());
 #endif
@@ -70,7 +70,7 @@ void CircleLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
         }
         const UnwrappedTileID tileID = drawable.getTileID()->toUnwrapped();
 
-        auto* binders = static_cast<CircleProgram::Binders*>(drawable.getBinders());
+        auto* binders = static_cast<CircleBinders*>(drawable.getBinders());
         if (!binders) {
             assert(false);
             return;

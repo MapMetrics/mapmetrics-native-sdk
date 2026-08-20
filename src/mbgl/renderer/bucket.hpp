@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mbgl/layout/symbol_instance.hpp>
-#include <mbgl/renderer/image_atlas.hpp>
 #include <mbgl/style/image_impl.hpp>
 #include <mbgl/style/layer_impl.hpp>
 #include <mbgl/tile/geometry_tile_data.hpp>
@@ -20,7 +19,7 @@ class RenderLayer;
 class CrossTileSymbolLayerIndex;
 class OverscaledTileID;
 class PatternDependency;
-using PatternLayerMap = std::map<std::string, PatternDependency>;
+using PatternLayerMap = mbgl::unordered_map<std::string, PatternDependency>;
 class Placement;
 class TransformState;
 class BucketPlacementData;
@@ -41,7 +40,7 @@ public:
                             const ImagePositions&,
                             const PatternLayerMap&,
                             std::size_t,
-                            const CanonicalTileID&) {};
+                            const CanonicalTileID&) {}
 
     virtual void update(const FeatureStates&, const GeometryTileLayer&, const std::string&, const ImagePositions&) {}
 
@@ -72,7 +71,7 @@ public:
     const util::SimpleIdentity& getID() const { return bucketID; }
 
 #if MLN_SYMBOL_GUARDS
-    virtual bool check(std::source_location) { return true; }
+    virtual bool check(source_location) { return true; }
 #else
     bool check(std::string_view = {}) { return true; }
 #endif

@@ -8,6 +8,7 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.gson.JsonObject;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.Geometry;
 import org.maplibre.android.annotations.Marker;
@@ -190,6 +191,21 @@ interface NativeMap {
                                       @Nullable String[] layerIds,
                                       @Nullable Expression filter);
 
+  void setFeatureState(@NonNull String sourceId,
+                       @Nullable String sourceLayerId,
+                       @NonNull String featureId,
+                       @NonNull JsonObject state);
+
+  @Nullable
+  JsonObject getFeatureState(@NonNull String sourceId,
+                             @Nullable String sourceLayerId,
+                             @NonNull String featureId);
+
+  void removeFeatureState(@NonNull String sourceId,
+                          @Nullable String sourceLayerId,
+                          @Nullable String featureId,
+                          @Nullable String stateKey);
+
   //
   // Projection API
   //
@@ -221,6 +237,12 @@ interface NativeMap {
 
   boolean getDebug();
 
+  String[] getActionJournalLogFiles();
+
+  String[] getActionJournalLog();
+
+  void clearActionJournalLog();
+
   void setReachability(boolean status);
 
   void setApiBaseUrl(String baseUrl);
@@ -238,11 +260,33 @@ interface NativeMap {
 
   boolean getTileCacheEnabled();
 
+  void setTileLodMinRadius(double radius);
+
+  double getTileLodMinRadius();
+
+  void setTileLodScale(double scale);
+
+  double getTileLodScale();
+
+  void setTileLodPitchThreshold(double threshold);
+
+  double getTileLodPitchThreshold();
+
+  void setTileLodZoomShift(double shift);
+
+  double getTileLodZoomShift();
+
   void setGestureInProgress(boolean inProgress);
 
   float getPixelRatio();
 
   void triggerRepaint();
+
+  boolean isRenderingStatsViewEnabled();
+
+  void enableRenderingStatsView(boolean value);
+
+  void setFrustumOffset(RectF offset);
 
   void setSwapBehaviorFlush(boolean flush);
 

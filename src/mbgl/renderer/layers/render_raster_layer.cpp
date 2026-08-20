@@ -4,8 +4,6 @@
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/render_static_data.hpp>
 #include <mbgl/renderer/sources/render_image_source.hpp>
-#include <mbgl/programs/programs.hpp>
-#include <mbgl/programs/raster_program.hpp>
 #include <mbgl/tile/tile.hpp>
 #include <mbgl/gfx/context.hpp>
 #include <mbgl/gfx/cull_face_mode.hpp>
@@ -143,7 +141,7 @@ void RenderRasterLayer::update(gfx::ShaderRegistry& shaders,
         staticDataIndices = std::make_shared<TriangleIndexVector>(RenderStaticData::quadTriangleIndices());
     }
     if (!staticDataSegments) {
-        staticDataSegments = std::make_shared<RasterSegmentVector>(RenderStaticData::rasterSegments());
+        staticDataSegments = std::make_shared<SegmentVector>(RenderStaticData::rasterSegments());
     }
 
     const auto createBuilder = [&] {
@@ -189,8 +187,7 @@ void RenderRasterLayer::update(gfx::ShaderRegistry& shaders,
         [&](const gfx::UniqueDrawableBuilder& builder, gfx::Drawable* drawable, const RasterBucket& bucket) {
             // The bucket may later add, remove, or change masking.  In that case, the tile's
             // shared data and segments are not updated, and it needs to be re-created.
-            if (drawable &&
-                (bucket.sharedVertices->isModifiedAfter(drawable->createTime) || bucket.sharedTriangles->getDirty())) {
+            if (drawable && bucket.sharedVertices->isModifiedAfter(drawable->createTime)) {
                 return false;
             }
 
@@ -313,7 +310,7 @@ void RenderRasterLayer::update(gfx::ShaderRegistry& shaders,
                     }
                 });
 
-                if (tileUpdateTime && (bucket.vertices.isModifiedAfter(*tileUpdateTime) || bucket.indices.getDirty())) {
+                if (tileUpdateTime && (bucket.vertices.isModifiedAfter(*tileUpdateTime))) {
                     removeTile(renderPass, tileID);
                     cleared = true;
                 }

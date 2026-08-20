@@ -11,10 +11,10 @@
 #include <mbgl/style/source_impl.hpp>
 #include <mbgl/style/layer_properties.hpp>
 
-#include <unordered_map>
-#include <vector>
 #include <map>
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace mbgl {
 
@@ -33,6 +33,7 @@ class Tile;
 class TileParameters;
 class TransformParameters;
 class TransformState;
+class UpdateParameters;
 
 namespace gfx {
 class UploadPass;
@@ -43,6 +44,7 @@ public:
     const TransformParameters& transform;
     const MapDebugOptions& debugOptions;
     const ImageManager& imageManager;
+    const std::string sourceName;
 };
 
 using RenderTiles = std::shared_ptr<const std::vector<std::reference_wrapper<const RenderTile>>>;
@@ -102,7 +104,9 @@ public:
                                     const std::optional<std::string>&,
                                     const std::optional<std::string>&) {}
 
-    virtual void setCacheEnabled(bool) {};
+    virtual void setCacheEnabled(bool) {}
+
+    virtual void setFastPFOREnabled(bool) {}
 
     virtual void reduceMemoryUse() = 0;
 

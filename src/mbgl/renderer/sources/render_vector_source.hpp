@@ -2,21 +2,30 @@
 
 #include <mbgl/renderer/sources/render_tile_source.hpp>
 #include <mbgl/renderer/tile_pyramid.hpp>
-#include <mbgl/style/sources/vector_source_impl.hpp>
+#include <mbgl/style/sources/tile_source_impl.hpp>
 
 namespace mbgl {
 
 class RenderVectorSource final : public RenderTileSetSource {
 public:
-    explicit RenderVectorSource(Immutable<style::VectorSource::Impl>, const TaggedScheduler&);
+    explicit RenderVectorSource(Immutable<style::TileSource::Impl>, const TaggedScheduler&);
 
-private:
+    /// Enable the decoding of MLT tiles with FastPFOR integer encodings.
+    /// Default is false.  Such tiles will fail if not explicitly enabled.
+    void setFastPFOREnabled(bool enable) override { fastPFOREnabled = enable; }
+
+protected:
     void updateInternal(const Tileset&,
                         const std::vector<Immutable<style::LayerProperties>>&,
                         bool needsRendering,
                         bool needsRelayout,
                         const TileParameters&) override;
+
     const std::optional<Tileset>& getTileset() const override;
+
+private:
+    std::optional<bool> isMLT;
+    bool fastPFOREnabled = false;
 };
 
 } // namespace mbgl

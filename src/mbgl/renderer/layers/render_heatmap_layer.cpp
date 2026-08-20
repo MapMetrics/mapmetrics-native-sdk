@@ -3,7 +3,6 @@
 #include <mbgl/renderer/render_tile.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/render_static_data.hpp>
-#include <mbgl/programs/programs.hpp>
 #include <mbgl/tile/tile.hpp>
 #include <mbgl/style/layers/heatmap_layer_impl.hpp>
 #include <mbgl/geometry/feature_index.hpp>
@@ -93,9 +92,7 @@ void RenderHeatmapLayer::updateColorRamp() {
             colorValue = HeatmapLayer::getDefaultHeatmapColor();
         }
 
-        if (applyColorRamp(colorValue, *colorRamp)) {
-            colorRampTexture = std::nullopt;
-        }
+        applyColorRamp(colorValue, *colorRamp);
     }
 }
 
@@ -256,7 +253,8 @@ void RenderHeatmapLayer::update(gfx::ShaderRegistry& shaders,
             }
             return true;
         };
-        if (updateTile(renderPass, tileID, std::move(updateExisting))) {
+
+        if (updateTile(tileLayerGroup, renderPass, tileID, std::move(updateExisting))) {
             continue;
         }
 

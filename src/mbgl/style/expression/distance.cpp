@@ -839,7 +839,7 @@ std::optional<GeoJSON> parseValue(const style::conversion::Convertible& value, s
             style::conversion::Error error;
             auto geojson = toGeoJSON(argument, error);
             if (geojson && error.message.empty()) {
-                return *geojson;
+                return geojson;
             }
             ctx.error(error.message);
         }
@@ -878,7 +878,7 @@ using namespace mbgl::style::conversion;
 EvaluationResult Distance::evaluate(const EvaluationContext& params) const {
     if (!params.feature || !params.canonical) {
         return EvaluationError{
-            "distance expression requirs valid feature and canonical "
+            "distance expression requires valid feature and canonical "
             "information."};
     }
     auto geometryType = params.feature->getType();

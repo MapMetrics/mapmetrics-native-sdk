@@ -2,7 +2,7 @@
 
 #include <mbgl/style/types.hpp>
 #include <mbgl/util/constants.hpp>
-#include <mbgl/programs/line_program.hpp>
+#include <mbgl/renderer/buckets/line_bucket.hpp>
 #include <mbgl/gfx/drawable_builder.hpp>
 #include <mbgl/gfx/drawable_builder_impl.hpp>
 #include <mbgl/gfx/drawable_impl.hpp>
@@ -93,14 +93,14 @@ void PolylineGenerator<PLV, PS>::generate(const GeometryCoordinates& coordinates
     const std::size_t first = [&coordinates, &len] {
         std::size_t i = 0;
         // If the line has duplicate vertices at the start, adjust index to remove them.
-        while (i < len - 1 && coordinates[i] == coordinates[i + 1]) {
+        while (i + 1 < len && coordinates[i] == coordinates[i + 1]) {
             i++;
         }
         return i;
     }();
 
     // Ignore invalid geometry.
-    if (len < (options.type == FeatureType::Polygon ? 3 : 2)) {
+    if (len < ((options.type == FeatureType::Polygon) ? 3u : 2u)) {
         return;
     }
 
@@ -338,7 +338,7 @@ void PolylineGenerator<PLV, PS>::generate(const GeometryCoordinates& coordinates
                 offsetB = offset;
             }
 
-            // Close previous segement with bevel
+            // Close previous segment with bevel
             if (!startOfLine) {
                 addCurrentVertex(*currentCoordinate,
                                  distance,
@@ -637,7 +637,7 @@ void PolylineGenerator<PLV, PS>::addPieSliceVertex(const GeometryCoordinate& cur
 template class PolylineGenerator<gfx::DrawableBuilder::Impl::LineLayoutVertex,
                                  std::unique_ptr<gfx::Drawable::DrawSegment>>;
 
-template class PolylineGenerator<LineLayoutVertex, Segment<LineAttributes>>;
+template class PolylineGenerator<LineLayoutVertex, SegmentBase>;
 
 } // namespace gfx
 } // namespace mbgl

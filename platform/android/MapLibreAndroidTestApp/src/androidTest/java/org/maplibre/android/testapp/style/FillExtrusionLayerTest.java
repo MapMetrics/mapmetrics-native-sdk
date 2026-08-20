@@ -177,6 +177,19 @@ public class FillExtrusionLayerTest extends BaseLayerTest {
 
   @Test
   @UiThreadTest
+  public void testFillExtrusionRoundedCornerDistanceAsConstant() {
+    Timber.i("fill-extrusion-rounded-corner-distance");
+    assertNotNull(layer);
+    assertNull(layer.getFillExtrusionRoundedCornerDistance().getValue());
+
+    // Set and Get
+    Float propertyValue = 0.3f;
+    layer.setProperties(fillExtrusionRoundedCornerDistance(propertyValue));
+    assertEquals(layer.getFillExtrusionRoundedCornerDistance().getValue(), propertyValue);
+  }
+
+  @Test
+  @UiThreadTest
   public void testFillExtrusionOpacityTransition() {
     Timber.i("fill-extrusion-opacityTransitionOptions");
     assertNotNull(layer);
@@ -271,7 +284,7 @@ public class FillExtrusionLayerTest extends BaseLayerTest {
     // Set and Get
     Float[] propertyValue = new Float[] {0f, 0f};
     layer.setProperties(fillExtrusionTranslate(propertyValue));
-    assertEquals(layer.getFillExtrusionTranslate().getValue(), propertyValue);
+    assertArrayEquals(layer.getFillExtrusionTranslate().getValue(), propertyValue);
   }
 
   @Test

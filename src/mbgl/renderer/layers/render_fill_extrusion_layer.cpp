@@ -5,8 +5,6 @@
 #include <mbgl/gfx/render_pass.hpp>
 #include <mbgl/gfx/renderer_backend.hpp>
 #include <mbgl/gfx/shader_registry.hpp>
-#include <mbgl/programs/fill_extrusion_program.hpp>
-#include <mbgl/programs/programs.hpp>
 #include <mbgl/renderer/buckets/fill_extrusion_bucket.hpp>
 #include <mbgl/renderer/image_manager.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
@@ -165,6 +163,36 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
 
     tileLayerGroup->setStencilTiles(renderTiles);
 
+#if MLN_USE_FILL_EXTRUSION_INSTANCING
+    if (!fillExtrusionInstancedGroup) {
+        fillExtrusionInstancedGroup = shaders.getShaderGroup("FillExtrusionInstancedShader");
+    }
+    if (!fillExtrusionPatternInstancedGroup) {
+        fillExtrusionPatternInstancedGroup = shaders.getShaderGroup("FillExtrusionPatternInstancedShader");
+    }
+
+    if (!staticDataVertices) {
+        staticDataVertices = std::make_shared<FillExtrusionVertexVector>(RenderStaticData::fillExtrusionVertices());
+    }
+    if (!staticDataIndices) {
+        staticDataIndices = std::make_shared<TriangleIndexVector>(RenderStaticData::fillExtrusionTriangleIndices());
+    }
+    if (!staticDataSegments) {
+        staticDataSegments = std::make_shared<SegmentVector>(RenderStaticData::fillExtrusionSegments());
+    }
+
+    const auto& instancedShaderGroup = hasPattern ? fillExtrusionPatternInstancedGroup : fillExtrusionInstancedGroup;
+    if (!instancedShaderGroup) {
+        removeAllDrawables();
+        return;
+    }
+
+    const auto instanceVertexCount = staticDataVertices->elements();
+    std::unique_ptr<gfx::DrawableBuilder> instancedDepthBuilder;
+    std::unique_ptr<gfx::DrawableBuilder> instancedColorBuilder;
+    StringIDSetsPair instancePropertiesAsUniforms;
+#endif
+
     StringIDSetsPair propertiesAsUniforms;
     for (const RenderTile& tile : *renderTiles) {
         const auto& tileID = tile.getOverscaledTileID();
@@ -224,6 +252,31 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
             continue;
         }
 
+#if MLN_USE_FILL_EXTRUSION_INSTANCING
+        if (instancedDepthBuilder) {
+            instancedDepthBuilder->clearTweakers();
+        }
+        if (instancedColorBuilder) {
+            instancedColorBuilder->clearTweakers();
+        }
+
+        instancePropertiesAsUniforms.first.clear();
+        instancePropertiesAsUniforms.second.clear();
+
+        auto instanceAttrs = context.createVertexAttributeArray();
+        instanceAttrs->readDataDrivenPaintProperties<FillExtrusionBase,
+                                                     FillExtrusionColor,
+                                                     FillExtrusionHeight,
+                                                     FillExtrusionPattern>(
+            binders, evaluated, instancePropertiesAsUniforms, idFillExtrusionBaseVertexAttribute);
+
+        const auto instancedShader = std::static_pointer_cast<gfx::ShaderProgramBase>(
+            instancedShaderGroup->getOrCreateShader(context, instancePropertiesAsUniforms));
+        if (!instancedShader) {
+            continue;
+        }
+#endif
+
         // The non-pattern path in `render()` only uses two-pass rendering if there's translucency.
         // The pattern path always uses two passes.
         const auto doDepthPass = (!opaque || hasPattern);
@@ -274,6 +327,15 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                 if (colorBuilder) {
                     colorBuilder->addTweaker(tweaker);
                 }
+
+#if MLN_USE_FILL_EXTRUSION_INSTANCING
+                if (instancedDepthBuilder) {
+                    instancedDepthBuilder->addTweaker(tweaker);
+                }
+                if (instancedColorBuilder) {
+                    instancedColorBuilder->addTweaker(tweaker);
+                }
+#endif
             }
         }
 
@@ -284,13 +346,24 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                                    sizeof(FillExtrusionLayoutVertex),
                                    gfx::AttributeDataType::Short2);
         }
-        if (const auto& attr = vertexAttrs->set(idFillExtrusionNormalEdVertexAttribute)) {
+
+        if (const auto& attr = vertexAttrs->set(idFillExtrusionDecimalsEdAttribute)) {
             attr->setSharedRawData(bucket.sharedVertices,
                                    offsetof(FillExtrusionLayoutVertex, a2),
                                    /*vertexOffset=*/0,
                                    sizeof(FillExtrusionLayoutVertex),
-                                   gfx::AttributeDataType::Short4);
+                                   gfx::AttributeDataType::UShort2);
         }
+
+#if !MLN_USE_FILL_EXTRUSION_INSTANCING
+        if (const auto& attr = vertexAttrs->set(idFillExtrusionNormal2DVertexAttribute)) {
+            attr->setSharedRawData(bucket.sharedVertices,
+                                   offsetof(FillExtrusionLayoutVertex, a3),
+                                   /*vertexOffset=*/0,
+                                   sizeof(FillExtrusionLayoutVertex),
+                                   gfx::AttributeDataType::Short2);
+        }
+#endif
 
         if (doDepthPass) {
             depthBuilder->setRawVertices({}, vertexCount, gfx::AttributeDataType::Short2);
@@ -323,11 +396,101 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                 ++stats.drawablesAdded;
             }
         };
-
         if (doDepthPass) {
             finish(*depthBuilder);
         }
         finish(*colorBuilder);
+
+#if MLN_USE_FILL_EXTRUSION_INSTANCING
+        if (doDepthPass && !instancedDepthBuilder) {
+            if (auto builder = context.createDrawableBuilder(layerPrefix + "depthInstanced")) {
+                builder->setShader(instancedShader);
+                builder->setIs3D(true);
+                builder->setEnableColor(false);
+                builder->setRenderPass(drawPass);
+                builder->setCullFaceMode(gfx::CullFaceMode::backCCW());
+                builder->setDrawPriority(0);
+                if (tweaker) {
+                    builder->addTweaker(tweaker);
+                }
+                instancedDepthBuilder = std::move(builder);
+            }
+        }
+        if (!instancedColorBuilder) {
+            if (auto builder = context.createDrawableBuilder(layerPrefix + "colorInstanced")) {
+                builder->setShader(instancedShader);
+                builder->setIs3D(true);
+                builder->setEnableColor(true);
+                builder->setColorMode(gfx::ColorMode::alphaBlended());
+                builder->setRenderPass(drawPass);
+                builder->setCullFaceMode(gfx::CullFaceMode::backCCW());
+                builder->setDrawPriority(1);
+                if (tweaker) {
+                    builder->addTweaker(tweaker);
+                }
+                instancedColorBuilder = std::move(builder);
+            }
+        }
+
+        auto instanceVertexAttrs = context.createVertexAttributeArray();
+        if (const auto& attr = instanceVertexAttrs->set(idFillExtrusionPosVertexAttribute)) {
+            attr->setSharedRawData(staticDataVertices,
+                                   offsetof(FillExtrusionStaticVertex, a1),
+                                   /*vertexOffset=*/0,
+                                   sizeof(FillExtrusionStaticVertex),
+                                   gfx::AttributeDataType::Short2);
+        }
+        if (const auto& attr = instanceAttrs->set(idFillExtrusionOutlinePosAttribute)) {
+            attr->setSharedRawData(bucket.sharedVertices,
+                                   offsetof(FillExtrusionLayoutVertex, a1),
+                                   /*vertexOffset=*/0,
+                                   sizeof(FillExtrusionLayoutVertex),
+                                   gfx::AttributeDataType::Short2);
+        }
+        if (const auto& attr = instanceAttrs->set(idFillExtrusionDecimalsEdAttribute)) {
+            attr->setSharedRawData(bucket.sharedVertices,
+                                   offsetof(FillExtrusionLayoutVertex, a2),
+                                   /*vertexOffset=*/0,
+                                   sizeof(FillExtrusionLayoutVertex),
+                                   gfx::AttributeDataType::UShort2);
+        }
+
+        if (doDepthPass) {
+            instancedDepthBuilder->setRawVertices({}, instanceVertexCount, gfx::AttributeDataType::Short2);
+            instancedDepthBuilder->setVertexAttributes(instanceVertexAttrs);
+            instancedDepthBuilder->setInstanceAttributes(instanceAttrs);
+        }
+
+        instancedColorBuilder->setEnableStencil(doDepthPass);
+        instancedColorBuilder->setRawVertices({}, instanceVertexCount, gfx::AttributeDataType::Short2);
+        instancedColorBuilder->setVertexAttributes(std::move(instanceVertexAttrs));
+        instancedColorBuilder->setInstanceAttributes(std::move(instanceAttrs));
+
+        const auto finishInstance = [&](gfx::DrawableBuilder& instancedBuilder) {
+            if (!staticDataIndices->elements()) {
+                return;
+            }
+            instancedBuilder.setSegments(
+                gfx::Triangles(), staticDataIndices, staticDataSegments->data(), staticDataSegments->size());
+
+            instancedBuilder.flush(context);
+
+            for (auto& drawable : instancedBuilder.clearDrawables()) {
+                drawable->setTileID(tileID);
+                drawable->setType(static_cast<std::size_t>(hasPattern));
+                drawable->setLayerTweaker(layerTweaker);
+                drawable->setBinders(renderData.bucket, &binders);
+                drawable->setRenderTile(renderTilesOwner, &tile);
+
+                tileLayerGroup->addDrawable(drawPass, tileID, std::move(drawable));
+                ++stats.drawablesAdded;
+            }
+        };
+        if (doDepthPass) {
+            finishInstance(*instancedDepthBuilder);
+        }
+        finishInstance(*instancedColorBuilder);
+#endif
     }
 }
 

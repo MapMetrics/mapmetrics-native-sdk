@@ -1,11 +1,11 @@
 #pragma once
 
-#include <mbgl/gfx/texture.hpp>
 #include <mbgl/gfx/draw_mode.hpp>
 #include <mbgl/gfx/depth_mode.hpp>
 #include <mbgl/gfx/stencil_mode.hpp>
 #include <mbgl/gfx/color_mode.hpp>
 #include <mbgl/gfx/context.hpp>
+#include <mbgl/gfx/scissor_rect.hpp>
 #include <mbgl/gl/object.hpp>
 #include <mbgl/gl/state.hpp>
 #include <mbgl/gl/value.hpp>
@@ -63,10 +63,6 @@ public:
     Framebuffer createFramebuffer(const gfx::Renderbuffer<gfx::RenderbufferPixelType::RGBA>&,
                                   const gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>&);
     Framebuffer createFramebuffer(const gfx::Renderbuffer<gfx::RenderbufferPixelType::RGBA>&);
-    Framebuffer createFramebuffer(const gfx::Texture&,
-                                  const gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>&);
-    Framebuffer createFramebuffer(const gfx::Texture&);
-    Framebuffer createFramebuffer(const gfx::Texture&, const gfx::Renderbuffer<gfx::RenderbufferPixelType::Depth>&);
 
     template <typename Image,
               gfx::TexturePixelType format = Image::channels == 4 ? gfx::TexturePixelType::RGBA
@@ -82,6 +78,8 @@ public:
     void setStencilMode(const gfx::StencilMode&);
     void setColorMode(const gfx::ColorMode&);
     void setCullFaceMode(const gfx::CullFaceMode&);
+    void setScissorTest(const gfx::ScissorRect&);
+    bool hasStencilBuffer() const;
 
     void draw(const gfx::DrawMode&, std::size_t indexOffset, std::size_t indexLength);
 
@@ -112,6 +110,7 @@ public:
 
     extension::Debugging* getDebuggingExtension() const { return debugging.get(); }
 
+    bool getCleanupOnDestruction() { return cleanupOnDestruction; }
     void setCleanupOnDestruction(bool cleanup) { cleanupOnDestruction = cleanup; }
 
     gfx::UniqueDrawableBuilder createDrawableBuilder(std::string name) override;
@@ -129,6 +128,8 @@ public:
     LayerGroupPtr createLayerGroup(int32_t layerIndex, std::size_t initialCapacity, std::string name) override;
 
     gfx::Texture2DPtr createTexture2D() override;
+
+    gfx::DynamicTexturePtr createDynamicTexture(Size size, gfx::TexturePixelType pixelType) override;
 
     RenderTargetPtr createRenderTarget(const Size size, const gfx::TextureChannelDataType type) override;
 
@@ -211,9 +212,6 @@ private:
 
 public:
     std::unique_ptr<gfx::OffscreenTexture> createOffscreenTexture(Size, gfx::TextureChannelDataType) override;
-    std::unique_ptr<gfx::TextureResource> createTextureResource(Size,
-                                                                gfx::TexturePixelType,
-                                                                gfx::TextureChannelDataType) override;
 
 private:
     std::unique_ptr<gfx::RenderbufferResource> createRenderbufferResource(gfx::RenderbufferPixelType,

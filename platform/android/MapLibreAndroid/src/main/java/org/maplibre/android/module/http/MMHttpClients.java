@@ -8,7 +8,7 @@ import okhttp3.OkHttpClient;
 /**
  * MAPMETRICS PATCH -- v2 map sessions.
  * <p>
- * Exposes {@link HttpRequestImpl#DEFAULT_CLIENT}, which is package-private, to the
+ * Exposes {@code HttpRequestImpl.getOrCreateDefaultClient()}, which is package-private, to the
  * {@code org.maplibre.android.session} package.
  * </p>
  * <p>
@@ -37,7 +37,7 @@ public final class MMHttpClients {
    */
   @NonNull
   public static OkHttpClient defaultClient() {
-    return HttpRequestImpl.DEFAULT_CLIENT;
+    return HttpRequestImpl.getOrCreateDefaultClient();
   }
 
   /**

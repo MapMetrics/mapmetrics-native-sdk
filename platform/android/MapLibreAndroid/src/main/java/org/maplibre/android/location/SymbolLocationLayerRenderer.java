@@ -245,6 +245,10 @@ final class SymbolLocationLayerRenderer implements LocationLayerRenderer {
   }
 
   private void setLayerVisibility(@NonNull String layerId, boolean visible) {
+    if (!style.isFullyLoaded()) {
+      return;
+    }
+
     Layer layer = style.getLayer(layerId);
     if (layer != null) {
       String targetVisibility = visible ? VISIBLE : NONE;
@@ -314,7 +318,7 @@ final class SymbolLocationLayerRenderer implements LocationLayerRenderer {
   }
 
   private void addLocationSource() {
-    locationSource = layerSourceProvider.generateSource(locationFeature);
+    locationSource = layerSourceProvider.generateSource(locationFeature, true);
     style.addSource(locationSource);
   }
 

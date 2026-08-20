@@ -2,12 +2,14 @@
 
 #include <mbgl/gfx/attribute.hpp>
 #include <mbgl/gl/types.hpp>
-#include <mbgl/programs/attributes.hpp>
+#include <mbgl/shaders/attributes.hpp>
 #include <mbgl/util/literal.hpp>
 
-#include <vector>
-#include <string>
+#include <algorithm>
 #include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 namespace mbgl {
 namespace gl {
@@ -33,17 +35,20 @@ public:
     void queryLocations(const ProgramID& id) {
         locations = Locations{
             queryLocation(id, concat_literals<&string_literal<'a', '_'>::value, &As::name>::value())...};
+    }
+
+    bool hasExpectedFirstLocation() const {
         using TypeOfFirst = typename std::tuple_element_t<0, std::tuple<As...>>;
-        [[maybe_unused]] auto first = locations.template get<TypeOfFirst>();
-        assert(first && first.value() == 0);
+        const auto location = locations.template get<TypeOfFirst>();
+        return location && *location == 0;
     }
 
     static constexpr const char* getFirstAttribName() {
         // Static assert that attribute list starts with position: we bind it on location 0.
         using TypeOfFirst = typename std::tuple_element_t<0, std::tuple<As...>>;
-        static_assert(std::is_same<attributes::pos, TypeOfFirst>::value ||
-                          std::is_same<attributes::pos_offset, TypeOfFirst>::value ||
-                          std::is_same<attributes::pos_normal, TypeOfFirst>::value,
+        static_assert(std::is_same_v<attributes::pos, TypeOfFirst> ||
+                          std::is_same_v<attributes::pos_offset, TypeOfFirst> ||
+                          std::is_same_v<attributes::pos_normal, TypeOfFirst>,
                       "Program must start with position related attribute.");
         return concat_literals<&string_literal<'a', '_'>::value, TypeOfFirst::name>::value();
     }
@@ -66,12 +71,24 @@ public:
 
     AttributeBindingArray toBindingArray(const gfx::AttributeBindings<TypeList<As...>>& bindings) const {
         AttributeBindingArray result;
-        result.resize(sizeof...(As));
+
+        std::optional<AttributeLocation> maxLocation;
+        auto updateMaxLocation = [&](const std::optional<AttributeLocation>& location) {
+            if (location) {
+                maxLocation = maxLocation ? std::max(*maxLocation, *location) : *location;
+            }
+        };
+
+        util::ignore({(updateMaxLocation(locations.template get<As>()), 0)...});
+
+        if (maxLocation) {
+            result.resize(*maxLocation + 1);
+        }
 
         auto maybeAddBinding = [&](const std::optional<AttributeLocation>& location,
                                    const std::optional<gfx::AttributeBinding>& binding) {
             if (location) {
-                result.at(*location) = binding;
+                result[*location] = binding;
             }
         };
 

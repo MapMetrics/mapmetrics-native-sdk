@@ -1,13 +1,46 @@
-uniform mat4 u_matrix;
-uniform vec3 u_lightcolor;
-uniform lowp vec3 u_lightpos;
-uniform lowp float u_lightintensity;
-uniform float u_vertical_gradient;
-uniform lowp float u_opacity;
-
 layout (location = 0) in vec2 a_pos;
-layout (location = 1) in vec4 a_normal_ed;
+layout (location = 1) in vec2 a_decimals_ed;
+layout (location = 2) in vec2 a_normal2d;
 out vec4 v_color;
+
+layout (std140) uniform FillExtrusionDrawableUBO {
+    highp mat4 u_matrix;
+    highp vec2 u_pixel_coord_upper;
+    highp vec2 u_pixel_coord_lower;
+    highp float u_height_factor;
+    highp float u_tile_ratio;
+    // Interpolations
+    highp float u_base_t;
+    highp float u_height_t;
+    highp float u_color_t;
+    highp float u_pattern_from_t;
+    highp float u_pattern_to_t;
+    lowp float drawable_pad1;
+};
+
+layout (std140) uniform FillExtrusionTilePropsUBO {
+    highp vec4 u_pattern_from;
+    highp vec4 u_pattern_to;
+    highp vec2 u_texsize;
+    lowp float tileprops_pad1;
+    lowp float tileprops_pad2;
+};
+
+layout (std140) uniform FillExtrusionPropsUBO {
+    highp vec4 u_color;
+    highp vec3 u_lightcolor;
+    lowp float props_pad1;
+    highp vec3 u_lightpos;
+    highp float u_base;
+    highp float u_height;
+    highp float u_lightintensity;
+    highp float u_vertical_gradient;
+    highp float u_opacity;
+    highp float u_fade;
+    highp float u_from_scale;
+    highp float u_to_scale;
+    lowp float props_pad2;
+};
 
 #pragma mapbox: define highp float base
 #pragma mapbox: define highp float height
@@ -18,14 +51,16 @@ void main() {
     #pragma mapbox: initialize highp float height
     #pragma mapbox: initialize highp vec4 color
 
-    vec3 normal = a_normal_ed.xyz;
+    vec3 normal = vec3(a_normal2d / 16384.0, a_normal2d.x == 0.0 && a_normal2d.y == 0.0 ? 1.0 : 0.0);
 
     base = max(0.0, base);
     height = max(0.0, height);
 
-    float t = mod(normal.x, 2.0);
+    float t = mod(a_decimals_ed.x, 2.0);
+    float z = t > 0.0 ? height : base;
+    vec2 decimals = unpack_float(floor(a_decimals_ed.x / 2.0)) / 128.0;
 
-    gl_Position = u_matrix * vec4(a_pos, t > 0.0 ? height : base, 1);
+    gl_Position = u_matrix * vec4(a_pos + decimals, z, 1);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
@@ -37,7 +72,7 @@ void main() {
     color += ambientlight;
 
     // Calculate cos(theta), where theta is the angle between surface normal and diffuse light ray
-    float directional = clamp(dot(normal / 16384.0, u_lightpos), 0.0, 1.0);
+    float directional = clamp(dot(normal, u_lightpos), 0.0, 1.0);
 
     // Adjust directional so that
     // the range of values for highlight/shading is narrower
@@ -46,12 +81,12 @@ void main() {
     directional = mix((1.0 - u_lightintensity), max((1.0 - colorvalue + u_lightintensity), 1.0), directional);
 
     // Add gradient along z axis of side surfaces
-    if (normal.y != 0.0) {
+    if (normal.z == 0.0) {
         // This avoids another branching statement, but multiplies by a constant of 0.84 if no vertical gradient,
         // and otherwise calculates the gradient based on base + height
-        directional *= (
-            (1.0 - u_vertical_gradient) +
-            (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));
+        float fMin = mix(0.7, 0.98, 1.0 - u_lightintensity);
+        float factor = clamp((t + base) * pow(height / 150.0, 0.5), fMin, 1.0);
+        directional *= (1.0 - u_vertical_gradient) + (u_vertical_gradient * factor);
     }
 
     // Assign final color based on surface + ambient light color, diffuse light directional, and light color

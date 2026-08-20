@@ -10,11 +10,16 @@
 #include <mbgl/style/layout_property.hpp>
 #include <mbgl/style/paint_property.hpp>
 #include <mbgl/style/properties.hpp>
-#include <mbgl/programs/attributes.hpp>
-#include <mbgl/programs/uniforms.hpp>
+#include <mbgl/shaders/attributes.hpp>
+#include <mbgl/shaders/uniforms.hpp>
 
 namespace mbgl {
 namespace style {
+
+struct FillExtrusionRoundedCornerDistance : LayoutProperty<float> {
+    static constexpr const char *name() { return "fill-extrusion-rounded-corner-distance"; }
+    static float defaultValue() { return 0.f; }
+};
 
 struct FillExtrusionBase : DataDrivenPaintProperty<float, attributes::base, uniforms::base> {
     static float defaultValue() { return 0.f; }
@@ -47,6 +52,10 @@ struct FillExtrusionTranslateAnchor : PaintProperty<TranslateAnchorType> {
 struct FillExtrusionVerticalGradient : PaintProperty<bool> {
     static bool defaultValue() { return true; }
 };
+
+class FillExtrusionLayoutProperties : public Properties<
+    FillExtrusionRoundedCornerDistance
+> {};
 
 class FillExtrusionPaintProperties : public Properties<
     FillExtrusionBase,

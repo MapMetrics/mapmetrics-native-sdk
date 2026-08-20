@@ -4,9 +4,9 @@
 #include <mbgl/renderer/render_tile.hpp>
 #include <mbgl/style/layers/symbol_layer_impl.hpp>
 #include <mbgl/text/cross_tile_symbol_index.hpp>
-#include <mbgl/text/glyph_atlas.hpp>
 #include <mbgl/text/placement.hpp>
 
+#include <algorithm>
 #include <utility>
 
 namespace mbgl {
@@ -15,6 +15,27 @@ using namespace style;
 namespace {
 std::atomic<uint32_t> maxBucketInstanceId;
 } // namespace
+
+std::unique_ptr<SymbolSizeBinder> SymbolSizeBinder::create(const float tileZoom,
+                                                           const style::PropertyValue<float>& sizeProperty,
+                                                           const float defaultValue) {
+    return sizeProperty.match(
+        [&](const Undefined& value) -> std::unique_ptr<SymbolSizeBinder> {
+            return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, value, defaultValue);
+        },
+        [&](float value) -> std::unique_ptr<SymbolSizeBinder> {
+            return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, value, defaultValue);
+        },
+        [&](const style::PropertyExpression<float>& expression) -> std::unique_ptr<SymbolSizeBinder> {
+            if (expression.isFeatureConstant()) {
+                return std::make_unique<ConstantSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            } else if (expression.isZoomConstant()) {
+                return std::make_unique<SourceFunctionSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            } else {
+                return std::make_unique<CompositeFunctionSymbolSizeBinder>(tileZoom, expression, defaultValue);
+            }
+        });
+}
 
 SymbolBucket::SymbolBucket(Immutable<style::SymbolLayoutProperties::PossiblyEvaluated> layout_,
                            const std::map<std::string, Immutable<style::LayerProperties>>& paintProperties_,
@@ -190,7 +211,7 @@ SymbolInstanceReferences SymbolBucket::getSortedSymbols(const float angle) const
     const float sin = std::sin(angle);
     const float cos = std::cos(angle);
 
-    std::sort(result.begin(), result.end(), [sin, cos](const SymbolInstance& a, const SymbolInstance& b) {
+    std::ranges::sort(result, [sin, cos](const SymbolInstance& a, const SymbolInstance& b) {
         const auto aRotated = std::lround(sin * a.getAnchor().point.x + cos * a.getAnchor().point.y);
         const auto bRotated = std::lround(sin * b.getAnchor().point.x + cos * b.getAnchor().point.y);
         if (aRotated != bRotated) {
@@ -214,7 +235,7 @@ SymbolInstanceReferences SymbolBucket::getSymbols(const std::optional<SortKeyRan
 }
 
 #if MLN_SYMBOL_GUARDS
-bool SymbolBucket::check(std::source_location source) {
+bool SymbolBucket::check(source_location source) {
     if (text.vertices().elements() != text.dynamicVertices().elements() ||
         text.vertices().elements() != text.opacityVertices().elements() ||
         icon.vertices().elements() != icon.dynamicVertices().elements() ||

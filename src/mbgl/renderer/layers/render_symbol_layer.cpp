@@ -1,10 +1,8 @@
 #include <mbgl/renderer/layers/render_symbol_layer.hpp>
 
 #include <mbgl/gfx/cull_face_mode.hpp>
+#include <mbgl/gfx/shader_registry.hpp>
 #include <mbgl/layout/symbol_layout.hpp>
-#include <mbgl/programs/collision_box_program.hpp>
-#include <mbgl/programs/programs.hpp>
-#include <mbgl/programs/symbol_program.hpp>
 #include <mbgl/renderer/bucket_parameters.hpp>
 #include <mbgl/renderer/buckets/symbol_bucket.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
@@ -14,7 +12,6 @@
 #include <mbgl/renderer/tile_render_data.hpp>
 #include <mbgl/renderer/upload_parameters.hpp>
 #include <mbgl/style/layers/symbol_layer_impl.hpp>
-#include <mbgl/text/glyph_atlas.hpp>
 #include <mbgl/text/shaping.hpp>
 #include <mbgl/tile/geometry_tile.hpp>
 #include <mbgl/tile/geometry_tile_data.hpp>
@@ -43,7 +40,7 @@ using namespace shaders;
 namespace {
 
 constexpr std::string_view SymbolIconShaderName = "SymbolIconShader";
-constexpr std::string_view SymbolSDFIconShaderName = "SymbolSDFIconShader";
+constexpr std::string_view SymbolSDFShaderName = "SymbolSDFShader";
 constexpr std::string_view SymbolTextAndIconShaderName = "SymbolTextAndIconShader";
 constexpr std::string_view CollisionBoxShaderName = "CollisionBoxShader";
 constexpr std::string_view CollisionCircleShaderName = "CollisionCircleShader";
@@ -74,8 +71,8 @@ style::SymbolPropertyValues textPropertyValues(const style::SymbolPaintPropertie
         .hasFill = evaluated_.get<style::TextColor>().constantOr(Color::black()).a > 0};
 }
 
-using SegmentWrapper = std::reference_wrapper<const Segment<SymbolTextAttributes>>;
-using SegmentVectorWrapper = std::reference_wrapper<const SegmentVector<SymbolTextAttributes>>;
+using SegmentWrapper = std::reference_wrapper<const SegmentBase>;
+using SegmentVectorWrapper = std::reference_wrapper<const SegmentVector>;
 using SegmentsWrapper = variant<SegmentWrapper, SegmentVectorWrapper>;
 
 struct RenderableSegment {
@@ -246,8 +243,11 @@ void RenderSymbolLayer::prepare(const LayerPrepareParameters& params) {
                                                   .featureIndex = featureIndex,
                                                   .sourceId = baseImpl->source,
                                                   .sortKeyRange = sortKeyRange};
-                    auto sortPosition = std::upper_bound(
-                        placementData.cbegin(), placementData.cend(), layerData, [](const auto& lhs, const auto& rhs) {
+                    auto sortPosition = std::upper_bound( // NOLINT(modernize-use-ranges)
+                        placementData.cbegin(),
+                        placementData.cend(),
+                        layerData,
+                        [](const auto& lhs, const auto& rhs) {
                             assert(lhs.sortKeyRange && rhs.sortKeyRange);
                             return lhs.sortKeyRange->sortKey < rhs.sortKeyRange->sortKey;
                         });
@@ -259,7 +259,7 @@ void RenderSymbolLayer::prepare(const LayerPrepareParameters& params) {
 }
 
 namespace {
-const SegmentVector<SymbolTextAttributes> emptySegmentVector;
+const SegmentVector emptySegmentVector;
 constexpr auto posOffsetAttribName = "a_pos_offset";
 
 void updateTileAttributes(const SymbolBucket::Buffer& buffer,
@@ -462,8 +462,9 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
 
     const auto& getCollisionTileLayerGroup = [&] {
         if (!collisionTileLayerGroup) {
-            if ((collisionTileLayerGroup = context.createTileLayerGroup(
-                     layerIndex, /*initialCapacity=*/64, getID() + "-collision"))) {
+            collisionTileLayerGroup = context.createTileLayerGroup(
+                layerIndex, /*initialCapacity=*/64, getID() + "-collision");
+            if (collisionTileLayerGroup) {
                 activateLayerGroup(collisionTileLayerGroup, true, changes);
             }
         }
@@ -478,7 +479,7 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
         symbolIconGroup = shaders.getShaderGroup(std::string(SymbolIconShaderName));
     }
     if (!symbolSDFGroup) {
-        symbolSDFGroup = shaders.getShaderGroup(std::string(SymbolSDFIconShaderName));
+        symbolSDFGroup = shaders.getShaderGroup(std::string(SymbolSDFShaderName));
     }
     if (!symbolTextAndIconGroup) {
         symbolTextAndIconGroup = shaders.getShaderGroup(std::string(SymbolTextAndIconShaderName));
@@ -511,9 +512,11 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
         });
     }
 
-    const bool sortFeaturesByKey = !impl_cast(baseImpl).layout.get<SymbolSortKey>().isUndefined();
+    const auto& layout = impl_cast(baseImpl).layout;
+    const bool sortFeaturesByKey = !layout.get<SymbolSortKey>().isUndefined();
     std::multiset<SegmentGroup> renderableSegments;
     std::unique_ptr<gfx::DrawableBuilder> builder;
+    const bool isOffset = !layout.get<IconOffset>().isUndefined();
 
     const auto currentZoom = static_cast<float>(state.getZoom());
     const auto layerPrefix = getID() + "/";
@@ -548,7 +551,7 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
         }
         setRenderTileBucketID(tileID, bucket.getID());
 
-        assert(bucket.paintProperties.find(getID()) != bucket.paintProperties.end());
+        assert(bucket.paintProperties.contains(getID()));
         const auto& bucketPaintProperties = bucket.paintProperties.at(getID());
 
         auto addCollisionDrawables = [&](const bool isText, const bool hasCollisionBox, const bool hasCollisionCircle) {
@@ -559,8 +562,9 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
                 return;
             }
 
-            const auto& layout = *bucket.layout;
-            const auto values = isText ? textPropertyValues(evaluated, layout) : iconPropertyValues(evaluated, layout);
+            const auto& bucketLayout = *bucket.layout;
+            const auto values = isText ? textPropertyValues(evaluated, bucketLayout)
+                                       : iconPropertyValues(evaluated, bucketLayout);
             const std::string suffix = isText ? "text/" : "icon/";
 
             const auto addVertices = [&collisionBuilder](const auto& vertices) {
@@ -707,8 +711,9 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
         const auto& evaluated = getEvaluated<SymbolLayerProperties>(renderable.renderData.layerProperties);
         auto& bucketPaintProperties = bucket.paintProperties.at(getID());
 
-        const auto& layout = *bucket.layout;
-        const auto values = isText ? textPropertyValues(evaluated, layout) : iconPropertyValues(evaluated, layout);
+        const auto& bucketLayout = *bucket.layout;
+        const auto values = isText ? textPropertyValues(evaluated, bucketLayout)
+                                   : iconPropertyValues(evaluated, bucketLayout);
 
         const auto& atlases = tile.getAtlasTextures();
         if (!atlases) {
@@ -758,7 +763,7 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
                                                                                      textSizeIsZoomConstant);
             }
             if (!isText && !tileInfo.iconTweaker) {
-                const bool iconScaled = layout.get<IconSize>().constantOr(1.0) != 1.0 || bucket.iconsNeedLinear;
+                const bool iconScaled = bucketLayout.get<IconSize>().constantOr(1.0) != 1.0 || bucket.iconsNeedLinear;
                 tileInfo.iconTweaker = std::make_shared<gfx::DrawableAtlasesTweaker>(atlases,
                                                                                      idSymbolImageIconTexture,
                                                                                      idSymbolImageTexture,
@@ -818,8 +823,9 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
                     /*.symbolType=*/renderable.type,
                     /*.pitchAlignment=*/values.pitchAlignment,
                     /*.rotationAlignment=*/values.rotationAlignment,
-                    /*.placement=*/layout.get<SymbolPlacement>(),
-                    /*.textFit=*/layout.get<IconTextFit>()));
+                    /*.placement=*/bucketLayout.get<SymbolPlacement>(),
+                    /*.textFit=*/bucketLayout.get<IconTextFit>(),
+                    /*.isOffset=*/isOffset));
 
                 tileLayerGroup->addDrawable(passes, tileID, std::move(drawable));
                 ++stats.drawablesAdded;

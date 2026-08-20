@@ -1,4 +1,7 @@
-[![MapLibre Logo](https://maplibre.org/img/maplibre-logo-big.svg)](https://maplibre.org/)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7ff2cda8-f564-4e70-a971-d34152f969f0#gh-light-mode-only" alt="MapLibre Logo" width="200">
+  <img src="https://github.com/user-attachments/assets/cee8376b-9812-40ff-91c6-2d53f9581b83#gh-dark-mode-only" alt="MapLibre Logo" width="200">
+</p>
 
 # MapMetrics Native
 
@@ -37,7 +40,7 @@ Add a `MapView` to your layout XML file:
 ```
 
 > [!TIP]
-> There are external projects such as [Ramani Maps](https://github.com/ramani-maps/ramani-maps) and [MapLibre Compose Playground](https://github.com/Rallista/maplibre-compose-playground) available to intergrate MapMetrics Native Android with Compose-based projects.
+> There are external projects such as [Ramani Maps](https://github.com/ramani-maps/ramani-maps) and [MapLibre Compose Playground](https://github.com/Rallista/maplibre-compose-playground) available to integrate MapMetrics Native Android with Compose-based projects.
 
 Next, initialize the map in an activity:
 
@@ -47,7 +50,7 @@ Next, initialize the map in an activity:
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
-import org.maplibre.android.Maplibre
+import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
@@ -121,7 +124,7 @@ For more information, refer to the [Android API Documentation](https://maplibre.
 
 You can find MapMetrics Native iOS on [Cocoapods](https://cocoapods.org/) and on the [Pods](https://cocoapods.org/pods/MapMetrics).
 
-MapMetrics Native iOS uses UIKit. To intergrate it with an UIKit project, you can use
+MapMetrics Native iOS uses UIKit. To integrate it with an UIKit project, you can use
 
 ```swift
 class SimpleMap: UIViewController, MLNMapViewDelegate {
@@ -164,7 +167,7 @@ The [iOS Documentation](https://maplibre.org/maplibre-native/ios/latest/document
 
 MapMetrics Native has at its core a C++ library. This is where the bulk of development is currently happening.
 
-To get started with the code base, you need to clone the the repository including all its submodules.
+To get started with the code base, you need to clone the repository including all its submodules.
 
 All contributors use pull requests from a private fork. [Fork the project](https://github.com/maplibre/maplibre-native/fork). Then run:
 

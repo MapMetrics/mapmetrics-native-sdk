@@ -35,7 +35,7 @@ std::optional<ImagePosition> PatternAtlas::getPattern(const std::string& id) con
 }
 
 std::optional<ImagePosition> PatternAtlas::addPattern(const style::Image::Impl& image) {
-    if (patterns.find(image.id) != patterns.end()) {
+    if (patterns.contains(image.id)) {
         return std::nullopt;
     }
     const uint16_t width = image.image.size.width + padding * 2;
@@ -65,7 +65,9 @@ std::optional<ImagePosition> PatternAtlas::addPattern(const style::Image::Impl& 
 
     dirty = true;
 
-    return patterns.emplace(image.id, Pattern{.bin = bin, .position = {*bin, image}}).first->second.position;
+    return patterns
+        .emplace(image.id, Pattern{.bin = bin, .position = {Rect<uint16_t>(bin->x, bin->y, bin->w, bin->h), image}})
+        .first->second.position;
 }
 
 void PatternAtlas::removePattern(const std::string& id) {

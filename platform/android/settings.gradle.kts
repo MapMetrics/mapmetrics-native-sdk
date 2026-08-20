@@ -16,11 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 include(":MapLibreAndroid", ":MapLibreAndroidTestApp", ":MapLibreAndroidLint")
@@ -38,3 +39,9 @@ includeBuild(cppTestProjectDir) {
 }
 
 includeBuild("./MapLibrePlugin")
+
+buildCache {
+    local {
+        isEnabled = true
+    }
+}

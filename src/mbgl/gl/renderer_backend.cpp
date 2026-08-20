@@ -8,6 +8,7 @@
 #include <mbgl/util/logging.hpp>
 
 #include <mbgl/shaders/gl/shader_group_gl.hpp>
+#include <mbgl/shaders/gl/legacy/programs.hpp>
 
 #include <cassert>
 
@@ -52,10 +53,10 @@ void RendererBackend::assumeViewport(int32_t x, int32_t y, const Size& size) {
     assert(gl::value::Viewport::Get() == getContext<gl::Context>().viewport.getCurrentValue());
 }
 
-void RendererBackend::assumeScissorTest(bool enabled) {
+void RendererBackend::assumeScissorTest(int32_t x, int32_t y, uint32_t width, uint32_t height) {
     MLN_TRACE_FUNC();
 
-    getContext<gl::Context>().scissorTest.setCurrentValue(enabled);
+    getContext<gl::Context>().scissorTest.setCurrentValue({x, y, width, height});
     assert(gl::value::ScissorTest::Get() == getContext<gl::Context>().scissorTest.getCurrentValue());
 }
 
@@ -81,10 +82,10 @@ void RendererBackend::setViewport(int32_t x, int32_t y, const Size& size) {
     assert(gl::value::Viewport::Get() == getContext<gl::Context>().viewport.getCurrentValue());
 }
 
-void RendererBackend::setScissorTest(bool enabled) {
+void RendererBackend::setScissorTest(int32_t x, int32_t y, uint32_t width, uint32_t height) {
     MLN_TRACE_FUNC();
 
-    getContext<gl::Context>().scissorTest = enabled;
+    getContext<gl::Context>().scissorTest = {x, y, width, height};
     assert(gl::value::ScissorTest::Get() == getContext<gl::Context>().scissorTest.getCurrentValue());
 }
 
@@ -102,7 +103,7 @@ void registerTypes(gfx::ShaderRegistry& registry, const ProgramParameters& progr
     /// in the parameter pack and register it with the shader registry.
 
     /// Registration calls are wrapped in a lambda that throws on registration
-    /// failure, we shouldn't expect registration to faill unless the shader
+    /// failure, we shouldn't expect registration to fail unless the shader
     /// registry instance provided already has conflicting programs present.
     (
         [&]() {
@@ -136,6 +137,7 @@ void RendererBackend::initShaders(gfx::ShaderRegistry& shaders, const ProgramPar
                   shaders::BuiltIn::HeatmapTextureShader,
                   shaders::BuiltIn::HillshadePrepareShader,
                   shaders::BuiltIn::HillshadeShader,
+                  shaders::BuiltIn::ColorReliefShader,
                   shaders::BuiltIn::LineShader,
                   shaders::BuiltIn::LineGradientShader,
                   shaders::BuiltIn::LinePatternShader,
@@ -144,8 +146,12 @@ void RendererBackend::initShaders(gfx::ShaderRegistry& shaders, const ProgramPar
                   shaders::BuiltIn::LocationIndicatorTexturedShader,
                   shaders::BuiltIn::RasterShader,
                   shaders::BuiltIn::SymbolIconShader,
-                  shaders::BuiltIn::SymbolSDFIconShader,
+                  shaders::BuiltIn::SymbolSDFShader,
                   shaders::BuiltIn::SymbolTextAndIconShader>(shaders, programParameters);
+
+    // Initialize legacy shader programs
+    Programs programs(programParameters);
+    programs.registerWith(shaders);
 }
 
 } // namespace gl

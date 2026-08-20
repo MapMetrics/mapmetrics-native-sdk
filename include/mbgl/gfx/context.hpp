@@ -5,16 +5,16 @@
 #include <mbgl/gfx/command_encoder.hpp>
 #include <mbgl/gfx/context_observer.hpp>
 #include <mbgl/gfx/draw_scope.hpp>
-#include <mbgl/gfx/program.hpp>
 #include <mbgl/gfx/renderbuffer.hpp>
 #include <mbgl/gfx/rendering_stats.hpp>
-#include <mbgl/gfx/texture.hpp>
 #include <mbgl/gfx/types.hpp>
 
 #include <mbgl/gfx/uniform_buffer.hpp>
 
 #include <memory>
 #include <string>
+#include <mutex>
+#include <shared_mutex>
 
 namespace mbgl {
 
@@ -30,16 +30,20 @@ using RenderTargetPtr = std::shared_ptr<RenderTarget>;
 
 namespace gfx {
 
+class DepthMode;
+class ColorMode;
 class OffscreenTexture;
 class ShaderRegistry;
 
 class Drawable;
 class DrawableBuilder;
+class DynamicTexture;
 class ShaderProgramBase;
 class Texture2D;
 class VertexAttributeArray;
 
 using DrawablePtr = std::shared_ptr<Drawable>;
+using DynamicTexturePtr = std::shared_ptr<DynamicTexture>;
 using ShaderProgramBasePtr = std::shared_ptr<ShaderProgramBase>;
 using Texture2DPtr = std::shared_ptr<Texture2D>;
 using UniformBufferPtr = std::shared_ptr<UniformBuffer>;
@@ -79,13 +83,6 @@ public:
 
     virtual std::unique_ptr<OffscreenTexture> createOffscreenTexture(Size, TextureChannelDataType) = 0;
 
-    /// Creates an empty texture with the specified dimensions.
-    Texture createTexture(const Size size,
-                          TexturePixelType format = TexturePixelType::RGBA,
-                          TextureChannelDataType type = TextureChannelDataType::UnsignedByte) {
-        return {size, createTextureResource(size, format, type)};
-    }
-
     template <RenderbufferPixelType pixelType>
     Renderbuffer<pixelType> createRenderbuffer(const Size size) {
         return {size, createRenderbufferResource(pixelType, size)};
@@ -98,7 +95,17 @@ public:
     gfx::RenderingStats& renderingStats() { return stats; }
     const gfx::RenderingStats& renderingStats() const { return stats; }
 
-#if !defined(NDEBUG)
+    void threadSafeAccessRenderingStats(const std::function<void(RenderingStats&)>& function) {
+        std::scoped_lock lock(renderingStatsMutex);
+        function(stats);
+    }
+
+    RenderingStats threadSafeCopyRenderingStats() {
+        std::shared_lock lock(renderingStatsMutex);
+        return stats;
+    }
+
+#ifndef NDEBUG
     virtual void visualizeStencilBuffer() = 0;
     virtual void visualizeDepthBuffer(float depthRangeSize) = 0;
 #endif
@@ -139,6 +146,9 @@ public:
     /// Create a texture
     virtual Texture2DPtr createTexture2D() = 0;
 
+    /// Create a dynamic texture
+    virtual DynamicTexturePtr createDynamicTexture(Size size, TexturePixelType pixelType) = 0;
+
     /// Create a render target
     virtual RenderTargetPtr createRenderTarget(const Size size, const TextureChannelDataType type) = 0;
 
@@ -173,10 +183,10 @@ public:
     virtual void unbindGlobalUniformBuffers(gfx::RenderPass&) const noexcept = 0;
 
 protected:
-    virtual std::unique_ptr<TextureResource> createTextureResource(Size, TexturePixelType, TextureChannelDataType) = 0;
     virtual std::unique_ptr<RenderbufferResource> createRenderbufferResource(RenderbufferPixelType, Size) = 0;
     virtual std::unique_ptr<DrawScopeResource> createDrawScopeResource() = 0;
 
+    std::shared_mutex renderingStatsMutex;
     gfx::RenderingStats stats;
     ContextObserver* observer;
 };

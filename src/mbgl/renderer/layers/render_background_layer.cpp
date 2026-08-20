@@ -2,7 +2,6 @@
 #include <mbgl/gfx/context.hpp>
 #include <mbgl/gfx/cull_face_mode.hpp>
 #include <mbgl/map/transform_state.hpp>
-#include <mbgl/programs/programs.hpp>
 #include <mbgl/renderer/image_manager.hpp>
 #include <mbgl/renderer/paint_parameters.hpp>
 #include <mbgl/renderer/pattern_atlas.hpp>
@@ -21,6 +20,8 @@
 #include <mbgl/renderer/layer_group.hpp>
 #include <mbgl/renderer/update_parameters.hpp>
 #include <mbgl/shaders/shader_program_base.hpp>
+
+#include <algorithm>
 
 namespace mbgl {
 
@@ -114,11 +115,19 @@ static constexpr std::string_view BackgroundPatternShaderName = "BackgroundPatte
 void RenderBackgroundLayer::update(gfx::ShaderRegistry& shaders,
                                    gfx::Context& context,
                                    const TransformState& state,
-                                   const std::shared_ptr<UpdateParameters>&,
+                                   const std::shared_ptr<UpdateParameters>& updateParameters,
                                    [[maybe_unused]] const RenderTree& renderTree,
                                    [[maybe_unused]] UniqueChangeRequestVec& changes) {
+    assert(updateParameters);
     const auto zoom = state.getIntegerZoom();
-    const auto tileCover = util::tileCover(state, zoom);
+    Range<uint8_t> zoomRange(0, zoom);
+    const auto tileCover = util::tileCover({.transformState = state,
+                                            .tileLodMinRadius = updateParameters->tileLodMinRadius,
+                                            .tileLodScale = updateParameters->tileLodScale,
+                                            .tileLodPitchThreshold = updateParameters->tileLodPitchThreshold,
+                                            .tileLodMode = updateParameters->tileLodMode},
+                                           zoom,
+                                           zoomRange);
 
     // renderTiles is always empty, we use tileCover instead
     if (tileCover.empty()) {
@@ -187,8 +196,7 @@ void RenderBackgroundLayer::update(gfx::ShaderRegistry& shaders,
     // Remove drawables for tiles that are no longer in the cover set.
     // (Note that `RenderTiles` is empty, and this layer does not use it)
     tileLayerGroup->removeDrawablesIf([&](gfx::Drawable& drawable) -> bool {
-        return drawable.getTileID() &&
-               (std::find(tileCover.begin(), tileCover.end(), *drawable.getTileID()) == tileCover.end());
+        return drawable.getTileID() && (std::ranges::find(tileCover, *drawable.getTileID()) == tileCover.end());
     });
 
     // For each tile in the cover set, add a tile drawable if one doesn't already exist.
