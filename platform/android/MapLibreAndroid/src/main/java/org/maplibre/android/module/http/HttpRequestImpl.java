@@ -234,7 +234,10 @@ public class HttpRequestImpl implements HttpRequest {
     }
   }
 
-  private static Call.Factory getHttpClient() {
+  // MAPMETRICS PATCH -- v2 map sessions: package-private rather than private so that
+  // MMHttpClients.currentClient() can route through the lazy initializer instead of reading
+  // the raw `client` field, which is null until the first map request.
+  static Call.Factory getHttpClient() {
     if (client == null) {
       synchronized (HttpRequestImpl.class) {
         if (client == null) {

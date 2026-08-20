@@ -56,6 +56,17 @@ public final class MMHttpClients {
    */
   @NonNull
   public static okhttp3.Call.Factory currentClient() {
-    return HttpRequestImpl.client;
+    // Routed through the lazy initializer, NOT a raw read of HttpRequestImpl.client.
+    //
+    // That field is `volatile Call.Factory client = null` and is only populated on the first map
+    // request. MapLibre.getInstance -> MMMapSessionInterceptor.install -> installClient runs
+    // BEFORE any tile has been fetched, so a raw read returns null on every cold start. Kotlin
+    // sees this method's @NonNull and throws "currentClient(...) must not be null" from
+    // installClient, taking getInstance -- and therefore the whole map -- down.
+    //
+    // Going through getHttpClient() also means the client we compare against and derive from is
+    // the default one WITH this fork's InMemoryCookieJar, which is the entire point of building
+    // the signing client via newBuilder().
+    return HttpRequestImpl.getHttpClient();
   }
 }
