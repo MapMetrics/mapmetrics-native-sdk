@@ -251,7 +251,8 @@ public class HttpRequestImpl implements HttpRequest {
   // cookie, which is what makes the v1 path bill once per 30-minute window instead of once per
   // tile. Remove the .cookieJar(cookieJar) call below and tiles keep serving perfectly, nothing
   // turns red, and billing regresses ~200x. Guarded by
-  // MMMapSessionInterceptorTest.theSigningClientInheritsTheDefaultClientsCookieJar.
+  // MMMapSessionInterceptorTest.installedClientKeepsTheCookieJar, which asserts the jar's
+  // identity and not merely that both clients share one -- two NO_COOKIES jars are also shared.
   //
   // Package-private rather than private so MMHttpClients can hand the same instance -- jar and
   // all -- to the v2 signing client. Upstream made this lazy; the laziness is preserved, because

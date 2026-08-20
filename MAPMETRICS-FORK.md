@@ -1,10 +1,18 @@
 # MapMetrics fork of MapLibre Native (Android)
 
-Fork point: dfa80771346ffba43999aa890578e796c73bd755 (2025-04-22).
+Upstream baseline: **`ios-v6.28.0`** = `18545ca10d296704b2cba675b182ff2c8da24588` (2026-07-23),
+merged 2026-08. This tag is chosen deliberately, not for being newest: the sibling iOS fork
+(`Native-MapMetrics-iOS-SDK`) was snapshotted from exactly it, so pinning here makes the two trees
+CONVERGE. After the merge `platform/darwin`, `platform/ios`, `platform/macos`, `src/` and
+`include/` are byte-identical to the tag. Do not move to a newer tag without moving iOS too --
+the convergence is the point.
+
+Previous fork point (pre-upgrade, for archaeology): dfa80771346ffba43999aa890578e796c73bd755
+(2025-04-22).
 Reproduce the divergence with:
     git remote add upstream https://github.com/maplibre/maplibre-native.git
     git fetch upstream --tags --filter=blob:none
-    git diff --name-only $(git merge-base main upstream/main)..main
+    git diff --name-only ios-v6.28.0..HEAD
 
 ## Patches to replay on every re-vendor
 
@@ -12,6 +20,14 @@ Reproduce the divergence with:
    Upstream has no cookie jar. It holds the gateway's `usageSession` cookie, which is
    what makes v1 bill once per 30-minute window instead of once per tile.
    DROPPING THIS REGRESSES BILLING ~200x, SILENTLY. Tiles keep working; only the invoice changes.
+
+   The wiring point moved at the ios-v6.28.0 upgrade. Upstream replaced the eager
+   `static final DEFAULT_CLIENT` with a lazily built `static volatile defaultClient`, created in
+   `getOrCreateDefaultClient()`. The jar now goes on the builder INSIDE that method, and the
+   method is package-private (not `private`, as upstream has it) so `MMHttpClients` can hand the
+   same instance to the v2 signing client. Keep the laziness: upstream's `HttpRequestUtilTest`
+   asserts `defaultClient` is still null before first use, so restoring the old eager field
+   turns that test red. Search for "MAPMETRICS PATCH -- InMemoryCookieJar".
 2. **401/403 -> Error::Reason::Server** in `platform/android/.../src/cpp/http_file_source.cpp`.
    Upstream maps them to Reason::Other, which the shared http_timeout.cpp never retries.
    Search for "MAPMETRICS PATCH -- v2 map sessions".
@@ -91,19 +107,42 @@ Reproduce the divergence with:
    NOT REPLAYABLE FROM THIS DOCUMENT, and NOTHING TURNS RED IF IT IS DROPPED. There is no marker
    comment to grep for and no test asserts the resource names. Recover the actual content with:
 
-       git diff $(git merge-base main upstream/main)..main -- \
+       git diff ios-v6.28.0..HEAD -- \
          platform/android/MapLibreAndroid/src/main/java/org/maplibre/android/maps/MapView.java \
          platform/android/MapLibreAndroid/src/main/java/org/maplibre/android/snapshotter/MapSnapshotter.kt \
          'platform/android/MapLibreAndroid/src/main/res*'
 
    Symptom if dropped: the map renders with MapLibre branding instead of MapMetrics. Visual only.
-5. **Build/publishing**: `build.gradle.kts`, `gradle.properties`.
-   NOT REPLAYABLE FROM THIS DOCUMENT, and NOTHING TURNS RED IF IT IS DROPPED — a wrong group id or
-   version publishes cleanly. Recover the actual content with:
+5. **Build/publishing**. NOT REPLAYABLE FROM THIS DOCUMENT, and NOTHING TURNS RED IF IT IS
+   DROPPED — a wrong group id or version publishes cleanly. The files are:
 
-       git diff $(git merge-base main upstream/main)..main -- \
-         platform/android/MapLibreAndroid/build.gradle.kts \
-         platform/android/gradle.properties
+   - `platform/android/buildSrc/src/main/kotlin/maplibre.artifact-settings.gradle.kts` — **this is
+     where the group id and artifact id live** (`org.mapmetrics.android-sdk` /
+     `mapmetrics-native-sdk`) plus the MapMetrics title, developer and SCM fields. Before the
+     ios-v6.28.0 upgrade this document did not mention the file at all, which meant the one
+     patch it warns "publishes cleanly when wrong" had no recorded home.
+   - `platform/android/VERSION` — the artifact version, `1.0.1`. **The home for this moved at the
+     ios-v6.28.0 upgrade.** It used to be `VERSION_NAME` at the top of
+     `platform/android/MapLibreAndroid/gradle.properties` (this document previously named
+     `platform/android/gradle.properties`, which was simply the wrong path). Upstream now reads
+     the version from a root `VERSION` file in `maplibre.artifact-settings.gradle.kts`.
+   - `platform/android/MapLibreAndroid/build.gradle.kts` — the dokka `sourceLink.remoteUrl`, and
+     a legacy `publishing { }` block near the bottom pointing at GitHub Packages.
+
+   Recover the actual content with:
+
+       git diff ios-v6.28.0..HEAD -- \
+         platform/android/buildSrc/src/main/kotlin/maplibre.artifact-settings.gradle.kts \
+         platform/android/VERSION \
+         platform/android/MapLibreAndroid/build.gradle.kts
+
+   NO LONGER PATCHES, as of the ios-v6.28.0 upgrade — do not replay them:
+   `platform/android/build.gradle.kts` (upstream removed root-project publishing entirely; it now
+   uses `com.vanniktech.maven.publish.base` applied per module) and
+   `buildSrc/src/main/kotlin/maplibre.publish-root.gradle.kts` and
+   `buildSrc/src/main/kotlin/maplibre.gradle-publish.gradle.kts` (upstream deleted the first and
+   rewrote the second; both of this fork's versions are gone and upstream's are taken as-is).
+   The deleted files had held plaintext Sonatype and GPG credentials.
 
    Note that the first of those files also carries the **Test-task input declaration** patch below,
    which is a separate block; do not treat one diff hunk as covering both.
@@ -123,6 +162,11 @@ Reproduce the divergence with:
 A re-vendor that drops any of the above still COMPILES. Silence is not success.
 
     cd platform/android && make run-android-unit-test
+
+The renderer flavor was renamed at the ios-v6.28.0 upgrade: `drawable` became `opengl`, and the
+Makefile's `RENDERER` now defaults to `opengl`. The task is `:MapLibreAndroid:testOpenglDebugUnitTest`;
+`testDrawableDebugUnitTest` no longer exists. Post-upgrade the suite is 968 tests, 0 failures,
+1 skipped (the live cold start, which needs `MM_STAGING_KEY`). Pre-upgrade it was 961/0/1.
 
 (The `Makefile` lives in `platform/android/`, not at the repo root where the rest of this document
 is rooted. Run it from the repo root and it fails with "No such file or directory".)
@@ -144,8 +188,8 @@ prove — the suite is not uniformly strong across the patches above:
 
       export MM_STAGING_KEY=...   # staging API key, from the environment only
       cd platform/android && ./gradlew -Pmaplibre.abis=none \
-        :MapLibreAndroid:testDrawableDebugUnitTest
+        :MapLibreAndroid:testOpenglDebugUnitTest
 
   Then confirm it RAN rather than skipped — check for `<skipped/>` in
-  `MapLibreAndroid/build/test-results/testDrawableDebugUnitTest/TEST-*MMMapSessionIntegrationTest.xml`.
+  `MapLibreAndroid/build/test-results/testOpenglDebugUnitTest/TEST-*MMMapSessionIntegrationTest.xml`.
   A green run in which that test skipped tells you nothing about the gateway path.

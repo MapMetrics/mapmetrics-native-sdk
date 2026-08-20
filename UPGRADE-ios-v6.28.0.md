@@ -82,3 +82,108 @@ moved back to environment variables before this repo is ever pushed.
   that Gradle 9 breaks.
 - Upstream has also removed `VERSION_NAME` from the top of `MapLibreAndroid/gradle.properties`,
   so patch item 5's version pin has no longer got the same home.
+
+## Phases 2-4 — upgrade, replay, verification
+
+### Result
+
+| | pre | post |
+|---|---|---|
+| tests | 961 | 968 |
+| failures | 0 | 0 |
+| skipped | 1 | 1 |
+| passing | 960 | 967 |
+
+The 7 extra tests are upstream's. The 1 skip is the same live-gateway cold start.
+
+Convergence achieved: `platform/darwin`, `platform/ios`, `platform/macos`, `src/`, `include/` and
+`vendor/` are byte-identical to `ios-v6.28.0`. Divergence is now 60 files, all Android, docs, or
+this file.
+
+### The Gradle situation — the anticipated risk did not materialize
+
+The brief budgeted for a Gradle 8.13 -> 9.x toolchain fight, with publishing as the likely casualty.
+It cost nothing, because upstream had already done that migration and this fork's publishing
+patches were mostly *replaced by* it rather than broken by it:
+
+- The wrapper went 8.13 -> 9.5.1 with the merge, and the suite went green on the first run with no
+  intervention.
+- Upstream moved off `nexusPublishing` onto `com.vanniktech.maven.publish.base`, applied per module.
+  It deleted `maplibre.publish-root.gradle.kts` and rewrote `maplibre.gradle-publish.gradle.kts`.
+  This fork's edits to both were workarounds for the old structure (signing disabled,
+  `PublishToMavenRepository` narrowed to `PublishToMavenLocal`, an extra `bundleDrawableReleaseAar`
+  dependency); upstream's rewrite handles all three properly. Both taken as-is.
+- Only the durable identity survived as patches: group/artifact ids in
+  `maplibre.artifact-settings.gradle.kts`, and the version, which moved to `platform/android/VERSION`.
+- Remaining warning is now "incompatible with Gradle 10", one major version out. Not urgent.
+
+Not verified: an actual `publish` to Maven Central. The suite does not exercise it and it should
+not be run from a dev machine. See handover.
+
+### Replay status
+
+| # | item | status |
+|---|------|--------|
+| 1 | `InMemoryCookieJar` | **rewired.** See below. Verified by `installedClientKeepsTheCookieJar`. |
+| 2 | native 401/403 -> `Reason::Server` | auto-merged clean, scoping to `Resource::Kind::Tile` intact |
+| 3 | `cacheApiKey` x3 in `MapLibre.java` | auto-merged clean, all three sites |
+| 4 | branding | auto-merged clean: `MapView.java`, `MapSnapshotter.kt`, `public.xml`, PNG, 22 `strings.xml` |
+| 5 | build/publishing | restructured by upstream; identity re-pinned, see the Gradle section |
+| 6 | test-task input declaration | survived unmodified; **proven live**, see below |
+| 7 | renewal-timer removal | intact; no timer/scheduler/`postDelayed` anywhere under `session/` |
+
+Item 1 was the only real conflict. Upstream replaced the eager `static final DEFAULT_CLIENT` with
+a lazily built `static volatile defaultClient` whose builder has no cookie jar. Taking either side
+whole loses something: upstream's shape silently drops the jar, this fork's shape breaks upstream's
+new `HttpRequestUtilTest`, which asserts the client starts null. Resolved by keeping upstream's
+laziness and adding `.cookieJar(cookieJar)` inside `getOrCreateDefaultClient()`, which is now
+package-private so `MMHttpClients` can hand the same instance to the v2 signing client.
+
+### Item 6 was tested properly, and the first result was a false alarm
+
+`touch`ing the `.cpp` leaves the task UP-TO-DATE — Gradle hashes content, not mtime, so `touch`
+proves nothing either way. A first attempt to break the patch by prefixing the branch with
+`false &&` ALSO left it UP-TO-DATE, which looked like the input declaration had stopped working;
+it had not. That edit preserved every string the guard matches on, so the guard would have passed
+anyway, and Gradle was right to skip.
+
+Establishing the truth took deleting the 401/403 branch outright, the way a re-vendor would:
+
+- with the branch deleted, the task RE-RAN (not UP-TO-DATE) and
+  `nativeHttpSourceStillTreats401And403AsRetryable` FAILED — correct;
+- restoring the branch returned the suite to green with the task re-running again.
+
+Both runs used the **unmodified, committed** `build.gradle.kts` with the block in its original
+place inside `android { }`. A separate check confirmed `tasks.withType<Test>().configureEach`
+matches all four unit-test tasks from inside that block as well as at top level, so the placement
+is fine and no change was needed. An intermediate commit that moved the block to top level and
+claimed the old placement was broken was wrong and has been reverted.
+
+Lesson for the next re-vendor: to test this guard, DELETE the branch. Do not `touch` it, and do
+not disable it in a way that leaves the source text intact.
+
+## Handover — what remains
+
+1. **Rotate the committed credentials.** The merge deleted `maplibre.publish-root.gradle.kts` and
+   the root `build.gradle.kts` publishing block, which held a plaintext Sonatype username/password
+   and a GPG key id + passphrase. They are gone from the working tree but remain in history, on
+   this branch and on `maven_central_migration`. Treat them as compromised. Also
+   `SimpleMapActivity.kt` still embeds a gateway JWT, and `MapLibreAndroid/build.gradle.kts` still
+   carries a legacy GitHub Packages `publishing` block with a username in it and a hardcoded
+   `/Users/macbook/Desktop/...` aar path that cannot work on any other machine.
+2. **Publishing is unproven.** Upstream's vanniktech setup calls `signAllPublications()` and
+   `publishToMavenCentral(true)`, and expects credentials from Gradle properties/env, not from the
+   deleted file. Nobody has run a publish since the upgrade. Do a `publishToMavenLocal` first.
+3. **Committed build junk**, pre-existing and untouched here: `android-binaries-1.3.290.0.zip`,
+   `test/android/app/src/main/assets/data.zip` (78 MB), two `build/reports/problems-report.html`.
+   Worth removing, but it is history-rewriting work and was out of scope.
+4. **Live gateway path still unexercised.** `coldStartRecoversFrom401AndServesTilesOnOneCredential`
+   skipped in every run here because `MM_STAGING_KEY` was not set. Nothing in this upgrade has been
+   validated against the real gateway.
+5. **No native build was run.** The suite uses `-Pmaplibre.abis=none`, so `http_file_source.cpp`
+   was never compiled — only source-guarded. Upstream's Android layer moved substantially
+   (283 files, +33917/-1505) and there are new renderer flavors (`vulkan`, `webgpuDawn`,
+   `webgpuWgpu`). An actual `make android` and a device smoke test are the obvious next step, and
+   are phase-2 prerequisites.
+6. **Phase 2 (porting the iOS work) is unblocked**: the darwin/ios/macos/src/include trees now
+   match the iOS fork's baseline exactly.
