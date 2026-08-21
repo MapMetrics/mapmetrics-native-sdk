@@ -2972,8 +2972,11 @@ static NSURL *MLNMapMetricsConfiguredStyleURL(BOOL isDarkMode) {
     }
   }
 
+  // The DEFAULT matters as much as the .strings entries: it is what shows when a
+  // locale has no SDK_NAME, so leaving it as upstream's name would put MapLibre
+  // back on screen for exactly the users whose language nobody translated.
   NSString *actionSheetTitle = NSLocalizedStringWithDefaultValue(
-      @"SDK_NAME", nil, nil, @"MapLibre Native iOS", @"Action sheet title");
+      @"SDK_NAME", nil, nil, @"MapMetrics", @"Action sheet title");
   UIAlertController *attributionController =
       [UIAlertController alertControllerWithTitle:actionSheetTitle
                                           message:nil

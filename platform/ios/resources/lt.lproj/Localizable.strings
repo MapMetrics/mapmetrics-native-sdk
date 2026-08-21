@@ -53,7 +53,7 @@
 "PARSE_STYLE_FAILED_DESC" = "Nepavyko užkrauti žemėlapio, nes stilius yra netinkamo formato.";
 
 /* Action sheet title */
-"SDK_NAME" = "MapLibre Native iOS";
+"SDK_NAME" = "MapMetrics";
 
 /* User-friendly error description */
 "STYLE_NOT_FOUND_DESC" = "Nepavyko užkrauti žemėlapio, nes neįmanoma rasti stiliaus arba jis nėra suderinamas.";

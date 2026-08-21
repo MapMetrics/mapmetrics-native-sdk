@@ -77,7 +77,7 @@
 "ROAD_REF_A11Y_FMT" = "Rute %@";
 
 /* Action sheet title */
-"SDK_NAME" = "MapLibre Native iOS";
+"SDK_NAME" = "MapMetrics";
 
 /* User-friendly error description */
 "STYLE_NOT_FOUND_DESC" = "Kortet kunne ikke hentes fordi det enten ikke findes, eller ikke er kompatibelt.";

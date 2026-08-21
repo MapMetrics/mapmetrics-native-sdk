@@ -77,7 +77,7 @@
 "ROAD_REF_A11Y_FMT" = "Rota %@";
 
 /* Action sheet title */
-"SDK_NAME" = "Mapas Mapbox SDK para iOS";
+"SDK_NAME" = "MapMetrics";
 
 /* User-friendly error description */
 "STYLE_NOT_FOUND_DESC" = "Não foi possível carregar o mapa porque o estilo não foi encontrado ou é incompatível.";

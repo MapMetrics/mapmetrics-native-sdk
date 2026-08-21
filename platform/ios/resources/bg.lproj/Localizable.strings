@@ -74,7 +74,7 @@
 "ROAD_REF_A11Y_FMT" = "Маршрут %@";
 
 /* Action sheet title */
-"SDK_NAME" = "mapLibre Maps SDK за iOS";
+"SDK_NAME" = "MapMetrics";
 
 /* User-friendly error description */
 "STYLE_NOT_FOUND_DESC" = "Картата не се зареди поради неоткрит или несъвместим стил.";
