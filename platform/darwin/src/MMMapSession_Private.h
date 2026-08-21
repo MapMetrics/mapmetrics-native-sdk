@@ -81,6 +81,11 @@ extern const NSTimeInterval MMGiveUpCooldown;
 /// Test seam: the pinned gateway origin, or nil if none has been established.
 - (nullable NSURL *)originForTesting;
 
+/// Buys the first window as soon as BOTH the pinned origin and the API key are
+/// known, before any request exists. See the implementation for why this cannot
+/// wait for -noteGatewayRequestURL: when the style is not served by the gateway.
+- (void)createIfConfigured;
+
 /// Test seam: clears the origin AND the configured flag.
 ///
 /// -resetForTesting deliberately preserves a CONFIGURED origin, mirroring

@@ -156,6 +156,10 @@ class MMMapSessionInterceptor : Interceptor {
             pinOriginFromManifest(context)
             installClient()
             installForegroundHook(context)
+            // AFTER the pin and the client: with both the origin and the key known, and no request
+            // issued yet, the credential can be in hand before the first tile — whatever host the
+            // style came from. No-op when nothing is pinned or no key is set.
+            MMMapSession.createIfConfigured()
         }
 
         /**

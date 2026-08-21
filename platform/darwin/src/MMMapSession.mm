@@ -263,7 +263,14 @@ static BOOL MMIsGatewayHost(NSURL *url) {
         BOOL mine = (object == _observedSettings);
         if (mine && [apiKey isKindOfClass:NSString.class]) _cachedApiKey = [apiKey copy];
         [_lock unlock];
-        if (mine) return;
+        if (mine) {
+            // The key has just landed. If an origin is already pinned this is the
+            // earliest moment both halves exist -- before any map view has asked
+            // for anything -- so the credential can be in hand before the first
+            // tile whatever host the style came from.
+            [self createIfConfigured];
+            return;
+        }
     }
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
@@ -344,6 +351,26 @@ static BOOL MMIsGatewayHost(NSURL *url) {
     NSTimeInterval left = _exp > 0 ? _exp - [[NSDate date] timeIntervalSince1970] : 0;
     [_lock unlock];
     return left > 0 ? left : 0;
+}
+
+- (void)createIfConfigured {
+    // -noteGatewayRequestURL: fires on the first request to the gateway, and the
+    // design assumes that is the STYLE request, which precedes every tile. True
+    // when the style is served BY the gateway; false for a self-hosted style, a
+    // bundled asset, or a CDN, where the gateway's first sight of the client IS
+    // the opening tile. That tile then goes out unsigned, bills once on the v1
+    // path, and the create bills again. Measured on Android: 2 for a cold load
+    // that should cost 1, fixed there the same way.
+    //
+    // Both halves have to be in hand: the origin (pinned from Info.plist in
+    // -init) and the API key (cached by the KVO in -observeValueForKeyPath:,
+    // which is why this is called from there and not only from +load -- at
+    // +load the host app has usually not set MLNSettings.apiKey yet).
+    [_lock lock];
+    BOOL shouldCreate = (_origin != nil && _sig == nil && _cachedApiKey.length > 0);
+    [_lock unlock];
+    // Outside the lock: -refreshNow takes it.
+    if (shouldCreate) [self refreshNow];
 }
 
 - (void)noteGatewayRequestURL:(NSURL *)url {

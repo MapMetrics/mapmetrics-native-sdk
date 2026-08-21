@@ -304,6 +304,33 @@ object MMMapSession {
      * fragile, and it is unnecessary: the host allow-list is what makes this safe, so the first
      * gateway request of any kind is a fine trigger.
      */
+    /**
+     * Buys the first window at CONFIGURATION time, before any request exists.
+     *
+     * [noteGatewayRequest] fires on the first request to the gateway, and the design assumes that
+     * is the STYLE request, which precedes every tile. That holds when the style is served BY the
+     * gateway. It does not hold for a self-hosted style, a bundled asset, or a CDN: there the
+     * gateway's first sight of the client IS the opening tile, so that tile goes out unsigned,
+     * bills once on the v1 path, and the create bills again. Measured on a device: 2 for a cold
+     * load that should cost 1.
+     *
+     * `MapLibre.getInstance` caches the key and then installs the interceptor, which pins the
+     * origin from the manifest, so by the end of `install()` both halves are known and no request
+     * has been made yet. Creating here removes the dependency on where the style is hosted.
+     *
+     * Requires an origin already established, which at this point means PINNED -- learning happens
+     * from traffic, and there has not been any. An app with no pin still gets the credential from
+     * [noteGatewayRequest] on its first allow-listed gateway request, which is the zero-config
+     * path and is unchanged.
+     */
+    @JvmStatic
+    fun createIfConfigured() {
+        val shouldCreate = lock.withLock {
+            origin != null && sig == null && !cachedApiKey.isNullOrEmpty()
+        }
+        if (shouldCreate) refreshNow()
+    }
+
     @JvmStatic
     fun noteGatewayRequest(url: HttpUrl) {
         try {
