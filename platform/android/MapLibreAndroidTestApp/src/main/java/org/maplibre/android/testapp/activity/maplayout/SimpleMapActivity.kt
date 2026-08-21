@@ -7,6 +7,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import org.maplibre.android.maps.*
 import org.maplibre.android.testapp.R
+import org.maplibre.android.testapp.styles.TestStyles
 import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.NavUtils
 
@@ -32,9 +33,16 @@ class SimpleMapActivity : AppCompatActivity() {
         mapView.getMapAsync {
             val key = ApiKeyUtils.getApiKey(applicationContext)
             if (key == null || key == "YOUR_API_KEY_GOES_HERE") {
-                it.setStyle(
-                    Style.Builder().fromUri("https://gateway.mapmetrics.org/styles/?fileName=facc61a1-d7f6-4ad5-9b80-580949f35509/jim.json&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYWNjNjFhMS1kN2Y2LTRhZDUtOWI4MC01ODA5NDlmMzU1MDkiLCJzY29wZSI6WyJtYXBzIiwic2VhcmNoIl0sImlhdCI6MTc0NDc5MDQzOX0.kIuOVdSqr6ifYnNkrt6b2I11ySlW96H9Gg_E1UpQ_ck")
-                )
+                // THE NO-KEY FALLBACK MUST NOT NEED A KEY. This pointed at
+                // `gateway.mapmetrics.org` with a JWT baked in, and that host is
+                // NXDOMAIN -- the device reports `Unable to resolve host ... No
+                // address associated with hostname` and the activity renders an
+                // empty grey map with no clue why. The same style and token also
+                // 403 on the live gateway, so it was doubly dead.
+                //
+                // DEMOTILES is public, needs no credential, and is what the rest
+                // of the test app already falls back to.
+                it.setStyle(Style.Builder().fromUri(TestStyles.DEMOTILES))
             } else {
                 val styles = Style.getPredefinedStyles()
                 if (styles.isNotEmpty()) {
