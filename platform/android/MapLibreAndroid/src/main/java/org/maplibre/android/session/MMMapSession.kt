@@ -234,11 +234,16 @@ object MMMapSession {
      * When the meta-data is ABSENT — the default, since `WellKnownTileServer` has no MapMetrics
      * entry and the native `TileServerOptions` carry no gateway host — this is never called and
      * [signedUrl] learns the origin instead, from the first https TILE-SHAPED URL it sees (see
-     * [TILE_PATH_PATTERN]), once and irrevocably. That is weaker: whichever host serves the first
-     * tile is the host the API key is later POSTed to, and since the matcher is a shape rather
-     * than a `/v2/tiles/` prefix, more URLs can play that role. It is https-only and one-shot, so
-     * a later style cannot re-point it, but an app that cares about invariant 3 must set the
-     * meta-data.
+     * [TILE_PATH_PATTERN]) whose host is on [MMMapSessionHosts.GATEWAY_HOSTS], once and
+     * irrevocably.
+     *
+     * That learned path is still the weaker one — it is trust-on-first-use, and the shape matcher
+     * lets more URLs play the role than a `/v2/tiles/` prefix would — but it can no longer point
+     * the API key at an arbitrary host, because a document cannot add to the allow-list.
+     *
+     * PINNING REMAINS THE STRONG CASE, and it is the only way to use a gateway that is not on the
+     * list: a self-hosted deployment, or staging. The origin then comes from the app's own
+     * manifest and no response can move it.
      */
     @JvmStatic
     fun pinConfiguredOrigin(baseUrl: String?) {
@@ -302,12 +307,26 @@ object MMMapSession {
             var params: List<Pair<String, String>>? = null
 
             lock.withLock {
-                // Learn the gateway origin from the tile URL itself when nothing is
-                // configured, so the SDK works against staging and production with no setup.
-                // Two constraints make that safe enough to keep: https only (the API key is
-                // POSTed here later), and learned exactly ONCE — a later tile URL on a
-                // different host can never re-point the origin.
-                if (origin == null && url.scheme == "https" && url.host.isNotEmpty()) {
+                // Learn the gateway origin from the tile URL itself when nothing is configured,
+                // so the SDK works out of the box against a known gateway.
+                //
+                // THREE constraints, not two. https only (the API key is POSTed here later),
+                // learned exactly ONCE so a later tile URL cannot re-point it, and — the one that
+                // was missing — the host must be on [MMMapSessionHosts.GATEWAY_HOSTS].
+                //
+                // Without the host guard this accepted ANY https host whose path was tile-shaped.
+                // A style is customer-authored and its `tiles` array can name any host at all, so
+                // a style pointing at a host of the author's choosing made that host the origin
+                // the customer's permanent API key is later POSTed to. https-only and learn-once
+                // bound how OFTEN that happens, not WHO it happens to.
+                //
+                // A gateway that is not on the list is still fully supported: pin it through the
+                // manifest meta-data, which is a deliberate act by the app rather than something a
+                // fetched document can decide. That is how staging runs.
+                if (origin == null &&
+                    url.scheme == "https" &&
+                    MMMapSessionHosts.isGatewayUrl(url)
+                ) {
                     origin = originOf(url)
                     originLearnedLogs++
                     // The learned path is the WEAK one and is otherwise indistinguishable from

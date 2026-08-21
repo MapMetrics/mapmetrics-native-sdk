@@ -210,10 +210,20 @@ class MMMapSessionIntegrationTest {
         // check above must still run offline, so the skip lives in the network test itself.
         apiKey = System.getenv("MM_STAGING_KEY")
 
-        // A genuinely cold start: no credential, no account, and no origin either — the origin is
-        // LEARNED from the first tile URL, which is what an app with no manifest meta-data does.
+        // A genuinely cold start: no credential and no account.
         MMMapSession.resetForTesting()
         MMMapSession.resetOriginForTesting()
+
+        // The origin is PINNED, not learned. Origin learning is now restricted to
+        // MMMapSessionHosts.GATEWAY_HOSTS, and staging is deliberately not on that list — an
+        // allow-list that carried a workers.dev host would ship in every release build.
+        //
+        // This also makes the test more faithful, not less: a real staging deployment configures
+        // its origin through the manifest meta-data for exactly this reason. What is still cold
+        // here is everything that matters to the cold-start property — no credential, no account,
+        // first tile unsigned, 401, recovery. Origin learning itself is covered offline in
+        // MMMapSessionTest against a real gateway hostname, where it needs no network.
+        MMMapSession.pinConfiguredOrigin(STAGING_BASE)
 
         // Sibling tests replace the call factory with a mock so nothing leaves the JVM. This test
         // is the one that DOES want real traffic, and `resetForTesting` deliberately does not
@@ -282,8 +292,10 @@ class MMMapSessionIntegrationTest {
             1,
             MMMapSession.refreshDecisionCountForTesting()
         )
+        // The pin must have survived the whole cold start. If a 401 or an adoption could clear or
+        // move it, the next refreshNow would POST the API key somewhere else.
         assertEquals(
-            "the origin must have been learned from the tile URL",
+            "the pinned origin must still be the host that was configured",
             firstTile.host,
             MMMapSession.originForTesting()?.host
         )

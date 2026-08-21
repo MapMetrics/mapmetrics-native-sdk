@@ -43,7 +43,9 @@ import org.robolectric.Shadows.shadowOf
 @RunWith(RobolectricTestRunner::class)
 class MMMapSessionInterceptorTest {
 
-    private val gateway = "gw.example.com"
+    // A REAL gateway hostname: origin learning is restricted to MMMapSessionHosts.GATEWAY_HOSTS.
+    // Nothing leaves the JVM -- these tests drive a fake chain, not MockWebServer.
+    private val gateway = "gateway.mapmetrics-atlas.net"
     private val interceptor = MMMapSessionInterceptor()
 
     private lateinit var originalCallFactory: Call.Factory

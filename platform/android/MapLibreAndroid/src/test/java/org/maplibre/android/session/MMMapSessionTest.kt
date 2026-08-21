@@ -33,7 +33,11 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class MMMapSessionTest {
 
-    private val gateway = "gw.example.com"
+    // A REAL gateway hostname, because origin learning is now restricted to
+    // MMMapSessionHosts.GATEWAY_HOSTS. No traffic leaves the JVM -- the call factory is faked --
+    // so this is a hostname, not an endpoint. `cdn.example.com` below stays deliberately OFF the
+    // list: it is the foreign host the negative cases need.
+    private val gateway = "gateway.mapmetrics-atlas.net"
     private lateinit var requests: MutableList<Request>
     private lateinit var callbacks: MutableList<Callback>
 
@@ -135,6 +139,41 @@ class MMMapSessionTest {
         val url = tileUrl()
         assertSame(url, MMMapSession.signedUrl(url))
         assertEquals(gateway, MMMapSession.originForTesting()?.host)
+    }
+
+    /**
+     * THE HOST GUARD. A style is customer-authored and its `tiles` array can name any host, so
+     * before this the first tile-shaped https URL — from anywhere — became the origin the
+     * customer's PERMANENT API key is later POSTed to by `refreshNow`. https-only and learn-once
+     * bounded how often that could happen, not to whom.
+     *
+     * A foreign host must teach us nothing at all. Not a deferred origin, not a "learn but refuse
+     * to sign": nothing, so a later tile from the real gateway can still be learned normally.
+     */
+    @Test
+    fun aTileFromANonGatewayHostTeachesNoOrigin() {
+        val foreign = tileUrl(host = "cdn.example.com")
+        assertSame(foreign, MMMapSession.signedUrl(foreign))
+        assertNull(
+            "a host that is not on the allow-list must never become the API key's destination",
+            MMMapSession.originForTesting()
+        )
+
+        // And the door stays open: the guard must not have latched anything on the way past.
+        val real = tileUrl()
+        assertSame(real, MMMapSession.signedUrl(real))
+        assertEquals(gateway, MMMapSession.originForTesting()?.host)
+    }
+
+    /** Exact match, never a suffix — `gateway.mapmetrics-atlas.net.evil.com` is not us. */
+    @Test
+    fun aSuffixOfAGatewayHostIsNotAGatewayHost() {
+        val lookalike = tileUrl(host = "$gateway.evil.com")
+        assertSame(lookalike, MMMapSession.signedUrl(lookalike))
+        assertNull(
+            "a suffix match would hand the API key to anyone who can register a subdomain",
+            MMMapSession.originForTesting()
+        )
     }
 
     @Test
