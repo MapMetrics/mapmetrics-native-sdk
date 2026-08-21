@@ -126,6 +126,14 @@ static NSString *const MMStagingBase =
                    dispatch_get_main_queue(), ^{ [drew fulfill]; });
     [self waitForExpectationsWithTimeout:20 handler:nil];
 
+    // NO PIXEL CAPTURE HERE, deliberately. MLNMapView renders through Metal, and
+    // -drawViewHierarchyInRect: does not read back a GPU-backed surface: it
+    // returns a blank image, which is worse than no image because it looks like
+    // a broken map. Sampling the simulator from outside fails too -- the test
+    // runner's window is not frontmost, so `simctl io screenshot` shows the
+    // springboard. Use MLNMapSnapshotter or run the demo app if a picture is
+    // wanted; what this test proves is behavioural and asserted below.
+
     // The map running must not have bought anything further: tiles ride the
     // window already paid for. 2+ here means a window per tile wave.
     XCTAssertEqual([[MMMapSession sharedSession] refreshCallCountForTesting], 1,
