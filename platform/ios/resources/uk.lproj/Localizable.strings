@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "Пн";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "Для показу мапи від Mapbox тут, встановіть %1$@ для вашої мітки доступу в %2$@\n\n\nДля отримання докладних інструкцій дивіться:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -44,7 +44,7 @@
 "LOAD_STYLE_FAILED_DESC" = "Збій мапи через те, що неможливо завантажити стиль";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Мапа";
@@ -83,7 +83,6 @@
 "STYLE_NOT_FOUND_DESC" = "Мапу неможливо завантажити через відсутність стилю або його невідповідність.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "Ви можете допомогти зробити мапи OpenStreetMap та Mapbox кращими надаючи анонімізовані дані про користування застосунком.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "Відмовитись";
@@ -92,7 +91,6 @@
 "TELEMETRY_DISABLED_ON" = "Брати участь";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "Ви допомагаєте робити мапи OpenStreetMap та Mapbox краще пощирюючи анонімні дані про користування мапами.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Припинити участь";
@@ -101,13 +99,10 @@
 "TELEMETRY_ENABLED_ON" = "Продовжити участь";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Докладніше";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Телеметрія Mapbox";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "Допоможіть зробити мапи Mapbox краще";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "Ви тут";

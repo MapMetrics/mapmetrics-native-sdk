@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "북";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "맵박스에의한 지도를 출력하기 위해, %1$@ 를 %2$@에 당신의 접근 토큰으로 으로 설정하십시오. \n\n자세한 정보를 찾으시는 경우, 확인:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -44,7 +44,7 @@
 "LOAD_STYLE_FAILED_DESC" = "형식이 로드되지 않아, 맵 로드에 실패하였습니다.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "맵박스";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "지도";
@@ -83,7 +83,6 @@
 "STYLE_NOT_FOUND_DESC" = "형식을 찾을 수 없거나 호환이 되지 않아, 맵 로드에 실패하였습니다.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "당신은 익명의 사용 데이타를 제공함으로써, 오픈스트리트맵과 맵박스의 향상에 기여하고 있습니다.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "참여하지 마십시오";
@@ -92,7 +91,6 @@
 "TELEMETRY_DISABLED_ON" = "참여";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "당신은 익명의 사용 데이타를 제공함으로써, 오픈스트리트맵과 맵박스의 향상에 기여하고 있습니다.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "참여 중지";
@@ -101,13 +99,10 @@
 "TELEMETRY_ENABLED_ON" = "참여 계속";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "좀 더 말해보세요";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "맵박스 텔레메트리";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "더 나은 맵박스 지도 만들기";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "당신의 위치";

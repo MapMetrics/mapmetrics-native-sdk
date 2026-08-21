@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "É";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "To display a Mapbox-hosted map here, set %1$@ to your access token in %2$@\n\nFor detailed instructions, see:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -41,7 +41,7 @@
 "LOAD_STYLE_FAILED_DESC" = "Nem sikerült betölteni a térképet, mert a stílust nem lehetett betölteni.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Térkép";
@@ -59,7 +59,6 @@
 "STYLE_NOT_FOUND_DESC" = "Nem sikerült betölteni a térképet, mert a stílus nem található vagy inkompatibilis.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "You can help make OpenStreetMap and Mapbox maps better by contributing anonymous usage data.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "Nem veszek részt";
@@ -68,7 +67,6 @@
 "TELEMETRY_DISABLED_ON" = "Részt veszek";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "You are helping to make OpenStreetMap and Mapbox maps better by contributing anonymous usage data.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Részvétel befejezése";
@@ -77,13 +75,10 @@
 "TELEMETRY_ENABLED_ON" = "Részvétel folytatása";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Többet akarok tudni";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Mapbox telemetria";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "Tedd jobbá a Mapbox térképeket";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "Itt vagy";

@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "N";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "Per mostrar aquí un mapa allotjat a Mapbox posa %1$@ al teu token d’accés a %2$@\n\nPer obtenir instruccions detallades, consulteu:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -41,7 +41,7 @@
 "LOAD_STYLE_FAILED_DESC" = "El mapa no s’ha carregat perquè l’estil no es pot carregar.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Mapa";
@@ -59,7 +59,6 @@
 "STYLE_NOT_FOUND_DESC" = "El mapa no s’ha carregat perquè no es troba l’estil o bé és incompatible.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "Pots ajudar a millorar els mapes d’OpenStreetMap i de Mapbox aportant dades d’ús anònimes.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "No vull participar";
@@ -68,7 +67,6 @@
 "TELEMETRY_DISABLED_ON" = "Participar";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "Estàs ajudant a millorar els mapes d’OpenStreetMap i de Mapbox aportant dades d’ús anònimes.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Aturar la participació";
@@ -77,13 +75,10 @@
 "TELEMETRY_ENABLED_ON" = "Continuar la participació";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Vull saber-ne més";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Telemetria de Mapbox";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "Millora els mapes de Mapbox";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "Ets aquí";

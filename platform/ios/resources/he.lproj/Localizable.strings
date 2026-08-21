@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "צ";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "בכדי להציג את המפות המאוכסנות של Mapbox כאן, הגדר %1$@ את אסימון הגישה ב %2$@\n\nלהוראות מפורטות, ראה:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -44,7 +44,7 @@
 "LOAD_STYLE_FAILED_DESC" = "טעינת המפה נכשלה - לא ניתן לטעון את הסגנון.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "מפה";
@@ -83,7 +83,6 @@
 "STYLE_NOT_FOUND_DESC" = "טעינת המפה נכשלה - לא ניתן למצוא את הסגנון או שהסגנון אינו תואם.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "אתם מסייעים לשפר את המפות של OpenStreetMap ו Mapbox באמצעות שיתוף אנונימי של נתוני השימוש.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "אל תשתף";
@@ -92,7 +91,6 @@
 "TELEMETRY_DISABLED_ON" = "שתף";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "אתם מסייעים לשפר את המפות של OpenStreetMap ו Mapbox באמצעות שיתוף אנונימי של נתוני השימוש.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "הפסק שיתוף";
@@ -101,13 +99,10 @@
 "TELEMETRY_ENABLED_ON" = "המשך לשתף";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "ספר לי עוד";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Mapbox Telemetry";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "הפוך את המפות של Mapbox לטובות יותר";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "אתה נמצא כאן";

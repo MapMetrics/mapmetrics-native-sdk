@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "С";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "За да покажеш Mapbox-хоствана карта тук, задай %1$@ към своя токен за достъп в %2$@\nЗа повече детайли, виж:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -44,7 +44,7 @@
 "LOAD_STYLE_FAILED_DESC" = "Картата не се зареди поради незареждане на стила.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Карта";
@@ -89,7 +89,6 @@
 "TELEMETRY_DISABLED_ON" = "Участвам";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "Ти помагаш OpenStreetMap и Mapbox картите да стават по-добри, като предоставяш анонимни данни за употреба.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Спирам участие";
@@ -98,10 +97,8 @@
 "TELEMETRY_ENABLED_ON" = "Продължавам да участвам";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Покажи ми още";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Mapbox телеметрия";
 
 /* Telemetry prompt title */
 "OSM_FULL_NAME" = "OpenStreetMap";

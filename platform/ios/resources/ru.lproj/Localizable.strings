@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "С";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "Для отображения здесь карт Mapbox, задайте %1$@ для вашего токена доступа в %2$@\n\nПодробные инструкции:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -44,7 +44,7 @@
 "LOAD_STYLE_FAILED_DESC" = "Не удалось загрузить карту из-за ошибки загрузки стиля.";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Карта";
@@ -83,7 +83,6 @@
 "STYLE_NOT_FOUND_DESC" = "Не удалось загрузить карту, так как стиль не найден или несовместим.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "Вы поможете улучшить карты OpenStreetMap и Mapbox, предоставляя обезличенные данные об использовании.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "Не участвовать";
@@ -92,7 +91,6 @@
 "TELEMETRY_DISABLED_ON" = "Участвовать";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "Вы помогаете улучшать карты OpenStreetMap и Mapbox, предоставляя обезличенные данные об использовании.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Прекратить участие";
@@ -101,13 +99,10 @@
 "TELEMETRY_ENABLED_ON" = "Продолжить участие";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Узнать больше";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Телеметрия Mapbox";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "Сделать карты Mapbox лучше";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "Вы здесь";

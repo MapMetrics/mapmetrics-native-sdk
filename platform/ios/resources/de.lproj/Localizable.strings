@@ -23,7 +23,7 @@
 "COMPASS_NORTH" = "N";
 
 /* Instructions in Interface Builder designable; {key}, {plist file name} */
-"DESIGNABLE" = "Um hier eine von Mapbox-Karte anzuzeigen, muss das Zugriffs-Token als %1$@ in %2$@ eingetragen werden.\n\nFür detaillierte Informationen, siehe:";
+"DESIGNABLE" = "To display a MapMetrics map here, set %1$@ to your API key in %2$@\n\nFor detailed instructions, see:";
 
 /* Setup documentation URL display string; keep as short as possible */
 "FIRST_STEPS_URL" = "mapbox.com/help/first-steps-ios-sdk";
@@ -41,7 +41,7 @@
 "LOAD_STYLE_FAILED_DESC" = "Die Karte konnte nicht geladen werden, da diese Form nicht geladen werden kann";
 
 /* Accessibility label */
-"LOGO_A11Y_LABEL" = "Mapbox";
+"LOGO_A11Y_LABEL" = "MapMetrics";
 
 /* Accessibility label */
 "MAP_A11Y_LABEL" = "Karte";
@@ -59,7 +59,6 @@
 "STYLE_NOT_FOUND_DESC" = "Die Karte konnte nicht geladen werden, da diese Form nicht gefunden werden kann oder nicht kompatibel ist.";
 
 /* Telemetry prompt message */
-"TELEMETRY_DISABLED_MSG" = "Durch anonymisierte Nutzungsdaten können Sie helfen, OpenStreetMap- und Mapbox-Karten zu verbessern.";
 
 /* Telemetry prompt button */
 "TELEMETRY_DISABLED_OFF" = "Nicht teilnehmen";
@@ -68,7 +67,6 @@
 "TELEMETRY_DISABLED_ON" = "Teilnehmen";
 
 /* Telemetry prompt message */
-"TELEMETRY_ENABLED_MSG" = "Durch anonymisierte Nutzungsdaten helfen Sie, OpenStreetMap- und Mapbox-Karten zu verbessern.";
 
 /* Telemetry prompt button */
 "TELEMETRY_ENABLED_OFF" = "Teilnahme beenden";
@@ -77,13 +75,10 @@
 "TELEMETRY_ENABLED_ON" = "Weiterhin teilnehmen";
 
 /* Telemetry prompt button */
-"TELEMETRY_MORE" = "Mehr Informationen";
 
 /* Action in attribution sheet */
-"TELEMETRY_NAME" = "Mapbox-Telemetrie";
 
 /* Telemetry prompt title */
-"TELEMETRY_TITLE" = "Mapbox-Karten verbessern";
 
 /* Default user location annotation title */
 "USER_DOT_TITLE" = "Sie sind hier";
