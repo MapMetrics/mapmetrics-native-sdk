@@ -44,6 +44,29 @@ MLN_EXPORT
 /// Returns `url` unchanged otherwise. Never throws.
 - (NSURL *)signedURLForRequestURL:(NSURL *)url;
 
+/// Learns the origin from ANY gateway request and buys the first window ahead
+/// of the tiles. Call before signing, for every outgoing request.
+///
+/// WHY THIS EXISTS. -refreshNow used to be reachable only from the 401 recovery
+/// path, so the SDK acquired its first credential only if the first tile was
+/// REJECTED. That holds for /v2/tiles, which 401s without a signature. It does
+/// NOT hold for the v1-shaped `?token=` URLs a real style still hands out:
+/// those return 200, so no 401 ever arrives, no credential is ever created, and
+/// every tile falls through to v1 cookie billing. Measured against staging, a
+/// 12-tile cold wave on that path cost 12 units instead of 1 — the v1 dedup
+/// cookie is only issued by the first RESPONSE, and the whole wave leaves
+/// before it lands.
+///
+/// The style request precedes every tile request, so learning and creating here
+/// puts the credential in hand before the opening wave.
+///
+/// This does NOT add a charge. The create bills one window — the window the map
+/// was going to pay for anyway — it just lands before the tiles, not after.
+///
+/// No-op once a credential is held, and no-op for a host that is neither the
+/// pinned origin nor a known gateway.
+- (void)noteGatewayRequestURL:(nullable NSURL *)url;
+
 /// Adopts a credential from X-Map-Session-* response headers (rollover only).
 /// Returns YES if a complete, newer credential was adopted.
 ///

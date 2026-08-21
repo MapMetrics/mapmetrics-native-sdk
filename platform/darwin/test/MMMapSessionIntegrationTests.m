@@ -22,6 +22,19 @@ static NSString *const MMStagingBase =
 
 @implementation MMMapSessionIntegrationTests
 
+// MMMapSession is a SINGLETON and -resetForTesting deliberately preserves a
+// CONFIGURED origin, because in production a pin comes from Info.plist and
+// cannot go away. So a pin set here outlives this class and every later test
+// inherits the staging origin — their own gateway URLs then fail the
+// same-origin check, go out unsigned, and fail in ways that look nothing like
+// the cause. That is exactly what happened: 33 unit tests broke, all of them
+// downstream of a pin set in this file.
+- (void)tearDown {
+    [[MMMapSession sharedSession] resetOriginForTesting];
+    [[MMMapSession sharedSession] resetForTesting];
+    [super tearDown];
+}
+
 // Named for what it PROVES: many tiles served on one credential. It does not
 // assert the billing counters — those are server-side meter state, asserted by
 // the gateway repo's harness (scripts/staging-maps-v2-matrix.mjs), deliberately,
@@ -40,10 +53,14 @@ static NSString *const MMStagingBase =
     [[MMMapSession sharedSession] resetForTesting];
     [MMMapSessionNetworkDelegate install];
 
-    // Prime the origin, then let MMMapSession create the session itself.
+    // PIN the origin, do not learn it. Learning is restricted to the gateway
+    // host list and staging is deliberately not on it -- an allow-list carrying
+    // a workers.dev host would ship in every release build. This also matches
+    // what a real staging deployment does: it sets MLNTileServerBaseURL.
+    [[MMMapSession sharedSession] pinOriginForTesting:MMStagingBase];
+
     NSURL *tile = [NSURL URLWithString:
         [MMStagingBase stringByAppendingString:@"/v2/tiles/12/2094/1362.mvt"]];
-    [[MMMapSession sharedSession] signedURLForRequestURL:tile];
     [[MMMapSession sharedSession] refreshNow];
 
     XCTestExpectation *ready = [self expectationWithDescription:@"session"];
@@ -95,6 +112,109 @@ static NSString *const MMStagingBase =
     }
 }
 
+// MARK: - the v1-style cold start
+
+// THE CASE THE 401 PATH STRUCTURALLY CANNOT REACH.
+//
+// A v1-shaped `?token=` tile returns 200. It never 401s, so before the eager
+// create the delegate's 401 handler -- the only caller -refreshNow had -- never
+// fired, no credential was ever minted, and every tile fell through to v1
+// cookie billing. Measured against this same gateway, a 12-tile cold wave on
+// that path cost 12 units instead of 1: the v1 dedup cookie is only issued by
+// the first RESPONSE and the whole wave leaves before it lands.
+//
+// So this starts on the v1 path deliberately. If the eager create regresses,
+// nothing here 401s, no credential appears, and the wave goes out unsigned --
+// exactly the silent per-tile billing this exists to prevent.
+//
+// Asserts client-side facts, not meter counts: reading the meter would mean
+// putting an admin credential in the iOS test environment. The gateway's own
+// harness owns that half. See progress.md ruling task-5-1.
+- (void)testAV1ShapedColdWaveBuysOneWindowBeforeTheFirstTile {
+    NSString *key = NSProcessInfo.processInfo.environment[@"MM_STAGING_KEY"];
+    if (!key.length) { XCTSkip(@"set MM_STAGING_KEY to run"); return; }
+
+    // ORDER MATTERS, and it bit this test once already. `_cachedApiKey` is
+    // populated by KVO on MLNSettings.apiKey, so the session has to EXIST and be
+    // observing before the key is set — assigning first means the change fires
+    // with nobody listening and the cache stays nil, which makes the eager
+    // create a silent no-op. This test sorts first alphabetically, so it cannot
+    // rely on an earlier test having warmed the singleton.
+    [[MMMapSession sharedSession] resetForTesting];
+    [MMMapSessionNetworkDelegate install];
+
+    // Cleared first so the assignment below is always a CHANGE. KVO does not
+    // fire when the value is identical, and another test in this bundle may
+    // already have set the same key.
+    MLNSettings.apiKey = nil;
+    MLNSettings.apiKey = key;
+    XCTAssertEqualObjects([[MMMapSession sharedSession] cachedAPIKeyForTesting], key,
+        @"precondition: the API key must have reached the session's cache, or "
+         "the eager create silently does nothing");
+
+    [[MMMapSession sharedSession] pinOriginForTesting:MMStagingBase];
+
+    XCTAssertEqual([MMMapSession sharedSession].secondsUntilExpiry, 0,
+        @"precondition: the test must begin with no credential");
+
+    // 1. The STYLE request, which precedes every tile a map fetches. Not a tile,
+    //    so it is never signed and teaches the old learning path nothing. It is
+    //    a gateway request on the pinned origin, which is all the eager create
+    //    needs.
+    //
+    // Driven through the DELEGATE, not by calling -noteGatewayRequestURL:
+    // directly. That distinction is the whole test: an earlier draft called the
+    // method itself, and commenting the call out of -willSendRequest: left this
+    // test passing — it proved the method worked while proving nothing about
+    // whether anything invokes it. Exercise the shipped path or exercise
+    // nothing.
+    NSURL *style = [NSURL URLWithString:
+        [MMStagingBase stringByAppendingString:@"/styles/basic.json"]];
+    NSMutableURLRequest *styleRequest = [NSMutableURLRequest requestWithURL:style];
+    [MLNNetworkConfiguration.sharedManager.delegate willSendRequest:styleRequest];
+
+    XCTestExpectation *ready = [self expectationWithDescription:@"session"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC),
+                   dispatch_get_main_queue(), ^{ [ready fulfill]; });
+    [self waitForExpectationsWithTimeout:10 handler:nil];
+
+    XCTAssertGreaterThan([MMMapSession sharedSession].secondsUntilExpiry, 0,
+        @"the style request must have bought a window before any tile went out");
+    XCTAssertEqual([[MMMapSession sharedSession] refreshCallCountForTesting], 1,
+        @"exactly one window; the create bills the window the map would have "
+         "paid anyway");
+
+    // 2. The opening wave, on the v1 path, CONCURRENTLY. A map fires a viewport
+    //    at once, and the v1 cookie race only exists under concurrency.
+    NSMutableArray<XCTestExpectation *> *waves = [NSMutableArray array];
+    for (int i = 0; i < 6; i++) {
+        NSURL *u = [NSURL URLWithString:[NSString stringWithFormat:
+            @"%@/planet20251013/12/%d/1362.mvt?token=style-token-placeholder",
+            MMStagingBase, 2200 + i]];
+        NSURL *signedURL = [[MMMapSession sharedSession] signedURLForRequestURL:u];
+
+        XCTAssertTrue([signedURL.query containsString:@"sig="],
+            @"v1-shaped tile %d went out UNSIGNED -- that is per-tile v1 billing", i);
+        XCTAssertTrue([signedURL.query containsString:@"token=style-token-placeholder"],
+            @"the style's own token must survive alongside the credential params");
+
+        XCTestExpectation *got = [self expectationWithDescription:@"v1 tile"];
+        [waves addObject:got];
+        [[NSURLSession.sharedSession dataTaskWithURL:signedURL
+            completionHandler:^(NSData *d, NSURLResponse *r, NSError *e) {
+                XCTAssertEqual([(NSHTTPURLResponse *)r statusCode], 200,
+                    @"v1-shaped tile %d should have been served", i);
+                [got fulfill];
+            }] resume];
+    }
+    [self waitForExpectationsWithTimeout:10 handler:nil];
+
+    // 3. The wave bought nothing further. Each increment is a billed map load;
+    //    7 rather than 1 would mean a window per tile.
+    XCTAssertEqual([[MMMapSession sharedSession] refreshCallCountForTesting], 1,
+        @"the tile wave must not have bought any further windows");
+}
+
 // MARK: - concurrent bootstrap coalescing
 
 // The other half of "one billed map load": `shouldRefreshForResponseSessionId:`
@@ -132,6 +252,11 @@ static NSString *const MMStagingBase =
     // back unsigned -- correct, there is no credential yet -- but the origin is
     // now pinned, so `refreshNow` will run PAST the origin check and genuinely
     // set `_refreshInFlight`.
+    // PINNED, not learned. Origin learning is restricted to the gateway host
+    // list and staging is deliberately off it, so a tile URL no longer
+    // establishes the origin. tearDown clears this.
+    [s pinOriginForTesting:MMStagingBase];
+
     NSURL *tile = [NSURL URLWithString:
         [MMStagingBase stringByAppendingString:@"/v2/tiles/12/2094/1362.mvt"]];
     NSURL *unsignedURL = [s signedURLForRequestURL:tile];

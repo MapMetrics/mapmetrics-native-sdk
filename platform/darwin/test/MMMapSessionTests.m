@@ -11,16 +11,28 @@
 
 @implementation MMMapSessionTests
 
+// MMMapSession is a SINGLETON, and -resetForTesting deliberately KEEPS a
+// configured origin because in production a pin comes from Info.plist and
+// cannot go away. So a pin set by one test outlives it, and every later test's
+// URLs then fail the same-origin check and silently go unsigned. Clearing the
+// origin between tests makes each one start from the same state whether or not
+// its predecessor pinned anything.
+- (void)tearDown {
+    [[MMMapSession sharedSession] resetOriginForTesting];
+    [[MMMapSession sharedSession] resetForTesting];
+    [super tearDown];
+}
+
 - (void)testSignedURLLeavesNonTileURLsUntouched {
     MMMapSession *s = [MMMapSession sharedSession];
-    NSURL *style = [NSURL URLWithString:@"https://example.com/v2/styles?fileName=a.json"];
+    NSURL *style = [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/styles?fileName=a.json"];
     XCTAssertEqualObjects([s signedURLForRequestURL:style], style);
 }
 
 - (void)testSignedURLLeavesTileURLUntouchedWithoutCredential {
     MMMapSession *s = [MMMapSession sharedSession];
     [s resetForTesting];
-    NSURL *tile = [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"];
+    NSURL *tile = [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"];
     XCTAssertEqualObjects([s signedURLForRequestURL:tile], tile);
 }
 
@@ -40,7 +52,7 @@
     };
     XCTAssertTrue([s applyCredentialFromHeaders:headers]);
 
-    NSURL *tile = [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"];
+    NSURL *tile = [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"];
     NSString *signed_ = [s signedURLForRequestURL:tile].absoluteString;
     XCTAssertTrue([signed_ containsString:@"s=abc123"]);
     XCTAssertTrue([signed_ containsString:@"sig=SIGVALUE"]);
@@ -72,7 +84,7 @@
     };
     XCTAssertFalse([s applyCredentialFromHeaders:headers]);
 
-    NSURL *tile = [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"];
+    NSURL *tile = [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"];
     XCTAssertEqualObjects([s signedURLForRequestURL:tile], tile);
 }
 
@@ -115,7 +127,7 @@
     [MMMapSessionNetworkDelegate install];
 
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:
-        [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
     NSURLRequest *out = [MLNNetworkConfiguration.sharedManager.delegate willSendRequest:req];
     XCTAssertTrue([out.URL.query containsString:@"sig=sg"]);
 }
@@ -184,7 +196,7 @@
         @"X-Map-Session-Key-Id": @"1" }];
 
     NSURL *signed_ = [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
 
     XCTAssertTrue([signed_.query containsString:@"sig=sg"], @"the tile must still be signed");
     XCTAssertEqual([s refreshCallCountForTesting], 0,
@@ -207,7 +219,7 @@
     // A tile was signed, exactly as it would have been before the app was
     // backgrounded. Under the timer this is what made the flag stale.
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
 
     [s applicationWillEnterForeground];
 
@@ -225,6 +237,12 @@
 // decision without any request actually leaving the simulator -- a unit suite
 // that reached out to example.com would be both slow and flaky, and its
 // completion handler would mutate shared state under a later test.
+//
+// That hazard is not hypothetical. The mapmetrics-gl suite had the same shape
+// and DID leak: once its test origin became a host that resolves, ~30 real
+// creates per run went to production, and the replies landed inside whichever
+// later test happened to await first, clearing its credential. Keep `_origin`
+// nil in unit tests unless the test is specifically about the origin.
 - (MMMapSession *)sessionWithCredential:(NSString *)sessionId {
     MMMapSession *s = [MMMapSession sharedSession];
     [s resetForTesting];
@@ -257,7 +275,7 @@
     MMMapSession *s = [MMMapSession sharedSession];
     [s resetForTesting];   // deliberately NO account: the rollover cannot be adopted
 
-    [self deliver401ForURL:@"https://example.com/v2/tiles/12/2094/1362.mvt"
+    [self deliver401ForURL:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"
                    headers:@{ @"X-Map-Session-Id": @"abc", @"X-Map-Session-Sig": @"sg",
                               @"X-Map-Session-Exp": @"4102444800",
                               @"X-Map-Session-Ends": @"4102448400",
@@ -281,7 +299,7 @@
 
     for (int i = 0; i < 8; i++) {
         [self deliver401ForURL:[NSString stringWithFormat:
-            @"https://example.com/v2/tiles/12/%d/1362.mvt?s=session-old&sig=dead", 2094 + i]
+            @"https://gateway.mapmetrics-atlas.net/v2/tiles/12/%d/1362.mvt?s=session-old&sig=dead", 2094 + i]
                        headers:@{}];
     }
 
@@ -294,7 +312,7 @@
 - (void)testA401ForTheHeldCredentialDoesTriggerRefresh {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
 
-    [self deliver401ForURL:@"https://example.com/v2/tiles/12/2094/1362.mvt?s=session-new&sig=x"
+    [self deliver401ForURL:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt?s=session-new&sig=x"
                    headers:@{}];
 
     XCTAssertEqual([s refreshCallCountForTesting], 1,
@@ -307,7 +325,7 @@
     MMMapSession *s = [MMMapSession sharedSession];
     [s resetForTesting];
 
-    [self deliver401ForURL:@"https://example.com/v2/tiles/12/2094/1362.mvt" headers:@{}];
+    [self deliver401ForURL:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt" headers:@{}];
 
     XCTAssertEqual([s refreshCallCountForTesting], 1,
         @"the unsigned first tile's 401 is how the first session is created");
@@ -318,7 +336,7 @@
 - (void)testUnsigned401IsIgnoredWhileACredentialIsHeld {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
 
-    [self deliver401ForURL:@"https://example.com/v2/tiles/12/2094/1362.mvt" headers:@{}];
+    [self deliver401ForURL:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt" headers:@{}];
 
     XCTAssertEqual([s refreshCallCountForTesting], 0,
         @"an unrelated unsigned 401 must not bill a refresh while the credential is healthy");
@@ -348,7 +366,7 @@
                 @"X-Map-Session-Exp": [@((long long)(exp + i)) stringValue],
                 @"X-Map-Session-Ends": @"4102448400", @"X-Map-Session-Key-Id": @"1" }];
             [s signedURLForRequestURL:
-                [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+                [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
         });
         [done fulfill];
     });
@@ -368,9 +386,9 @@
 // inject a credential the SDK would then sign tiles with.
 - (void)testCredentialFromAForeignHostIsRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
-    // Establish example.com as the origin, exactly as a first real tile would.
+    // Establish the gateway as the origin, exactly as a first real tile would.
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
 
     BOOL adopted = [s applyCredentialFromHeaders:@{
         @"X-Map-Session-Id": @"attacker", @"X-Map-Session-Sig": @"evil",
@@ -381,7 +399,7 @@
 
     XCTAssertFalse(adopted, @"only the pinned origin may mint credentials");
     NSString *signedURL = [[s signedURLForRequestURL:[NSURL URLWithString:
-        @"https://example.com/v2/tiles/12/2094/1362.mvt"]] absoluteString];
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]] absoluteString];
     XCTAssertTrue([signedURL containsString:@"s=session-new"],
         @"the held credential must be untouched by the rejected injection");
 }
@@ -395,11 +413,11 @@
     [s signedURLForRequestURL:[NSURL URLWithString:@"http://insecure.example/v2/tiles/1/2/3.mvt"]];
     XCTAssertNil([s originForTesting], @"an http tile URL must never become the origin");
 
-    [s signedURLForRequestURL:[NSURL URLWithString:@"https://good.example/v2/tiles/1/2/3.mvt"]];
-    XCTAssertEqualObjects([s originForTesting].host, @"good.example");
+    [s signedURLForRequestURL:[NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/1/2/3.mvt"]];
+    XCTAssertEqualObjects([s originForTesting].host, @"gateway.mapmetrics-atlas.net");
 
     [s signedURLForRequestURL:[NSURL URLWithString:@"https://attacker.example/v2/tiles/1/2/3.mvt"]];
-    XCTAssertEqualObjects([s originForTesting].host, @"good.example",
+    XCTAssertEqualObjects([s originForTesting].host, @"gateway.mapmetrics-atlas.net",
         @"a later host must not be able to re-point an established origin");
 }
 
@@ -412,9 +430,9 @@
 // tiles are refused.
 - (void)testTileHostMismatchRefusesToSignAndSaysSoOnce {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
-    // Establish good.example as the origin, exactly as the first real tile would.
+    // Establish the gateway as the origin, exactly as the first real tile would.
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/v2/tiles/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
     XCTAssertEqual([s originMismatchLogCountForTesting], 0, @"precondition");
 
     NSURL *foreign = [NSURL URLWithString:@"https://tiles.other.example/v2/tiles/12/2094/1362.mvt"];
@@ -578,7 +596,7 @@
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
 
     NSURL *out = [s signedURLForRequestURL:[NSURL URLWithString:
-        @"https://example.com/v2/tiles/12/2094/1362.mvt?token=abc&lang=nl"]];
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt?token=abc&lang=nl"]];
     NSString *q = out.query;
 
     XCTAssertTrue([q containsString:@"token=abc"], @"pre-existing query items must survive");
@@ -590,7 +608,7 @@
 - (void)testResigningDoesNotDuplicateCredentialParameters {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     NSURL *once = [s signedURLForRequestURL:[NSURL URLWithString:
-        @"https://example.com/v2/tiles/12/2094/1362.mvt"]];
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"]];
     NSURL *twice = [s signedURLForRequestURL:once];
 
     NSInteger sigCount = 0;
@@ -633,7 +651,7 @@
 - (void)testV2TilesURLIsStillSigned {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
 
-    NSURL *tile = [NSURL URLWithString:@"https://example.com/v2/tiles/12/2094/1362.mvt"];
+    NSURL *tile = [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.mvt"];
     NSString *q = [s signedURLForRequestURL:tile].query;
 
     XCTAssertTrue([q containsString:@"sig=sg"], @"widening must not drop the v2 form");
@@ -672,12 +690,12 @@
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
 
     NSArray<NSString *> *notTiles = @[
-        @"https://example.com/v2/styles?fileName=a.json",       // a style
-        @"https://example.com/v2/tiles/style.json",             // under the old prefix
-        @"https://example.com/planet20251013/12/2094/1362.json",// adjacent to a tile
-        @"https://example.com/v2/tiles/12/2094/1362.pbf",       // right shape, wrong suffix
-        @"https://example.com/v2/tiles/planet/tiles.mvt",       // .mvt, no z/x/y
-        @"https://example.com/v2/tiles/2094/1362.mvt",          // only two numeric segments
+        @"https://gateway.mapmetrics-atlas.net/v2/styles?fileName=a.json",       // a style
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/style.json",             // under the old prefix
+        @"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.json",// adjacent to a tile
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/12/2094/1362.pbf",       // right shape, wrong suffix
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/planet/tiles.mvt",       // .mvt, no z/x/y
+        @"https://gateway.mapmetrics-atlas.net/v2/tiles/2094/1362.mvt",          // only two numeric segments
     ];
     for (NSString *str in notTiles) {
         NSURL *url = [NSURL URLWithString:str];
@@ -692,10 +710,10 @@
 // the ORIGIN check (which says so, once), not silently skipped by the matcher.
 - (void)testV1ShapedTileOnAForeignHostIsStillRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
-    // Establish good.example as the origin, exactly as the first real tile would.
+    // Establish the gateway as the origin, exactly as the first real tile would.
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/planet20251013/12/2094/1362.mvt"]];
-    XCTAssertEqualObjects([s originForTesting].host, @"good.example", @"precondition");
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]];
+    XCTAssertEqualObjects([s originForTesting].host, @"gateway.mapmetrics-atlas.net", @"precondition");
     XCTAssertEqual([s originMismatchLogCountForTesting], 0, @"precondition");
 
     NSURL *foreign = [NSURL URLWithString:
@@ -738,8 +756,8 @@
 - (void)testRightHostWrongSchemeIsRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/planet20251013/12/2094/1362.mvt"]];
-    XCTAssertEqualObjects([s originForTesting].absoluteString, @"https://good.example",
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]];
+    XCTAssertEqualObjects([s originForTesting].absoluteString, @"https://gateway.mapmetrics-atlas.net",
         @"precondition: the origin is pinned, scheme included");
 
     NSURL *cleartext = [NSURL URLWithString:
@@ -754,11 +772,11 @@
 - (void)testRightHostWrongPortIsRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/planet20251013/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]];
     XCTAssertNil([s originForTesting].port, @"precondition: no port pinned");
 
     NSURL *otherPort = [NSURL URLWithString:
-        @"https://good.example:8443/planet20251013/12/2094/1362.mvt"];
+        @"https://gateway.mapmetrics-atlas.net:8443/planet20251013/12/2094/1362.mvt"];
     XCTAssertEqualObjects([s signedURLForRequestURL:otherPort], otherPort,
         @"a different port on the pinned host is a different origin");
     XCTAssertEqual([s originMismatchLogCountForTesting], 1);
@@ -770,9 +788,9 @@
 - (void)testMatchingSchemeHostAndPortIsStillSigned {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     NSURL *tile = [NSURL URLWithString:
-        @"https://good.example:8443/planet20251013/12/2094/1362.mvt"];
+        @"https://gateway.mapmetrics-atlas.net:8443/planet20251013/12/2094/1362.mvt"];
 
-    [s signedURLForRequestURL:tile];   // learns https://good.example:8443
+    [s signedURLForRequestURL:tile];   // learns https://gateway.mapmetrics-atlas.net:8443
     XCTAssertEqualObjects([s originForTesting].port, @8443, @"precondition");
 
     XCTAssertTrue([[s signedURLForRequestURL:tile].query containsString:@"sig=sg"],
@@ -786,7 +804,7 @@
 - (void)testCredentialFromTheRightHostOverPlaintextIsRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/planet20251013/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]];
 
     BOOL adopted = [s applyCredentialFromHeaders:@{
         @"X-Map-Session-Id": @"injected", @"X-Map-Session-Sig": @"evil",
@@ -799,7 +817,7 @@
         @"a plaintext response on the pinned host must not be able to mint the "
          "credential -- anyone on the network path can write those headers");
     XCTAssertTrue([[[s signedURLForRequestURL:[NSURL URLWithString:
-        @"https://good.example/planet20251013/12/2094/1362.mvt"]] query]
+        @"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]] query]
             containsString:@"s=session-new"],
         @"and the held credential must be untouched by the rejected injection");
 }
@@ -807,7 +825,7 @@
 - (void)testCredentialFromTheRightHostOnAnotherPortIsRefused {
     MMMapSession *s = [self sessionWithCredential:@"session-new"];
     [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://good.example/planet20251013/12/2094/1362.mvt"]];
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt"]];
 
     // Bound to a local first: the dictionary literal's commas would otherwise
     // be read as macro argument separators.
@@ -816,7 +834,7 @@
         @"X-Map-Session-Exp": @"4102444999", @"X-Map-Session-Ends": @"4102448400",
         @"X-Map-Session-Key-Id": @"1" }
                                      responseURL:[NSURL URLWithString:
-        @"https://good.example:8443/planet20251013/12/2094/1362.mvt"]];
+        @"https://gateway.mapmetrics-atlas.net:8443/planet20251013/12/2094/1362.mvt"]];
     XCTAssertFalse(adopted,
         @"only the pinned origin may mint credentials, port included");
 }
@@ -876,13 +894,15 @@
     // nothing. Port 9 (discard) is never answered, so no traffic leaves the
     // machine and the create simply fails later, off this thread.
     //
-    // The origin is LEARNED from this very URL and is built from its scheme,
-    // host and port, so the same-origin check (which covers all three) is
-    // satisfied by construction. This test is about the main-queue hop, not
-    // about origin matching -- the assertion below pins that it really did
-    // establish the origin including the non-default port.
-    [s signedURLForRequestURL:
-        [NSURL URLWithString:@"https://127.0.0.1:9/v2/tiles/12/2094/1362.mvt"]];
+    // The origin is PINNED, not learned: learning is now restricted to the
+    // gateway host list, and 127.0.0.1 is not on it -- deliberately, since the
+    // whole point of the list is that only a known gateway may become the
+    // destination for the customer's API key. Pinning is the supported way to
+    // point the SDK at any other host, and it is what a self-hosted deployment
+    // does. This test is about the main-queue hop, not about origin matching;
+    // the assertion below pins that the origin really was established, port
+    // included, so the same-origin check is satisfied by construction.
+    [s pinOriginForTesting:@"https://127.0.0.1:9"];
     XCTAssertEqualObjects([s originForTesting].absoluteString, @"https://127.0.0.1:9",
         @"precondition: the origin must be pinned, port included");
 

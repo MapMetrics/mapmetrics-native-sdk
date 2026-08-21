@@ -27,6 +27,14 @@
 
 // Called off the main thread, immediately before dataTaskWithRequest:.
 - (NSMutableURLRequest *)willSendRequest:(NSMutableURLRequest *)request {
+    // BEFORE signing, and before the first tile. The style request reaches the
+    // gateway ahead of every tile, so learning the origin and buying the first
+    // window here is what puts a credential in hand for the opening wave.
+    // Without it the SDK only ever acquires one by being 401'd, which a
+    // v1-shaped `?token=` tile never is -- it returns 200 and bills per tile.
+
+    [[MMMapSession sharedSession] noteGatewayRequestURL:request.URL];
+
     NSURL *signedURL = [[MMMapSession sharedSession] signedURLForRequestURL:request.URL];
     if (signedURL && ![signedURL isEqual:request.URL]) request.URL = signedURL;
     return request;

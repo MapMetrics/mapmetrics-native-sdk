@@ -107,6 +107,45 @@ static BOOL MMSameOrigin(NSURL *url, NSURL *origin) {
     return a == b || [a isEqual:b];
 }
 
+// The single source of truth for "is this URL one of our gateways?".
+//
+// THIS PREDICATE IS BILLING-RELEVANT AND KEY-RELEVANT. A host it accepts can
+// become the origin the customer's PERMANENT API key is POSTed to by
+// -refreshNow. Widening it hands that key to a third party; narrowing it
+// silently un-authenticates tiles, which shows up as a blank map, not an error.
+//
+// It gates LEARNING ONLY. An app that pins its origin through
+// MLNTileServerBaseURL has explicitly chosen where its key may go, and that
+// choice is not second-guessed -- see -pinConfiguredOrigin. That is the channel
+// staging and any self-hosted gateway use, and why there is no staging entry.
+//
+// Mirrors MMMapSessionHosts.kt on Android and mapmetrics_hosts.ts in
+// mapmetrics-gl. Keep the three lists in step.
+//
+// `gateway.mapmetrics.org` was on the other two lists and is NXDOMAIN: it never
+// resolved, so it never fired. Check DNS before adding anything back.
+static NSArray<NSString *> *MMGatewayHosts(void) {
+    static NSArray<NSString *> *hosts;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ hosts = @[@"gateway.mapmetrics-atlas.net"]; });
+    return hosts;
+}
+
+// EXACT hostname match, case-insensitive. Never -hasSuffix:, never -containsString:.
+//
+// A suffix test would accept `gateway.mapmetrics-atlas.net.evil.com`, and a
+// substring test would accept the name appearing anywhere at all, including in
+// a path or a query parameter. The gateway itself once shipped an endsWith
+// origin check that was bypassable in exactly this way.
+static BOOL MMIsGatewayHost(NSURL *url) {
+    NSString *host = url.host;
+    if (host.length == 0) return NO;
+    for (NSString *candidate in MMGatewayHosts()) {
+        if ([host caseInsensitiveCompare:candidate] == NSOrderedSame) return YES;
+    }
+    return NO;
+}
+
 @implementation MMMapSession {
     NSLock *_lock;
     NSString *_account, *_sessionId, *_sig, *_keyId;
@@ -251,6 +290,24 @@ static BOOL MMSameOrigin(NSURL *url, NSURL *origin) {
     [_lock unlock];
 }
 
+- (void)resetOriginForTesting {
+    [_lock lock];
+    _origin = nil;
+    _originIsConfigured = NO;
+    [_lock unlock];
+}
+
+- (void)pinOriginForTesting:(NSString *)baseURL {
+    NSURL *url = baseURL.length ? [NSURL URLWithString:baseURL] : nil;
+    if (!url.host.length) return;
+    NSURLComponents *o = [[NSURLComponents alloc] init];
+    o.scheme = url.scheme; o.host = url.host; o.port = url.port;
+    [_lock lock];
+    _origin = o.URL;
+    _originIsConfigured = YES;
+    [_lock unlock];
+}
+
 - (void)applicationWillEnterForeground {
     // MLNNetworkConfiguration holds its delegate WEAKLY and exposes it
     // publicly, so a host app that installs its own displaces ours and
@@ -289,16 +346,66 @@ static BOOL MMSameOrigin(NSURL *url, NSURL *origin) {
     return left > 0 ? left : 0;
 }
 
+- (void)noteGatewayRequestURL:(NSURL *)url {
+    if (url == nil) return;
+    if (![url.scheme isEqualToString:@"https"]) return;
+    // Create and renew go out on NSURLSession.sharedSession directly, not
+    // through MLNNetworkConfiguration's delegate, so they never re-enter this.
+    // Skip them anyway rather than depending on that: a host app that routed
+    // everything through one delegate would otherwise recurse on its own create.
+    if ([url.path hasPrefix:@"/v2/map-sessions"]) return;
+
+    [_lock lock];
+    // TWO ways a host qualifies, and they are NOT the same rule.
+    //
+    //  - ALREADY OUR ORIGIN. The app pinned it, or we learned it from a known
+    //    gateway earlier. Either way the decision is made, and re-testing the
+    //    host list here would break every pinned deployment that is not on it
+    //    -- staging, and anyone self-hosting. That is the point of a pin: a
+    //    deliberate act by the app is a STRONGER signal than the list, not a
+    //    weaker one.
+    //  - A KNOWN GATEWAY, when nothing is pinned yet. Zero-config bootstrap,
+    //    and the guard that stops a customer-authored style nominating a host.
+    BOOL qualifies = _origin ? MMSameOrigin(url, _origin) : MMIsGatewayHost(url);
+    if (!qualifies) { [_lock unlock]; return; }
+
+    if (!_origin) {
+        NSURLComponents *o = [[NSURLComponents alloc] init];
+        o.scheme = url.scheme; o.host = url.host; o.port = url.port;
+        _origin = o.URL;
+    }
+    // Only ever a CREATE. A credential that has merely lapsed is rolled over by
+    // the gateway on the tile request itself, so there is nothing to do here.
+    BOOL shouldCreate = (_sig == nil && _cachedApiKey.length > 0);
+    [_lock unlock];
+
+    // Outside the lock: -refreshNow takes it. Concurrent callers coalesce on
+    // _refreshInFlight, and a create that keeps failing is stopped by the
+    // give-up guard, so calling this on every gateway request is bounded.
+    if (shouldCreate) [self refreshNow];
+}
+
 - (NSURL *)signedURLForRequestURL:(NSURL *)url {
     if (!MMURLIsTileShaped(url)) return url;
 
     [_lock lock];
     // Learn the gateway origin from the tile URL itself when nothing is
-    // configured, so no setup is required and the SDK works against staging
-    // and production unchanged. Two constraints make that safe enough to keep:
-    // https only (the API key is POSTed here later), and learned exactly ONCE
-    // -- a later tile URL on a different host can never re-point the origin.
-    if (!_origin && [url.scheme isEqualToString:@"https"] && url.host.length) {
+    // configured, so a known gateway needs no setup.
+    //
+    // THREE constraints, not two. https only (the API key is POSTed here
+    // later), learned exactly ONCE so a later tile URL cannot re-point it, and
+    // -- the one that was missing -- the host must be a known gateway.
+    //
+    // Without MMIsGatewayHost this accepted ANY https host whose path was
+    // tile-shaped. A style is customer-authored and its `tiles` array can name
+    // any host at all, so a style could nominate the host the customer's
+    // permanent API key is later POSTed to. https-only and learn-once bounded
+    // how OFTEN that happened, not to WHOM.
+    //
+    // A gateway that is not on the list is still fully supported: pin it with
+    // MLNTileServerBaseURL, a deliberate act by the app rather than something a
+    // fetched document decides. That is how staging runs.
+    if (!_origin && [url.scheme isEqualToString:@"https"] && MMIsGatewayHost(url)) {
         NSURLComponents *o = [[NSURLComponents alloc] init];
         o.scheme = url.scheme; o.host = url.host; o.port = url.port;
         _origin = o.URL;

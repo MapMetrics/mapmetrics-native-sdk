@@ -81,6 +81,27 @@ extern const NSTimeInterval MMGiveUpCooldown;
 /// Test seam: the pinned gateway origin, or nil if none has been established.
 - (nullable NSURL *)originForTesting;
 
+/// Test seam: clears the origin AND the configured flag.
+///
+/// -resetForTesting deliberately preserves a CONFIGURED origin, mirroring
+/// production, where a pin comes from Info.plist and cannot go away. That makes
+/// a pin permanent for the life of the process — and the session is a
+/// singleton, so a test that pins one leaks it into every test that follows,
+/// whose own URLs then fail the same-origin check and go unsigned. Any test
+/// that calls -pinOriginForTesting: must undo it here in tearDown.
+/// The Android sibling has resetOriginForTesting() for the same reason.
+- (void)resetOriginForTesting;
+
+/// Test seam: pins the gateway origin directly, the way -pinConfiguredOrigin
+/// does from Info.plist's MLNTileServerBaseURL.
+///
+/// Origin LEARNING is restricted to the gateway host list, so a test that wants
+/// to run against a host off that list — staging, chiefly — must pin, exactly
+/// as a real staging deployment does. Info.plist cannot be written from a test,
+/// hence this seam. Marks the origin as CONFIGURED, so it survives the resets
+/// that clear a learned one.
+- (void)pinOriginForTesting:(NSString *)baseURL;
+
 /// Test seam: how many times the "tile host does not match the pinned origin"
 /// diagnostic has been emitted. Must be at most 1 however many tiles are
 /// refused — a map view issues hundreds.
