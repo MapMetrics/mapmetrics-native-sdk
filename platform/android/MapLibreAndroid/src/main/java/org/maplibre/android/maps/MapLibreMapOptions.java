@@ -38,7 +38,15 @@ public class MapLibreMapOptions implements Parcelable {
 
   private static final int LIGHT_GRAY = 0xFFF0E9E1; // RGB(240, 233, 225))
   private static final float FOUR_DP = 4f;
-  private static final float NINETY_TWO_DP = 92f;
+  /**
+   * Default left margin for the attribution button: it sits to the RIGHT of the logo, so this has
+   * to clear the logo's width or the "i" lands on top of the wordmark.
+   *
+   * Upstream's 92 was 84dp of logo plus 8dp of gap. The MapMetrics logo is the mapmetrics-gl
+   * vector at its natural 123x20dp, so 131 keeps the same 8dp gap. Tied to the drawable's width:
+   * change one and this must change with it.
+   */
+  private static final float ATTRIBUTION_MARGIN_LEFT_DP = 131f;
   private static final int UNDEFINED_COLOR = -1;
 
   private CameraPosition cameraPosition;
@@ -282,7 +290,7 @@ public class MapLibreMapOptions implements Parcelable {
         R.styleable.maplibre_MapView_maplibre_uiAttributionGravity, Gravity.BOTTOM | Gravity.START));
       maplibreMapOptions.attributionMargins(new int[] {
         (int) (typedArray.getDimension(R.styleable.maplibre_MapView_maplibre_uiAttributionMarginLeft,
-          NINETY_TWO_DP * pxlRatio)),
+          ATTRIBUTION_MARGIN_LEFT_DP * pxlRatio)),
         (int) (typedArray.getDimension(R.styleable.maplibre_MapView_maplibre_uiAttributionMarginTop,
           FOUR_DP * pxlRatio)),
         (int) (typedArray.getDimension(R.styleable.maplibre_MapView_maplibre_uiAttributionMarginRight,
