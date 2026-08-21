@@ -307,10 +307,7 @@ object MMMapSession {
     @JvmStatic
     fun noteGatewayRequest(url: HttpUrl) {
         try {
-            // Same three constraints as the tile-learning path in [signedUrl]. The allow-list is
-            // the one that matters -- it decides where the API key may be POSTed.
             if (url.scheme != "https") return
-            if (!MMMapSessionHosts.isGatewayUrl(url)) return
             // Create and renew go out on [callFactory], a different client, so they never reach
             // the interceptor. Skip them anyway rather than depending on that: a host app that
             // routed everything through one client would otherwise recurse on its own create.
@@ -318,7 +315,23 @@ object MMMapSession {
 
             val shouldCreate: Boolean
             lock.withLock {
-                if (origin == null) {
+                val pinned = origin
+                // TWO ways a host qualifies, and they are not the same rule.
+                //
+                //  - ALREADY OUR ORIGIN. The app pinned it, or we learned it from an allow-listed
+                //    host earlier. Either way the decision is already made, and re-testing the
+                //    allow-list here would break every pinned deployment that is not on it --
+                //    staging, and anyone self-hosting a gateway. That is the whole point of the
+                //    pin: it is a deliberate act by the app, which is a stronger signal than the
+                //    allow-list, not a weaker one.
+                //  - ON THE ALLOW-LIST, when nothing is pinned yet. Zero-config bootstrap, and
+                //    the guard that stops a customer-authored style from nominating a host.
+                val qualifies =
+                    if (pinned != null) sameOrigin(url, pinned)
+                    else MMMapSessionHosts.isGatewayUrl(url)
+                if (!qualifies) return
+
+                if (pinned == null) {
                     origin = originOf(url)
                     originLearnedLogs++
                 }

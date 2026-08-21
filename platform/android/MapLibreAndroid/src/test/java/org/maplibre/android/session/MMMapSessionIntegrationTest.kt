@@ -249,6 +249,82 @@ class MMMapSessionIntegrationTest {
         MMMapSession.callFactory = OkHttpClient()
     }
 
+    /**
+     * THE V1-STYLE COLD START — the case the 401 path structurally cannot reach.
+     *
+     * A v1-shaped `?token=` tile returns 200. It never 401s, so before the eager create the
+     * interceptor's 401 handler — the only caller `refreshNow` had — never fired, no credential
+     * was ever minted, and every tile fell through to v1 cookie billing. Measured against this
+     * same gateway, a 12-tile cold wave on that path cost 12 units instead of 1: the dedup cookie
+     * is only issued by the first RESPONSE and the whole wave leaves before it lands.
+     *
+     * So this test starts on the v1 path deliberately. If eager create regresses, nothing here
+     * 401s, `signedSessionId()` stays null, and the wave goes out unsigned — which is exactly the
+     * silent per-tile billing this is here to prevent. A green run means the credential was in
+     * hand BEFORE the wave.
+     *
+     * It asserts client-side facts, not meter counts. Reading the meter would mean putting an
+     * admin credential in the mobile test environment; the gateway's own harness owns that half
+     * (scripts/staging-maps-v2-matrix.mjs). See progress.md ruling task-5-1.
+     */
+    @Test
+    fun aV1ShapedColdWaveBuysOneWindowBeforeTheFirstTile() {
+        assumeTrue(
+            "MM_STAGING_KEY is not set; skipping the live staging integration test",
+            !apiKey.isNullOrEmpty()
+        )
+        assertFalse(
+            "precondition: the test must begin with no credential",
+            MMMapSession.hasCredentialForTesting()
+        )
+
+        // --- 1. the STYLE request, which precedes every tile a map fetches ------------------
+        // Not a tile, so it is never signed and teaches the old learning path nothing. It is a
+        // gateway request on the pinned origin, which is all the eager create needs.
+        val style = "$STAGING_BASE/styles/basic.json".toHttpUrl()
+        client.newCall(Request.Builder().url(style).build()).execute().close()
+
+        awaitCredential()
+        assertTrue(
+            "the style request must have bought a window before any tile went out",
+            MMMapSession.secondsUntilExpiry > 0
+        )
+        assertEquals(
+            "exactly one window; the create bills the window the map would have paid anyway",
+            1,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+
+        // --- 2. the opening wave, on the v1 path, CONCURRENTLY -------------------------------
+        // Concurrent on purpose: a map fires a viewport at once, and the v1 cookie race only
+        // exists under concurrency. Every one of these must go out already signed.
+        val wave = TILES.take(6)
+        val results = wave.parallelStream().map { tile ->
+            val response = client.newCall(Request.Builder().url(v1TileUrl(tile)).build()).execute()
+            val signed = response.request.url.queryParameterNames.contains("sig")
+            val code = response.code
+            response.close()
+            code to signed
+        }.toList()
+
+        results.forEachIndexed { i, (code, signed) ->
+            assertEquals("v1-shaped tile ${wave[i]} should have been served", 200, code)
+            assertTrue(
+                "v1-shaped tile ${wave[i]} went out UNSIGNED — that is per-tile v1 billing",
+                signed
+            )
+        }
+
+        // --- 3. the wave bought nothing further ----------------------------------------------
+        // Each increment here is a billed map load. One window covers the whole wave; if this is
+        // 7 rather than 1, the SDK is buying a window per tile.
+        assertEquals(
+            "the tile wave must not have bought any further windows",
+            1,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+    }
+
     @Test
     fun coldStartRecoversFrom401AndServesTilesOnOneCredential() {
         assumeTrue(
