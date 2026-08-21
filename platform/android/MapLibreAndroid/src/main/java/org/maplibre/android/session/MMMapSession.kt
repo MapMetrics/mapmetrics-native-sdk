@@ -281,6 +281,62 @@ object MMMapSession {
     @JvmStatic
     fun originMismatchLogCountForTesting(): Int = lock.withLock { originMismatchLogs }
 
+    /**
+     * Learns the origin from ANY gateway request and buys the first window ahead of the tiles.
+     *
+     * WHY THIS EXISTS. [refreshNow] used to be reachable only from the 401 recovery path, which
+     * means the SDK acquired its first credential only if the first tile was REJECTED. That holds
+     * for `/v2/tiles/...`, which 401s without a signature. It does not hold for the v1-shaped
+     * `?token=` URLs a real style still hands out: those return 200, so no 401 ever arrives, no
+     * credential is ever created, and every tile falls through to v1 cookie billing. Measured on
+     * staging, a 12-tile cold wave on that path cost 12 units instead of 1, because the dedup
+     * cookie is only issued by the first response and the whole wave leaves before it lands.
+     *
+     * The style request precedes every tile request, so learning here and creating here puts the
+     * credential in hand before the first wave. This is what mapmetrics-gl does
+     * (`map_session.ts`, `learnFromStyleUrl` plus the create in `configure`), where lazy creation
+     * was measured at 4-11 billed units for ONE page load.
+     *
+     * This does NOT add a charge. The create bills one window, which is the window the map was
+     * going to pay for anyway; it only lands before the tiles instead of after them.
+     *
+     * Deliberately not restricted to style URLs. Classifying resource types through OkHttp is
+     * fragile, and it is unnecessary: the host allow-list is what makes this safe, so the first
+     * gateway request of any kind is a fine trigger.
+     */
+    @JvmStatic
+    fun noteGatewayRequest(url: HttpUrl) {
+        try {
+            // Same three constraints as the tile-learning path in [signedUrl]. The allow-list is
+            // the one that matters -- it decides where the API key may be POSTed.
+            if (url.scheme != "https") return
+            if (!MMMapSessionHosts.isGatewayUrl(url)) return
+            // Create and renew go out on [callFactory], a different client, so they never reach
+            // the interceptor. Skip them anyway rather than depending on that: a host app that
+            // routed everything through one client would otherwise recurse on its own create.
+            if (url.encodedPath.startsWith("/v2/map-sessions")) return
+
+            val shouldCreate: Boolean
+            lock.withLock {
+                if (origin == null) {
+                    origin = originOf(url)
+                    originLearnedLogs++
+                }
+                // Only ever a CREATE. A credential that has merely lapsed is rolled over by the
+                // gateway on the tile request itself, so there is nothing to do here for one.
+                shouldCreate = sig == null && !cachedApiKey.isNullOrEmpty()
+            }
+            // Outside the lock: refreshNow takes it. Concurrent callers coalesce on
+            // refreshInFlight, and a create that keeps failing is stopped by the give-up guard,
+            // so calling this on every gateway request is bounded.
+            if (shouldCreate) refreshNow()
+        } catch (throwable: Throwable) {
+            // Never take a request down for this. Without it the 401 path is still the fallback,
+            // which is exactly the behaviour that shipped before.
+            Logger.e(TAG, "map-session eager create failed", throwable)
+        }
+    }
+
     // ---------------------------------------------------------------------------------
     // Signing
     // ---------------------------------------------------------------------------------

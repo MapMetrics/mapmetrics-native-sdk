@@ -32,6 +32,13 @@ class MMMapSessionInterceptor : Interceptor {
         // on the pinned origin, and signedUrl never throws: an unsigned tile 401s and recovers
         // below. Since the gateway now honours a v2 signature on the v1 tile path too, the URL a
         // real style already hands out is signed without the style changing at all.
+        // BEFORE signing, and before the first tile. The style request reaches the gateway ahead
+        // of every tile, so learning the origin and buying the first window here is what puts a
+        // credential in hand for the opening wave. Without it the SDK only ever acquires one by
+        // being 401'd, which a v1-shaped `?token=` tile never is -- it returns 200 and bills per
+        // tile. No-op once a credential is held, and no-op for any host off the allow-list.
+        MMMapSession.noteGatewayRequest(original.url)
+
         val signed = MMMapSession.signedUrl(original.url)
         val wasSigned = signed != original.url
         val request = if (wasSigned) {
