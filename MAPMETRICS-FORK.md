@@ -386,7 +386,7 @@ and 4 are the `MM_STAGING_KEY`-gated `MMMapSessionIntegrationTests`. Bazel repor
     grep "Executed .* tests" "$(bazel info bazel-testlogs)/platform/ios/test/ios_test/test.log"
 
 Note the target is `MapLibre.dynamic`, NOT `MapMetrics.dynamic` — the old iOS repo renamed it as
-part of the full rebrand this repo does not do. Likewise `platform/ios/MapLibre.podspec` and the
+part of the full rebrand this repo does not do. Likewise `platform/ios/mapmetrics.podspec` and the
 `org.maplibre` Android packages keep upstream spelling. See the minimal-rebrand note at the top.
 
 Then the greps that catch what a green build does not — B and D above are BOTH silent failures,

@@ -153,4 +153,4 @@ curl -v -X POST \
 
 step "Finished deploying ${PUBLISH_VERSION} in $(($SECONDS / 60)) minutes and $(($SECONDS % 60)) seconds"
 
-pod trunk push MapLibre.podspec
+pod trunk push mapmetrics.podspec
