@@ -1318,12 +1318,11 @@
         <activity
             android:name=".activity.render.RenderTestActivity"
             android:screenOrientation="landscape" /> <!-- Configuration Settings -->
-        <meta-data
-            android:name="com.maplibre.TestEventsServer"
-            android:value="api-events-staging.tilestream.net" />
-        <meta-data
-            android:name="com.maplibre.TestEventsAccessToken"
-            android:value="pk.eyJ1IjoiYmxzdGFnaW5nIiwiYSI6ImNpdDF3OHpoaTAwMDcyeXA5Y3Z0Nmk2dzEifQ.0IfB7v5Qbm2MGVYt8Kb8fg" /> <!-- Comment out this setting to switch to external storage (and disable internal) in your app -->
+        <!-- Removed: the inherited Mapbox telemetry test config, namely
+             com.maplibre.TestEventsServer (an api-events staging host) and
+             com.maplibre.TestEventsAccessToken (a Mapbox public token).
+             Nothing read either one; this manifest was their only occurrence in
+             the entire repo, and no telemetry code survives in the SDK. --> <!-- Comment out this setting to switch to external storage (and disable internal) in your app -->
         <!-- Alternatively you can rely on FileSource#setResourceCachePath API instead -->
         <!-- <meta-data -->
         <!-- android:name="com.maplibre.SetStorageExternal" -->
