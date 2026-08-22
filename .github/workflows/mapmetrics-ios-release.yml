@@ -1,0 +1,143 @@
+# MapMetrics iOS release: build the dynamic XCFramework, publish a GitHub
+# release on THIS repo, then push the pod.
+#
+# WHY THIS EXISTS RATHER THAN ios-release.yml. That workflow is still wired into
+# MapLibre's infrastructure, and none of it is optional:
+#
+#   * uploads the changelog to s3://maplibre-native/ (their bucket, our creds
+#     do not reach it)
+#   * mints a token from secrets.MAPLIBRE_NATIVE_BOT_APP_ID (a secret this repo
+#     does not have)
+#   * dispatches a workflow on maplibre/maplibre-gl-native-distribution, telling
+#     it to publish a download_url under maplibre/maplibre-native
+#
+# The last one is the dangerous one: it would announce a MapMetrics release
+# pointing at MapLibre's binary. Patching those steps out of ios-release.yml
+# would leave a workflow that reads as upstream's; a separate file makes the
+# MapMetrics release path explicit and leaves upstream's untouched for
+# re-vendoring.
+#
+# NOT INCLUDED, deliberately: the static XCFramework (nothing consumes it yet)
+# and Swift Package Manager (needs its own distribution repo, which is exactly
+# what upstream's dispatch step was for). Both are additive later.
+name: mapmetrics-ios-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        type: choice
+        default: pre
+        options:
+          - pre
+          - full
+        description: >-
+          full uses platform/ios/VERSION as-is. pre appends -pre<sha>, so it can
+          be run repeatedly without burning a version number.
+      dry_run:
+        type: boolean
+        default: true
+        description: >-
+          Build and attach artefacts, but do NOT push to CocoaPods. A pod
+          version cannot be unpublished, so this defaults to true.
+
+jobs:
+  build:
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: platform/ios
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Resolve version
+        run: |
+          if [[ "${{ github.event.inputs.release }}" == "full" ]]; then
+            version="$(head -n1 VERSION)"
+          else
+            version="$(head -n1 VERSION)"-pre${{ github.sha }}
+          fi
+          echo "version=$version" >> "$GITHUB_ENV"
+          echo "Releasing ios-v$version"
+
+      # --//:renderer=metal is REQUIRED, not a preference. The default renderer
+      # selects an empty MLNBackendResource interface and the Metal plugin
+      # sources then fail to compile -- verified locally, the demo app will not
+      # build without it.
+      - name: Build XCFramework (dynamic)
+        run: |
+          bazel build --compilation_mode=opt --features=dead_strip,thin_lto \
+            --objc_enable_binary_stripping --apple_generate_dsym \
+            --output_groups=+dsyms --//:renderer=metal \
+            //platform/ios:MapLibre.dynamic \
+            --embed_label=mapmetrics_ios_"${{ env.version }}"
+          echo xcframework="$(bazel info execution_root)"/"$(bazel cquery --output=files --compilation_mode=opt --//:renderer=metal //platform/ios:MapLibre.dynamic)" >> "$GITHUB_ENV"
+
+      # Step-level working-directory is relative to the WORKSPACE ROOT, not to
+      # the job's default of platform/ios -- and bazel-bin is symlinked at the
+      # repo root, since that is where bazel finds MODULE.bazel. Writing
+      # ./platform/ios/bazel-bin/... here resolves to platform/ios/platform/ios/.
+      - name: Zip debug symbols
+        working-directory: ./bazel-bin/platform/ios/MapLibre.dynamic_dsyms
+        run: |
+          zip MapLibre_ios_device.framework.dSYM.zip \
+            MapLibre_ios_device.framework.dSYM/Contents/Resources/DWARF/MapLibre_ios_device \
+            MapLibre_ios_device.framework.dSYM/Contents/Info.plist
+          echo debug_symbols="$(realpath MapLibre_ios_device.framework.dSYM.zip)" >> "$GITHUB_ENV"
+
+      - name: Assemble artefacts
+        working-directory: .
+        run: |
+          cp "${{ env.xcframework }}" MapLibre.dynamic.xcframework.zip
+          chmod +w MapLibre.dynamic.xcframework.zip
+          zip MapLibre.dynamic.xcframework.zip LICENSE.md
+          cp "${{ env.debug_symbols }}" .
+
+      # The podspec's source URL resolves to this exact filename under this exact
+      # tag. If either drifts, `pod trunk push` fails at the download step --
+      # after the release is already public.
+      - name: Verify the artefact matches what the podspec will fetch
+        working-directory: .
+        run: |
+          expected="MapLibre.dynamic.xcframework.zip"
+          grep -q "$expected" platform/ios/mapmetrics.podspec \
+            || { echo "::error::podspec does not reference $expected"; exit 1; }
+          grep -q "MapMetrics/mapmetrics-native-sdk" platform/ios/mapmetrics.podspec \
+            || { echo "::error::podspec source does not point at this repo"; exit 1; }
+          test -f "$expected" || { echo "::error::$expected was not produced"; exit 1; }
+          echo "podspec and artefact agree on $expected"
+
+      - name: Create tag if it does not exist
+        working-directory: .
+        run: .github/scripts/ensure-tag.sh ios-v${{ env.version }} ${{ github.sha }}
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          name: ios-v${{ env.version }}
+          tag_name: ios-v${{ env.version }}
+          prerelease: ${{ github.event.inputs.release == 'pre' }}
+          files: |
+            MapLibre.dynamic.xcframework.zip
+            MapLibre_ios_device.framework.dSYM.zip
+          fail_on_unmatched_files: true
+          draft: false
+
+      # Last, and only after the release asset is downloadable: CocoaPods
+      # validates the source URL during push, so the release must exist first.
+      - name: Push to CocoaPods
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        shell: bash -leo pipefail {0}   # so `pod` is on PATH
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+        run: VERSION=${{ env.version }} pod trunk push mapmetrics.podspec
+
+      - name: Dry run notice
+        if: ${{ github.event.inputs.dry_run != 'false' }}
+        run: |
+          echo "::notice::dry_run was set, so the pod was NOT pushed."
+          echo "::notice::Verify the release asset downloads, then re-run with dry_run=false."
