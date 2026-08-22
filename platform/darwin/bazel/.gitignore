@@ -1,1 +1,16 @@
+# Local Darwin build config. Overrides example_config.bzl when present, and
+# platform/ios/bazel/macros.bzl bakes its API_KEY straight into the built app's
+# Info.plist -- so this file HOLDS A REAL API KEY whenever anyone builds the
+# demo app against a real gateway. Never commit it.
+#
+# It is also the ONLY channel that works: editing platform/ios/app/Info.plist by
+# hand does nothing, because bazel regenerates the plist and runs
+# `plutil -replace MLNApiKey` with API_KEY from here. A hand-edited plist builds
+# fine and ships the 0000000000 placeholder, which then 401s on session create
+# with no obvious cause.
+#
+# Copy example_config.bzl and change API_KEY only -- the other symbols
+# (APPLE_MOBILE_PROVISIONING_PROFILE_NAME and friends) must survive or
+# platform/ios/bazel/provisioning.bzl fails to load and the whole package stops
+# resolving.
 /config.bzl
