@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
     s.version = version
     s.license = { :type => 'BSD', :file => "LICENSE.md" }
     s.homepage = 'https://mapmetrics.org/'
-    s.authors = { 'MapMetrics' => '' }
+    s.authors = { 'MapMetrics' => 'jack@mapmetrics.org' }
     s.summary = 'Open source vector map solution for iOS with full styling capabilities.'
     s.platform = :ios
     s.source = {
