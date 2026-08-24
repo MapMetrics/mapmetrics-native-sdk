@@ -117,6 +117,29 @@ object MMMapSession {
      * sets a call timeout so that cannot happen with the shipped client; this covers a call
      * factory injected by a host app that does not.
      */
+    /**
+     * How long an outgoing gateway request waits for a create that is ALREADY in flight, before
+     * going out unsigned.
+     *
+     * WHY A WAIT EXISTS. [noteGatewayRequest] starts the create, but the create is `enqueue`d —
+     * asynchronous. Without this the request that triggered it, and the whole wave behind it,
+     * leave immediately and unsigned. That is invisible rather than broken: the universal tile
+     * endpoint accepts the style's `?token=` as valid v1 auth and returns 200, so the map renders
+     * correctly and bills ONE CHARGE PER TILE instead of one per session. Measured on the iOS
+     * sibling against staging: seven tiles cost 8 units without the wait and 1 with it.
+     *
+     * This is the case [noteGatewayRequest]'s own comment describes as covered "because the style
+     * request reaches the gateway ahead of every tile". That holds only when the style is served
+     * BY the gateway. For a style that is a local file, a bundled asset or a CDN, the gateway's
+     * first sight of the client IS the opening tile wave.
+     *
+     * 2s covers a session POST by a wide margin while staying inside a user's tolerance for a map
+     * that has not drawn yet.
+     */
+    const val CREDENTIAL_WAIT_TIMEOUT_MS = 2_000L
+
+    private const val CREDENTIAL_WAIT_POLL_MS = 20L
+
     const val REFRESH_STALE_SECONDS = 120L
 
     /**
@@ -150,6 +173,7 @@ object MMMapSession {
     private var gaveUpAt = 0L
     private var lastCountedFailureAt = 0L
     private var refreshDecisionCount = 0
+    private var credentialWaits = 0
     private var cachedApiKey: String? = null
 
     /**
@@ -387,6 +411,65 @@ object MMMapSession {
      * held AND the host matches the pinned origin. Returns the input unchanged otherwise, and
      * never throws — an unsigned tile 401s and recovers, a thrown exception kills the request.
      */
+    /**
+     * Blocks the calling thread until an in-flight create lands, bounded by
+     * [CREDENTIAL_WAIT_TIMEOUT_MS], so the opening wave is signed instead of billing per tile.
+     *
+     * Called from the interceptor, which runs on an OkHttp dispatcher thread — never the UI
+     * thread.
+     *
+     * FAILS OPEN. Every exit is an early return: a credential is already held (the common case,
+     * every request after the first), nothing is in flight so nothing is coming (which covers the
+     * give-up state and the no-API-key case for free), the request is not for our origin and so
+     * would never be signed, or the deadline passed. On timeout the request goes out unsigned
+     * exactly as before, because a blank map is a worse outcome than a v1-billed one.
+     *
+     * NO DEADLOCK, by two independent guards. Create and renew are issued on [callFactory], a
+     * SEPARATE client with its own dispatcher, so blocking threads here cannot consume the slots
+     * the create needs — OkHttp's `maxRequestsPerHost` is 5 by default and a cold tile wave would
+     * otherwise starve it on the very host it must reach. `/v2/map-sessions` is also skipped
+     * outright, so even a host app that routed everything through one client could not make a
+     * create wait on itself.
+     */
+    @JvmStatic
+    fun awaitCredential(url: HttpUrl) {
+        if (url.scheme != "https") return
+        if (url.encodedPath.startsWith("/v2/map-sessions")) return
+
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CREDENTIAL_WAIT_TIMEOUT_MS)
+        var counted = false
+        while (true) {
+            var have: Boolean
+            var inFlight: Boolean
+            var mine: Boolean
+            lock.withLock {
+                have = sig != null
+                inFlight = refreshInFlight
+                val pinned = origin
+                mine = pinned != null && sameOrigin(url, pinned)
+                if (!counted && !have && inFlight && mine) {
+                    credentialWaits++
+                    counted = true
+                }
+            }
+            if (have || !inFlight || !mine) return
+            if (System.nanoTime() >= deadline) return
+            try {
+                Thread.sleep(CREDENTIAL_WAIT_POLL_MS)
+            } catch (interrupted: InterruptedException) {
+                // Preserve the flag for whoever owns this thread and stop waiting; going out
+                // unsigned is the fail-open behaviour this method already guarantees.
+                Thread.currentThread().interrupt()
+                return
+            }
+        }
+    }
+
+    /** Test seam: how many requests actually blocked on an in-flight create. */
+    @JvmStatic
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    fun credentialWaitCountForTesting(): Int = lock.withLock { credentialWaits }
+
     @JvmStatic
     fun signedUrl(url: HttpUrl): HttpUrl {
         try {
@@ -1010,6 +1093,7 @@ object MMMapSession {
         gaveUpAt = 0
         lastCountedFailureAt = 0
         refreshDecisionCount = 0
+        credentialWaits = 0
         loggedOriginMismatch = false
         originMismatchLogs = 0
         originLearnedLogs = 0

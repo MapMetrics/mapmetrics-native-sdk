@@ -34,9 +34,21 @@ class MMMapSessionInterceptor : Interceptor {
         // tile. No-op once a credential is held, and no-op for a host that is neither our pinned
         // origin nor on the allow-list.
         //
-        // Covered by aV1ShapedColdWaveBuysOneWindowBeforeTheFirstTile, which fails — and is the
-        // ONLY test that fails — when this line is removed.
+        // Covered by aV1ShapedColdWaveBuysOneWindowBeforeTheFirstTile and, since the wait below
+        // was added, by aColdWaveWithNoGatewayStyleIsStillSigned and
+        // coldStartBuysOneWindowAndServesTilesOnOneCredential too. This used to say it was the
+        // ONLY failing test; that stopped being true and a stale claim like that is worse than
+        // none, because the next person deletes the line and trusts one green test.
         MMMapSession.noteGatewayRequest(original.url)
+
+        // noteGatewayRequest may have just STARTED a create, and the create is `enqueue`d —
+        // asynchronous. Without this wait the request that triggered it, and the whole wave behind
+        // it, leave before the credential lands and go out unsigned. Nothing looks wrong when that
+        // happens: a v1-shaped `?token=` tile returns 200 either way and simply bills once PER TILE
+        // instead of once per session. Bounded, fails open, and safe to block here — this is an
+        // OkHttp dispatcher thread, and create/renew use a separate client. See
+        // [MMMapSession.awaitCredential].
+        MMMapSession.awaitCredential(original.url)
 
         // Signing is a no-op for anything that is not tile-shaped ([MMMapSession.isTileUrl] /
         // [MMMapSession.TILE_PATH_PATTERN], the ONE shared definition — never a literal path here)

@@ -7,6 +7,7 @@ import okhttp3.Request
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -30,10 +31,16 @@ import java.util.concurrent.TimeUnit
  * with two different tests. Be precise about which is which — an earlier draft of this comment
  * claimed the cold start below would catch a reverted C++ patch, and that is FALSE.
  *
- * - The KOTLIN half — [coldStartRecoversFrom401AndServesTilesOnOneCredential]. It issues the FIRST
- *   tile with no credential held, so the gateway 401s, and asserts the recovery that hangs off it:
- *   the interceptor sees the 401, `shouldRefreshForResponseUrl` agrees it is ours, `refreshNow`
- *   buys a window, later tiles are signed and served. Break any of that and this test fails.
+ * - The KOTLIN half — [coldStartBuysOneWindowAndServesTilesOnOneCredential]. It issues the FIRST
+ *   tile with no credential held and asserts the whole chain that follows: the interceptor waits
+ *   for the in-flight create, the tile goes out signed and is served, exactly one window is
+ *   bought, the pin survives, and the universal v1-shaped endpoint accepts the signature. Break
+ *   any of that and this test fails.
+ *
+ *   It USED to reach that 401 from a cold start, with no credential held. That route closed when
+ *   the interceptor started waiting for an in-flight create: the first tile now goes out signed
+ *   and is served, so a cold start no longer 401s at all. The Kotlin half therefore now asserts
+ *   the SIGNED cold start; the interceptor's 401 recovery branch is covered by the unit suites.
  *
  * - The NATIVE half — [nativeHttpSourceStillTreats401And403AsRetryable]. The 401/403 ->
  *   `Error::Reason::Server` mapping lives in C++, in `http_file_source.cpp`, and this suite runs
@@ -325,8 +332,81 @@ class MMMapSessionIntegrationTest {
         )
     }
 
+    /**
+     * THE CASE THE STYLE-FIRST TEST CANNOT REACH, and the one that pins the interceptor's wait.
+     *
+     * [aV1ShapedColdWaveBuysOneWindowBeforeTheFirstTile] issues a gateway-hosted STYLE request
+     * first and then waits for the credential before firing tiles. Both of those hide the defect
+     * this test exists for: when the style is a local file, a bundled asset or a CDN — which
+     * Flutter apps routinely use — the gateway's FIRST sight of the client is the opening tile
+     * wave itself, and nothing has bought a window yet.
+     *
+     * `noteGatewayRequest` starts the create, but the create is `enqueue`d. Without
+     * [MMMapSession.awaitCredential] in the interceptor the wave leaves before the credential
+     * lands and every tile goes out on `?token=` alone. That is invisible: a v1-shaped tile
+     * returns 200 either way, so the map draws correctly and simply bills once PER TILE.
+     *
+     * Delete the `awaitCredential` line from MMMapSessionInterceptor and this test fails while
+     * every unit test still passes — which is the reason it is here rather than in the unit
+     * suite, where awaitCredential is called directly and the wiring is not exercised at all.
+     */
     @Test
-    fun coldStartRecoversFrom401AndServesTilesOnOneCredential() {
+    fun aColdWaveWithNoGatewayStyleIsStillSigned() {
+        assumeTrue(
+            "MM_STAGING_KEY is not set; skipping the live staging integration test",
+            !apiKey.isNullOrEmpty()
+        )
+        assertFalse(
+            "precondition: the test must begin with no credential",
+            MMMapSession.hasCredentialForTesting()
+        )
+
+        // NO style request, and NO wait. Straight to a concurrent wave, exactly as a map with a
+        // locally-hosted style behaves on a cold start.
+        val wave = TILES.take(6)
+        val results = wave.parallelStream().map { tile ->
+            val response = client.newCall(Request.Builder().url(v1TileUrl(tile)).build()).execute()
+            val signed = response.request.url.queryParameterNames.contains("sig")
+            val code = response.code
+            response.close()
+            code to signed
+        }.toList()
+
+        results.forEachIndexed { i, (code, signed) ->
+            assertEquals("v1-shaped tile ${wave[i]} should have been served", 200, code)
+            assertTrue(
+                "tile ${wave[i]} went out UNSIGNED on a cold wave — that is per-tile v1 billing, " +
+                    "and it means the interceptor did not wait for the in-flight create",
+                signed
+            )
+        }
+
+        // Each increment is a billed map load. One window must cover the whole wave.
+        assertEquals(
+            "the cold wave must have bought exactly one window, not one per tile",
+            1,
+            MMMapSession.refreshDecisionCountForTesting()
+        )
+    }
+
+    /**
+     * The interceptor chain end to end on a cold start: window bought, pin intact, credential
+     * usable for signing, and the universal v1-shaped endpoint accepting that signature.
+     *
+     * RENAMED from coldStartRecoversFrom401AndServesTilesOnOneCredential, and step 1 now asserts
+     * the opposite of what it used to. A cold start no longer 401s: the interceptor waits for the
+     * in-flight create, so the first tile goes out SIGNED and is served. Reaching the 401 path
+     * from an empty credential is no longer possible, which is the fix working, not a gap.
+     *
+     * The 401 machinery itself is still covered -- [nativeHttpSourceStillTreats401And403AsRetryable]
+     * for the C++ retryability half, and MMMapSessionTest / MMMapSessionInterceptorTest for
+     * shouldRefreshForResponseUrl and the interceptor's recovery branch. What is NOT covered
+     * live any more is a gateway-rejected credential end to end; seeding one only exercises the
+     * RENEW path, since a held sig with a future `sae` makes refreshNow renew rather than create.
+     * Worth a dedicated test, not a contrivance bolted onto this one.
+     */
+    @Test
+    fun coldStartBuysOneWindowAndServesTilesOnOneCredential() {
         assumeTrue(
             "MM_STAGING_KEY is not set; skipping the live staging integration test",
             !apiKey.isNullOrEmpty()
@@ -337,7 +417,7 @@ class MMMapSessionIntegrationTest {
         )
         assertEquals(0, MMMapSession.secondsUntilExpiry)
 
-        // --- 1. cold start: the first tile goes out UNSIGNED and the gateway refuses it ------
+        // --- 1. cold start: the first tile WAITS for the create and goes out signed ----------
         val firstTile = tileUrl(TILES.first())
         val firstResponse = client.newCall(Request.Builder().url(firstTile).build()).execute()
         val firstCode = firstResponse.code
@@ -345,22 +425,20 @@ class MMMapSessionIntegrationTest {
         firstResponse.close()
 
         assertEquals(
-            "the first tile must be refused; it carried no credential",
-            401,
+            "the first tile must be served; the interceptor waits for the in-flight create",
+            200,
             firstCode
         )
-        assertFalse(
-            "the first tile must have gone out unsigned",
+        assertTrue(
+            "the first tile must have gone out SIGNED -- unsigned is per-tile v1 billing",
             firstSentUrl.queryParameterNames.contains("sig")
         )
 
-        // --- 2. the SDK recovers from that 401 by buying a window ---------------------------
-        // This is the assertion the fork doc's guarantee rests on: if 401 were terminal again,
-        // no credential would ever appear here.
+        // --- 2. exactly one window, and it is live ------------------------------------------
         awaitCredential()
 
         assertTrue(
-            "the 401 must have produced a live credential",
+            "the cold start must have produced a live credential",
             MMMapSession.secondsUntilExpiry > 0
         )
         assertEquals(

@@ -7,6 +7,7 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -288,6 +289,104 @@ class MMMapSessionTest {
     // -----------------------------------------------------------------------------
     // Invariant 2: ignore a 401 whose s= does not match the held session
     // -----------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------------
+    // awaitCredential: the opening wave must be signed, and the wait must never hang
+    // -----------------------------------------------------------------------------
+
+    // THE POSITIVE CASE. A create is in flight and the credential lands while a request is
+    // waiting: the request must block until it arrives rather than leaving unsigned and billing
+    // on the v1 `?token=` path.
+    @Test
+    fun awaitBlocksUntilAnInFlightCreateLands() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        MMMapSession.refreshNow()
+        assertEquals(1, requests.size)
+
+        // Deliver the create from another thread, after the waiter is already parked.
+        val deliverer = Thread {
+            Thread.sleep(150)
+            deliver(0, 200, body().toString())
+        }
+        val started = System.nanoTime()
+        deliverer.start()
+        MMMapSession.awaitCredential(tileUrl())
+        val waitedMs = (System.nanoTime() - started) / 1_000_000
+        deliverer.join()
+
+        assertTrue("must actually wait for the credential", waitedMs >= 100)
+        assertTrue("must return as soon as it lands, not at the timeout",
+            waitedMs < MMMapSession.CREDENTIAL_WAIT_TIMEOUT_MS)
+        assertEquals(1, MMMapSession.credentialWaitCountForTesting())
+        // And the whole point: the tile is now signable.
+        assertTrue(MMMapSession.signedUrl(tileUrl()) != tileUrl())
+    }
+
+    // FAILS OPEN. A create that never completes must not hold the request forever -- a blank map
+    // is a worse outcome than a v1-billed one.
+    @Test
+    fun awaitGivesUpAtTheDeadlineWhenTheCreateNeverLands() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        MMMapSession.refreshNow()   // enqueued, never answered
+
+        val started = System.nanoTime()
+        MMMapSession.awaitCredential(tileUrl())
+        val waitedMs = (System.nanoTime() - started) / 1_000_000
+
+        assertTrue("must give up at the deadline", waitedMs >= MMMapSession.CREDENTIAL_WAIT_TIMEOUT_MS)
+        assertTrue("must not wait appreciably beyond it", waitedMs < MMMapSession.CREDENTIAL_WAIT_TIMEOUT_MS + 1_000)
+        // Unsigned, exactly as before the wait existed.
+        assertEquals(tileUrl(), MMMapSession.signedUrl(tileUrl()))
+    }
+
+    @Test
+    fun awaitReturnsAtOnceWhenCredentialAlreadyHeld() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        seed()
+        val started = System.nanoTime()
+        MMMapSession.awaitCredential(tileUrl())
+        assertTrue((System.nanoTime() - started) / 1_000_000 < 200)
+        assertEquals(0, MMMapSession.credentialWaitCountForTesting())
+    }
+
+    // No API key means no create was ever started. Waiting for one would block every single
+    // request for the full timeout.
+    @Test
+    fun awaitReturnsAtOnceWhenNothingIsInFlight() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        val started = System.nanoTime()
+        MMMapSession.awaitCredential(tileUrl())
+        assertTrue((System.nanoTime() - started) / 1_000_000 < 200)
+        assertEquals(0, MMMapSession.credentialWaitCountForTesting())
+    }
+
+    @Test
+    fun awaitIgnoresForeignOrigins() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        MMMapSession.refreshNow()
+        val started = System.nanoTime()
+        MMMapSession.awaitCredential(tileUrl(host = "tiles.example.com"))
+        assertTrue("a request we would never sign must never be delayed",
+            (System.nanoTime() - started) / 1_000_000 < 200)
+    }
+
+    // A create must never wait on itself. It goes out on a separate client today, so this cannot
+    // happen -- but a host app routing everything through one client would deadlock behind the
+    // in-flight flag it just raised.
+    @Test
+    fun awaitNeverBlocksTheSessionCreateItself() {
+        MMMapSession.pinConfiguredOrigin("https://$gateway")
+        MMMapSession.cacheApiKey("KEY")
+        MMMapSession.refreshNow()
+        val createUrl = "https://$gateway/v2/map-sessions?token=x".toHttpUrlOrNull()!!
+        val started = System.nanoTime()
+        MMMapSession.awaitCredential(createUrl)
+        assertTrue("the create must never wait on the credential it is fetching",
+            (System.nanoTime() - started) / 1_000_000 < 200)
+    }
 
     @Test
     fun unsignedTile401RefreshesOnlyWhenNoCredentialIsHeld() {
