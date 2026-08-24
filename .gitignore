@@ -39,6 +39,23 @@ node_modules
 .env
 vendor/dawn/
 
+# ---------------------------------------------------------------------------
+# Publishing credentials.
+#
+# The Maven Central Portal user token lives in ~/.gradle/gradle.properties --
+# OUTSIDE this repo, so it cannot be committed from here at all. The five
+# gradle.properties files that ARE tracked hold build settings only and must
+# stay tracked, which is why there is no blanket `gradle.properties` rule.
+#
+# These cover the places a credential could still land in-tree by accident.
+gradle.properties.local
+*-credentials.properties
+*.keystore
+*.jks
+secring.*
+central-token*
+sonatype*.json
+
 # Node binaries.
 /lib
 

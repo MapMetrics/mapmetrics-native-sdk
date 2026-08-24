@@ -17,11 +17,36 @@ plugins {
 val androidComponents = extensions.getByType<LibraryAndroidComponentsExtension>()
 val androidLibrary = extensions.getByType<LibraryExtension>()
 
+// withSourcesJar()/withJavadocJar() are AGP's own mechanism and produce ONE
+// correctly-named jar per variant, which the publications then pick up through
+// `from(component)`.
+//
+// WHY NOT `artifacts { add("archives", ...) }`, which is still below: that is the
+// legacy maven plugin's mechanism and attaches NOTHING under maven-publish. The
+// androidSourcesJar task ran, wrote its jar into build/libs, and every
+// publication ignored it -- so 2.0.1 was about to go to Central with no sources
+// jar at all, where 1.0.3 shipped one. Central requires it for a release.
+//
+// Manual `artifact(tasks.named("androidSourcesJar"))` would also be wrong here:
+// it is a single task producing a single jar named after the MODULE, so all six
+// publications would carry the same mis-named artifact.
 androidLibrary.publishing {
-    singleVariant("vulkanRelease")
-    singleVariant("vulkanDebug")
-    singleVariant("openglRelease")
-    singleVariant("openglDebug")
+    singleVariant("vulkanRelease") {
+        withSourcesJar()
+        withJavadocJar()
+    }
+    singleVariant("vulkanDebug") {
+        withSourcesJar()
+        withJavadocJar()
+    }
+    singleVariant("openglRelease") {
+        withSourcesJar()
+        withJavadocJar()
+    }
+    singleVariant("openglDebug") {
+        withSourcesJar()
+        withJavadocJar()
+    }
 }
 
 // Signing is required for Maven Central but must not block a local build.
@@ -33,7 +58,18 @@ val hasSigningKey = providers.gradleProperty("signingInMemoryKey").isPresent ||
 
 afterEvaluate {
     mavenPublishing {
-        publishToMavenCentral(true)
+        // automaticRelease = FALSE, deliberately.
+        //
+        // `true` uploads AND releases in one step. A released version on Maven
+        // Central is permanent -- it can be deprecated or superseded, never
+        // withdrawn -- so that turns a mistyped version, a wrong artifactId or a
+        // bad POM into a public artefact with no way back.
+        //
+        // With `false` the upload lands as a PENDING deployment: it is validated
+        // (signatures, checksums, POM completeness) and then waits in the Portal
+        // for a human to inspect the file list and press Publish, or to drop it.
+        // The safety costs one click per release.
+        publishToMavenCentral(false)
         if (hasSigningKey) {
             signAllPublications()
         } else {
@@ -51,7 +87,14 @@ gradle.projectsEvaluated {
     // This fixes Gradle's implicit dependency validation warnings
     // Since some publications may share components (e.g., defaultdebug and opengldebug both use openglDebug),
     // we ensure all signing tasks complete before any publish task
-    tasks.filter { it.name.startsWith("publish") && it.name.endsWith("PublicationToMavenCentralRepository") }.forEach { publishTask ->
+    // EVERY publish task, not just ...ToMavenCentralRepository. Publications here
+    // share components (defaultdebug and vulkandebug both come from vulkanDebug),
+    // so one publication's publish task consumes another's .asc output. Gradle
+    // fails that as an undeclared dependency -- and it fails publishToMavenLocal
+    // too, which is the dry run used to check signing before a release. Covering
+    // only the Central tasks left the rehearsal broken while the real thing
+    // worked, which is the wrong way round.
+    tasks.filter { it.name.startsWith("publish") && it.name.contains("Publication") }.forEach { publishTask ->
         tasks.filter { it.name.startsWith("sign") && it.name.endsWith("Publication") }.forEach { signingTask ->
             publishTask.dependsOn(signingTask)
         }
@@ -133,7 +176,7 @@ fun configureMavenPublication(
                         developer {
                             id.set(project.extra["mapLibreDeveloperId"].toString())
                             name.set(project.extra["mapLibreDeveloperName"].toString())
-                            email.set("team@maplibre.org")
+                            email.set(project.extra["mapLibreDeveloperEmail"].toString())
                         }
                     }
                     scm {
