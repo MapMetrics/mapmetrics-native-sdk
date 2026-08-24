@@ -84,6 +84,19 @@ extern const NSTimeInterval MMGiveUpCooldown;
 /// Buys the first window as soon as BOTH the pinned origin and the API key are
 /// known, before any request exists. See the implementation for why this cannot
 /// wait for -noteGatewayRequestURL: when the style is not served by the gateway.
+/// Blocks the calling thread until an in-flight create lands, bounded by
+/// MMCredentialWaitTimeout. Returns at once when a credential is already held,
+/// when nothing is in flight, or when `url` is not for our origin.
+///
+/// Called from -willSendRequest: so the opening wave is signed rather than
+/// leaving on the v1 `?token=` path and billing per tile. Fails open: on
+/// timeout the request goes out unsigned, because a blank map is worse than a
+/// v1-billed one.
+- (void)awaitCredentialForURL:(nullable NSURL *)url;
+
+/// Number of requests that actually blocked on an in-flight create.
+- (NSInteger)credentialWaitCountForTesting;
+
 - (void)createIfConfigured;
 
 /// Test seam: clears the origin AND the configured flag.

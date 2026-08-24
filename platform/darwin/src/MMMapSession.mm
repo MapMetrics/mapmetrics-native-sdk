@@ -74,6 +74,29 @@ const NSTimeInterval MMMinHardFailureSpacing = 30;
 // foreground reset below is the fast path; this is for a map left open.
 const NSTimeInterval MMGiveUpCooldown = 600;
 
+// How long an outgoing gateway request will wait for a create that is ALREADY
+// in flight, before going out unsigned.
+//
+// WHY A WAIT EXISTS AT ALL. -noteGatewayRequestURL: starts the create, but the
+// create is an async POST: the request that triggered it would otherwise leave
+// immediately, unsigned, along with the whole wave behind it. That is invisible
+// rather than broken -- the universal tile endpoint accepts the style's
+// `?token=` as valid v1 auth and returns 200 -- so the map renders correctly
+// and bills ONE CHARGE PER TILE instead of one per session. Measured through
+// the Flutter plugin against staging: seven tiles cost 8 units without this
+// wait and 1 with it.
+//
+// This is the case -noteGatewayRequestURL:'s own comment describes as covered
+// "because the style request precedes every tile". That holds only when the
+// style is served BY the gateway. For a style that is a local file, a bundled
+// asset or a CDN, the gateway's first sight of the client IS the opening tile
+// wave, and there is no earlier request to buy the window.
+//
+// 2s covers a session POST (~80ms against staging) by a wide margin while
+// staying well inside a user's tolerance for a map that has not drawn yet.
+const NSTimeInterval MMCredentialWaitTimeout = 2.0;
+static const NSTimeInterval MMCredentialWaitPoll = 0.02;
+
 // Same-origin: SCHEME, HOST AND PORT, all three -- not host alone.
 //
 // `_origin` has always been built from all three (see -pinConfiguredOrigin and
@@ -160,6 +183,7 @@ static BOOL MMIsGatewayHost(NSURL *url) {
     BOOL _loggedOriginMismatch;
     NSInteger _originMismatchLogs;   // test observation only
     NSInteger _refreshCalls;   // test observation only; see refreshCallCountForTesting
+    NSInteger _credentialWaits;  // test observation only; see credentialWaitCountForTesting
     // The MLNApiKey, CACHED. See -beginObservingAPIKey for why refreshNow may
     // not read it from MLNSettings itself.
     NSString *_cachedApiKey;
@@ -410,6 +434,55 @@ static BOOL MMIsGatewayHost(NSURL *url) {
     // _refreshInFlight, and a create that keeps failing is stopped by the
     // give-up guard, so calling this on every gateway request is bounded.
     if (shouldCreate) [self refreshNow];
+}
+
+// Blocks the CALLING thread until the in-flight create lands, up to
+// MMCredentialWaitTimeout. Called from -willSendRequest:, which the SDK invokes
+// off the main thread immediately before the request is issued -- so this
+// delays a network request, never the UI.
+//
+// FAILS OPEN, and every exit below is an early return rather than a wait:
+//
+//   * a credential is already held -- the overwhelmingly common case, every
+//     request after the first
+//   * no create is in flight, so nothing is coming and waiting is pointless.
+//     Covers the give-up state and the no-apiKey case for free.
+//   * the request is not for our origin, so it would not be signed anyway
+//   * the deadline passed
+//
+// A blank map is a worse outcome than a v1-billed one, so when the credential
+// does not arrive the request goes out unsigned exactly as it did before.
+//
+// NO DEADLOCK. Create and renew are issued on NSURLSession.sharedSession, not
+// through MLNNetworkConfiguration's delegate, so the response that ends this
+// wait is delivered on a queue this thread is not blocking. `/v2/map-sessions`
+// is skipped explicitly as well, so even a host app that routed everything
+// through one delegate cannot make a create wait on itself.
+- (void)awaitCredentialForURL:(NSURL *)url {
+    if (url == nil) return;
+    if ([url.path hasPrefix:@"/v2/map-sessions"]) return;
+
+    NSTimeInterval deadline =
+        [[NSDate date] timeIntervalSince1970] + MMCredentialWaitTimeout;
+    BOOL counted = NO;
+
+    for (;;) {
+        [_lock lock];
+        BOOL have = (_sig != nil);
+        BOOL inFlight = _refreshInFlight;
+        BOOL mine = (_origin != nil && MMSameOrigin(url, _origin));
+        if (!counted && !have && inFlight && mine) { _credentialWaits++; counted = YES; }
+        [_lock unlock];
+
+        if (have || !inFlight || !mine) return;
+        if ([[NSDate date] timeIntervalSince1970] >= deadline) return;
+        [NSThread sleepForTimeInterval:MMCredentialWaitPoll];
+    }
+}
+
+- (NSInteger)credentialWaitCountForTesting {
+    [_lock lock]; NSInteger n = _credentialWaits; [_lock unlock];
+    return n;
 }
 
 - (NSURL *)signedURLForRequestURL:(NSURL *)url {

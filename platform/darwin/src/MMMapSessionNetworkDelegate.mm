@@ -35,6 +35,14 @@
 
     [[MMMapSession sharedSession] noteGatewayRequestURL:request.URL];
 
+    // -noteGatewayRequestURL: may have just STARTED a create, and the create is
+    // an async POST. Without this wait the request that triggered it -- and the
+    // whole wave behind it -- would leave before the credential landed and go
+    // out unsigned. That is invisible rather than broken: a v1-shaped `?token=`
+    // tile returns 200 either way, and bills once PER TILE instead of once per
+    // session. Bounded, and fails open; see -awaitCredentialForURL:.
+    [[MMMapSession sharedSession] awaitCredentialForURL:request.URL];
+
     NSURL *signedURL = [[MMMapSession sharedSession] signedURLForRequestURL:request.URL];
     if (signedURL && ![signedURL isEqual:request.URL]) request.URL = signedURL;
     return request;

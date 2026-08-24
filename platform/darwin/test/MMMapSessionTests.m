@@ -113,6 +113,77 @@
         @"a displaced delegate must be recoverable, not permanently lost");
 }
 
+// THE WAIT MUST NOT BECOME A HANG.
+//
+// -awaitCredentialForURL: blocks an outgoing gateway request until an in-flight
+// create lands, so the opening wave is signed instead of billing per tile on
+// the v1 `?token=` path. Every way that wait can fail has to be an early
+// return, because the alternative is a map that never draws -- a worse bug than
+// the billing one it fixes.
+- (void)testAwaitReturnsAtOnceWhenCredentialAlreadyHeld {
+    MMMapSession *s = [MMMapSession sharedSession];
+    [s resetForTesting];
+    [s seedAccountForTesting:@"acct1"];
+    [s applyCredentialFromHeaders:@{
+        @"X-Map-Session-Id": @"sid", @"X-Map-Session-Sig": @"sg",
+        @"X-Map-Session-Exp": @"4102444800", @"X-Map-Session-Ends": @"4102448400",
+        @"X-Map-Session-Key-Id": @"1" }];
+    [s pinOriginForTesting:@"https://gateway.mapmetrics-atlas.net"];
+
+    NSDate *t0 = [NSDate date];
+    [s awaitCredentialForURL:
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet/12/2094/1362.mvt"]];
+    XCTAssertLessThan(-[t0 timeIntervalSinceNow], 0.2,
+        @"a held credential must not wait at all");
+    XCTAssertEqual([s credentialWaitCountForTesting], 0);
+}
+
+- (void)testAwaitReturnsAtOnceWhenNothingIsInFlight {
+    MMMapSession *s = [MMMapSession sharedSession];
+    [s resetForTesting];
+    [s pinOriginForTesting:@"https://gateway.mapmetrics-atlas.net"];
+
+    // No apiKey, so no create was ever started. Waiting for one would block for
+    // the full timeout on every single request.
+    NSDate *t0 = [NSDate date];
+    [s awaitCredentialForURL:
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/planet/12/2094/1362.mvt"]];
+    XCTAssertLessThan(-[t0 timeIntervalSinceNow], 0.2,
+        @"with no create in flight there is nothing to wait for");
+    XCTAssertEqual([s credentialWaitCountForTesting], 0);
+}
+
+- (void)testAwaitIgnoresForeignOrigins {
+    MMMapSession *s = [MMMapSession sharedSession];
+    [s resetForTesting];
+    [s pinOriginForTesting:@"https://gateway.mapmetrics-atlas.net"];
+
+    NSDate *t0 = [NSDate date];
+    [s awaitCredentialForURL:[NSURL URLWithString:@"https://tiles.example.com/12/2094/1362.mvt"]];
+    XCTAssertLessThan(-[t0 timeIntervalSinceNow], 0.2,
+        @"a request we would never sign must never be delayed");
+}
+
+// A create POST must not wait on itself. Create/renew go out on
+// NSURLSession.sharedSession rather than through the delegate, so this cannot
+// happen today -- but a host app that routed everything through one delegate
+// would deadlock the create behind its own in-flight flag.
+- (void)testAwaitNeverBlocksTheSessionCreateItself {
+    MMMapSession *s = [MMMapSession sharedSession];
+    [s resetForTesting];
+    [s pinOriginForTesting:@"https://gateway.mapmetrics-atlas.net"];
+
+    NSDate *t0 = [NSDate date];
+    [s awaitCredentialForURL:
+        [NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/v2/map-sessions?token=x"]];
+    XCTAssertLessThan(-[t0 timeIntervalSinceNow], 0.2,
+        @"the create must never wait on the credential it is fetching");
+}
+
+- (void)testAwaitToleratesNilURL {
+    [[MMMapSession sharedSession] awaitCredentialForURL:nil];
+}
+
 - (void)testWillSendRequestSignsTileURL {
     [[MMMapSession sharedSession] resetForTesting];
     // The brief's version of this test omits this seed call, but
