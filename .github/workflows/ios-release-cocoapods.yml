@@ -21,4 +21,4 @@ jobs:
       - name: Release (CocoaPods)
         shell: bash -leo pipefail {0}  # so pod is found
         run: |
-          VERSION=${{ github.event.inputs.version }} COCOAPODS_TRUNK_TOKEN=${{ secrets.COCOAPODS_PASSWORD }} pod trunk push mapmetrics.podspec
+          VERSION=${{ github.event.inputs.version }} COCOAPODS_TRUNK_TOKEN=${{ secrets.COCOAPODS_PASSWORD }} pod trunk push MapMetrics-SDK.podspec

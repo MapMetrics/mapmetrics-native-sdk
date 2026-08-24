@@ -104,9 +104,9 @@ jobs:
         working-directory: .
         run: |
           expected="MapLibre.dynamic.xcframework.zip"
-          grep -q "$expected" platform/ios/mapmetrics.podspec \
+          grep -q "$expected" platform/ios/MapMetrics-SDK.podspec \
             || { echo "::error::podspec does not reference $expected"; exit 1; }
-          grep -q "MapMetrics/mapmetrics-native-sdk" platform/ios/mapmetrics.podspec \
+          grep -q "MapMetrics/mapmetrics-native-sdk" platform/ios/MapMetrics-SDK.podspec \
             || { echo "::error::podspec source does not point at this repo"; exit 1; }
           test -f "$expected" || { echo "::error::$expected was not produced"; exit 1; }
           echo "podspec and artefact agree on $expected"
@@ -134,7 +134,7 @@ jobs:
         shell: bash -leo pipefail {0}   # so `pod` is on PATH
         env:
           COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
-        run: VERSION=${{ env.version }} pod trunk push mapmetrics.podspec
+        run: VERSION=${{ env.version }} pod trunk push MapMetrics-SDK.podspec
 
       - name: Dry run notice
         if: ${{ github.event.inputs.dry_run != 'false' }}

@@ -255,7 +255,7 @@ filegroup(
     srcs = [
         "BAZEL.md",
         "CHANGELOG.md",
-        "mapmetrics.podspec",
+        "MapMetrics-SDK.podspec",
         "PrivacyInfo.xcprivacy",
         "README.md",
         "RELEASE.md",

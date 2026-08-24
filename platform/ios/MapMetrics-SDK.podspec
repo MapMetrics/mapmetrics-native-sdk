@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
     version = "#{ENV['VERSION']}"
 
-    s.name = 'mapmetrics'
+    s.name = 'MapMetrics-SDK'
     s.version = version
     s.license = { :type => 'BSD', :file => "LICENSE.md" }
     s.homepage = 'https://mapmetrics.org/'
@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
     }
     s.ios.deployment_target = '12.0'
     # NOTE: the pod is `mapmetrics` but the framework inside is still
-    # MapLibre.xcframework, so consumers write `pod 'mapmetrics'` and then
+    # MapLibre.xcframework, so consumers write `pod 'MapMetrics-SDK'` and then
     # `import MapLibre`. That is deliberate: MAPMETRICS-FORK.md records this repo
     # as a MINIMAL rebrand -- the bazel target is `MapLibre.dynamic`, the Android
     # packages stay `org.maplibre`, and renaming the framework would change the
