@@ -68,13 +68,22 @@ jobs:
       # selects an empty MLNBackendResource interface and the Metal plugin
       # sources then fail to compile -- verified locally, the demo app will not
       # build without it.
+      #
+      # THE EMBED LABEL MUST KEEP THE `maplibre_ios_` PREFIX. It is validated
+      # against a regex, not just recorded: platform/ios/BUILD.bazel's
+      # apple_bundle_version rule declares
+      #   build_label_pattern = "maplibre_ios_{version}"
+      # and the build fails outright with "did not match the pattern" if the
+      # prefix differs. Renaming it to mapmetrics_ios_ looked harmless and broke
+      # the build. Only the captured VERSION reaches the framework's
+      # CFBundleVersion, so the prefix is internal and costs nothing to keep.
       - name: Build XCFramework (dynamic)
         run: |
           bazel build --compilation_mode=opt --features=dead_strip,thin_lto \
             --objc_enable_binary_stripping --apple_generate_dsym \
             --output_groups=+dsyms --//:renderer=metal \
             //platform/ios:MapLibre.dynamic \
-            --embed_label=mapmetrics_ios_"${{ env.version }}"
+            --embed_label=maplibre_ios_"${{ env.version }}"
           echo xcframework="$(bazel info execution_root)"/"$(bazel cquery --output=files --compilation_mode=opt --//:renderer=metal //platform/ios:MapLibre.dynamic)" >> "$GITHUB_ENV"
 
       # Step-level working-directory is relative to the WORKSPACE ROOT, not to
