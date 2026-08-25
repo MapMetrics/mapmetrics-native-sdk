@@ -56,7 +56,7 @@ object MMMapSession {
      * ignore every real style's tile URLs and the feature would never engage. Both real forms —
      *
      *     https://gateway.mapmetrics-atlas.net/planet20251013/12/2094/1362.mvt?token=<JWT>
-     *     https://gateway-mapatlas-staging.jim9710.workers.dev/v2/tiles/12/2094/1362.mvt
+     *     https://gateway-mapatlas-staging.example.workers.dev/v2/tiles/12/2094/1362.mvt
      *
      * — satisfy this one predicate, and no list of known prefixes has to be maintained.
      *
