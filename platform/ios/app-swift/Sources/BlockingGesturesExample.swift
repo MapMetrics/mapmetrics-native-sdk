@@ -37,7 +37,7 @@ struct BlockingGesturesExample: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> MLNMapView {
-        let mapView = MLNMapView(frame: .zero, styleURL: VERSATILES_COLORFUL_STYLE)
+        let mapView = MLNMapView(frame: .zero, styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.setCenter(center, zoomLevel: 10, direction: 0, animated: false)
         mapView.delegate = context.coordinator
 

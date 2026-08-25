@@ -46,7 +46,7 @@
     MLNMapCamera* mapCamera = [[MLNMapCamera alloc] init];
     mapCamera.pitch = 20;
     mapCamera.centerCoordinate = coordinates;
-    MLNMapSnapshotOptions* options = [[MLNMapSnapshotOptions alloc] initWithStyleURL:[NSURL URLWithString:@"https://demotiles.maplibre.org/style.json"] camera:mapCamera size:CGSizeMake(imageView.frame.size.width, imageView.frame.size.height)];
+    MLNMapSnapshotOptions* options = [[MLNMapSnapshotOptions alloc] initWithStyleURL:[NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/demo/style.json"] camera:mapCamera size:CGSizeMake(imageView.frame.size.width, imageView.frame.size.height)];
     options.zoomLevel = 5;
     options.showsAttribution = !hideAttribution;
 

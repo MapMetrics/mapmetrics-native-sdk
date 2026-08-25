@@ -1,5 +1,22 @@
 import Foundation
 
+/// The MapMetrics demo style. No credential, and none needed.
+///
+/// This is what the examples in this app render. Every one of them used to
+/// point at somebody else's tile server -- MapLibre's demotiles, Americana,
+/// OpenFreeMap, VersaTiles, Protomaps with an inline key -- which meant the
+/// showcase app for OUR renderer was a showcase for their infrastructure, and
+/// broke whenever they rotated a key or moved a URL.
+///
+/// It is rate-limited, capped at zoom 12 and watermarked: enough to show a map
+/// rendering, deliberately not enough to ship. Get a real key at
+/// https://mapatlas.eu .
+///
+/// NOT FOR OFFLINE EXAMPLES. OfflinePackExample and ManageOfflineRegionsExample
+/// download whole regions -- thousands of tiles at once, past zoom 12 -- which
+/// the demo endpoint is built to refuse. Those two keep a third-party style.
+let MAPMETRICS_DEMO_STYLE = URL(string: "https://gateway.mapmetrics-atlas.net/demo/style.json")
+
 // #-example-code(ExampleStyles)
 
 let DEMOTILES_STYLE = URL(string: "https://demotiles.maplibre.org/style.json")

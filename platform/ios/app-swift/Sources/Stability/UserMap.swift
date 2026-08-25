@@ -7,15 +7,15 @@ class UserMap: MLNMapView, MLNMapViewDelegate {
     private var RANDOM = RandomNumberGeneratorWithSeed(seed: 42)
 
     private let STYLES = [
-        DEMOTILES_STYLE,
-        AMERICANA_STYLE,
-        OPENFREEMAP_LIBERTY_STYLE,
-        OPENFREEMAP_BRIGHT_STYLE,
-        PROTOMAPS_LIGHT_STYLE,
-        PROTOMAPS_DARK_STYLE,
-        PROTOMAPS_GRAYSCALE_STYLE,
-        PROTOMAPS_WHITE_STYLE,
-        PROTOMAPS_BLACK_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
     ]
 
     private let PLACES = [

@@ -2525,7 +2525,17 @@ CLLocationCoordinate2D randomWorldCoordinate(void) {
   self.styleNames = [NSMutableArray array];
   self.styleURLs = [NSMutableArray array];
 
-  /// Style that does not require an `apiKey` nor any further configuration
+  /// Style that does not require an `apiKey` nor any further configuration.
+  ///
+  /// The MapMetrics demo endpoint: rate-limited, capped at zoom 12 and
+  /// watermarked, with no credential to configure. First in the list so the
+  /// app opens on our own tiles rather than a third party's.
+  [self.styleNames addObject:@"MapMetrics Demo"];
+  [self.styleURLs
+      addObject:[NSURL URLWithString:@"https://gateway.mapmetrics-atlas.net/demo/style.json"]];
+
+  /// Third-party styles, kept so the app can still be pointed at something
+  /// without a zoom cap when testing high-zoom rendering.
   [self.styleNames addObject:@"OpenFreeMap Liberty"];
   [self.styleURLs addObject:[NSURL URLWithString:@"https://tiles.openfreemap.org/styles/liberty"]];
 

@@ -9,7 +9,7 @@ class POIAlongRouteExample: UIViewController, MLNMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        mapView = MLNMapView(frame: view.bounds, styleURL: AMERICANA_STYLE)
+        mapView = MLNMapView(frame: view.bounds, styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.setCenter(
             CLLocationCoordinate2D(latitude: 45.52214, longitude: -122.63748),

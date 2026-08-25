@@ -11,7 +11,7 @@ class StaticSnapshotExample: UIViewController, MLNMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        mapView = MLNMapView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: view.bounds.height / 2), styleURL: AMERICANA_STYLE)
+        mapView = MLNMapView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: view.bounds.height / 2), styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
 
         // Center map on the Giza Pyramid Complex in Egypt.

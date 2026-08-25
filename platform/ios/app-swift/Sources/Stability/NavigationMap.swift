@@ -4,14 +4,14 @@ private class NavigationConfig {
     var RANDOM = RandomNumberGeneratorWithSeed(seed: 42)
 
     let STYLES = [
-        AMERICANA_STYLE,
-        OPENFREEMAP_LIBERTY_STYLE,
-        OPENFREEMAP_BRIGHT_STYLE,
-        PROTOMAPS_LIGHT_STYLE,
-        PROTOMAPS_DARK_STYLE,
-        PROTOMAPS_GRAYSCALE_STYLE,
-        PROTOMAPS_WHITE_STYLE,
-        PROTOMAPS_BLACK_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
+        MAPMETRICS_DEMO_STYLE,
     ]
 
     func random(in range: ClosedRange<Int>) -> Int {

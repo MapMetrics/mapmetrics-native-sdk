@@ -9,7 +9,7 @@ class LineStyleLayerExample: UIViewController, MLNMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        mapView = MLNMapView(frame: view.bounds, styleURL: VERSATILES_COLORFUL_STYLE)
+        mapView = MLNMapView(frame: view.bounds, styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         mapView.setCenter(
