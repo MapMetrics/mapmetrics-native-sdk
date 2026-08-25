@@ -5,6 +5,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.kotlin.dsl.get
 import java.util.Locale
+import java.util.zip.ZipFile
 
 plugins {
     `maven-publish`
@@ -94,10 +95,67 @@ gradle.projectsEvaluated {
     // too, which is the dry run used to check signing before a release. Covering
     // only the Central tasks left the rehearsal broken while the real thing
     // worked, which is the wrong way round.
+    // The native-library gate runs before ANY publish, local or remote. Wired
+    // here rather than left as a task someone must remember: 2.0.1 shipped
+    // broken precisely because the release path had no check that could fail.
+    tasks.filter { it.name.startsWith("publish") && it.name.contains("Publication") }
+        .forEach { it.dependsOn(verifyAarsContainNativeLibraries) }
+
     tasks.filter { it.name.startsWith("publish") && it.name.contains("Publication") }.forEach { publishTask ->
         tasks.filter { it.name.startsWith("sign") && it.name.endsWith("Publication") }.forEach { signingTask ->
             publishTask.dependsOn(signingTask)
         }
+    }
+}
+
+// REFUSES TO PUBLISH AN AAR WITH NO NATIVE LIBRARIES.
+//
+// This exists because 2.0.1 shipped to Maven Central with zero .so files and is
+// permanently broken: every consumer crashes with UnsatisfiedLinkError on the
+// first map. The cause was `-Pmaplibre.abis=none` -- a flag used to speed up
+// unit-test runs -- being carried into the release command. Nothing caught it.
+// The build succeeded, the POMs were correct, the signatures verified, the file
+// NAMES were all present. The only visible symptom was an 897 KB artefact where
+// the previous release was 15 MB, and size is not something anyone checks.
+//
+// A released version cannot be withdrawn from Central, so this has to fail
+// BEFORE upload, not be noticed after.
+//
+// Skipped when maplibre.abis=none is explicitly set, because that is a
+// deliberate no-native build for tests -- but publishing one is then impossible,
+// which is the point.
+val verifyAarsContainNativeLibraries = tasks.register("verifyAarsContainNativeLibraries") {
+    group = "verification"
+    description = "Fails if any publishable AAR contains no jni/**/*.so"
+    doLast {
+        if (project.findProperty("maplibre.abis") == "none") {
+            throw GradleException(
+                "Refusing to publish: -Pmaplibre.abis=none produces an AAR with no native " +
+                    "libraries. Build the release without that flag."
+            )
+        }
+        val aarDir = layout.buildDirectory.dir("outputs/aar").get().asFile
+        val aars = aarDir.listFiles { f -> f.name.endsWith(".aar") }.orEmpty()
+        if (aars.isEmpty()) {
+            throw GradleException("Refusing to publish: no AAR found in $aarDir")
+        }
+        val empty = aars.filter { aar ->
+            ZipFile(aar).use { zip ->
+                zip.entries().asSequence().none { it.name.startsWith("jni/") && it.name.endsWith(".so") }
+            }
+        }
+        if (empty.isNotEmpty()) {
+            throw GradleException(
+                "Refusing to publish: these AARs contain no native libraries " +
+                    "(jni/**/*.so), so every consumer would crash with " +
+                    "UnsatisfiedLinkError:\n  " +
+                    empty.joinToString("\n  ") { "${it.name} (${it.length() / 1024} KB)" } +
+                    "\nThis is what shipped as 2.0.1. Build without -Pmaplibre.abis=none."
+            )
+        }
+        logger.lifecycle(
+            "verifyAarsContainNativeLibraries: ${aars.size} AAR(s) checked, all contain native libraries"
+        )
     }
 }
 

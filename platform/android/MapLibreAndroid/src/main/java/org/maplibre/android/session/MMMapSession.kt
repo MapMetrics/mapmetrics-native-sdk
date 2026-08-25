@@ -433,7 +433,21 @@ object MMMapSession {
      */
     @JvmStatic
     fun awaitCredential(url: HttpUrl) {
-        if (url.scheme != "https") return
+        // NO SCHEME CHECK, deliberately -- and this differs from
+        // [noteGatewayRequest] on purpose.
+        //
+        // That method is https-only because it can LEARN an origin, and the
+        // learned origin is where the customer's permanent API key is later
+        // POSTed; learning one over cleartext would be a real leak. Waiting
+        // sends nothing and decides nothing, so the same guard here buys no
+        // safety.
+        //
+        // It did cost correctness. [signedUrl] signs any same-origin tile URL
+        // regardless of scheme, so with an http origin pinned through the
+        // manifest the tiles WOULD be signed -- but the opening wave never
+        // waited for the create, raced it, and went out unsigned. Measured
+        // against a local proxy: session created, then 7 unsigned tiles and a
+        // meter delta of 8.
         if (url.encodedPath.startsWith("/v2/map-sessions")) return
 
         val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CREDENTIAL_WAIT_TIMEOUT_MS)

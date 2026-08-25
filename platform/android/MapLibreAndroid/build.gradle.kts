@@ -197,7 +197,23 @@ android {
 
     buildFeatures {
         buildConfig = true
-        prefabPublishing = project.findProperty("maplibre.abis") != "none"
+        // OFF BY DEFAULT, and no longer tied to maplibre.abis.
+        //
+        // Prefab ships a SECOND, UNSTRIPPED copy of libmaplibre.so per ABI --
+        // ~180 MB each against ~12 MB for the stripped jni/ copy that consumers
+        // actually load. With it on, the release AAR is 187 MB; 1.0.3 shipped
+        // 15 MB and zero prefab entries.
+        //
+        // Coupling it to `maplibre.abis != "none"` meant the only way to get a
+        // small artefact was to strip out the native libraries entirely, which
+        // is exactly the mistake that shipped 2.0.1 broken: abis=none gave an
+        // 897 KB AAR with no .so at all, and anything else gave an unpublishable
+        // one. Neither produced what a release needs.
+        //
+        // The only consumer is test/android/app, which builds against the
+        // project rather than the published artefact, so it can opt in with
+        // -Pmaplibre.prefab=true.
+        prefabPublishing = project.findProperty("maplibre.prefab") == "true"
     }
 
     prefab {
