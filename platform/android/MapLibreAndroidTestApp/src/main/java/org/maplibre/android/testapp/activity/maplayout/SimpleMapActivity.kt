@@ -40,9 +40,11 @@ class SimpleMapActivity : AppCompatActivity() {
                 // empty grey map with no clue why. The same style and token also
                 // 403 on the live gateway, so it was doubly dead.
                 //
-                // DEMOTILES is public, needs no credential, and is what the rest
-                // of the test app already falls back to.
-                it.setStyle(Style.Builder().fromUri(TestStyles.DEMOTILES))
+                // MAPMETRICS_DEMO is our own no-key demo endpoint, which is exactly
+                // what this fallback is for: show a working MapMetrics map to
+                // someone who has not configured a key yet. Previously this used
+                // MapLibre's demotiles, which works but shows somebody else's map.
+                it.setStyle(Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO))
             } else {
                 val styles = Style.getPredefinedStyles()
                 if (styles.isNotEmpty()) {
