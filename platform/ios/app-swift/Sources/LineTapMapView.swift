@@ -5,7 +5,7 @@ import UIKit
 // #-example-code(LineTapMap)
 struct LineTapMap: UIViewRepresentable {
     func makeUIView(context: Context) -> MLNMapView {
-        let mapView = MLNMapView()
+        let mapView = MLNMapView(frame: .zero, styleURL: MAPMETRICS_DEMO_STYLE)
 
         // Add a single tap gesture recognizer
         let singleTap = UITapGestureRecognizer(

@@ -59,7 +59,7 @@ struct PrivacyExampleRepresentable: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> MLNMapView {
-        let mapView = MLNMapView()
+        let mapView = MLNMapView(frame: .zero, styleURL: MAPMETRICS_DEMO_STYLE)
 
         mapView.delegate = context.coordinator
         mapView.showsUserLocation = true

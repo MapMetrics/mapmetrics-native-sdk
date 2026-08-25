@@ -6,7 +6,7 @@ class ClusteringExampleUIKit: UIViewController, MLNMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let mapView = MLNMapView(frame: view.bounds)
+        let mapView = MLNMapView(frame: view.bounds, styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.delegate = self
 

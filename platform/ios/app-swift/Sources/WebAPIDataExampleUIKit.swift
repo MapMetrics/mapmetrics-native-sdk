@@ -10,7 +10,7 @@ class WebAPIDataExample: UIViewController, MLNMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        mapView = MLNMapView(frame: view.bounds)
+        mapView = MLNMapView(frame: view.bounds, styleURL: MAPMETRICS_DEMO_STYLE)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.setCenter(CLLocationCoordinate2D(latitude: 37.090240, longitude: -95.712891), zoomLevel: 2, animated: false)
         mapView.delegate = self
