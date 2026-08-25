@@ -27,7 +27,7 @@ class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: MapLibreMap) {
         maplibreMap = map
-        maplibreMap.setStyle(TestStyles.OPENFREEMAP_LIBERTY)
+        maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO)
         // # --8<-- [start:zoomPreference]
         maplibreMap.setMinZoomPreference(3.0)
         maplibreMap.setMaxZoomPreference(5.0)
@@ -36,7 +36,7 @@ class MaxMinZoomActivity : AppCompatActivity(), OnMapReadyCallback {
         // # --8<-- [start:addOnMapClickListener]
         maplibreMap.addOnMapClickListener {
             if (this::maplibreMap.isInitialized) {
-                maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.AMERICANA))
+                maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO))
             }
             true
         }

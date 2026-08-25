@@ -103,7 +103,7 @@ class GridSourceActivity : AppCompatActivity(), OnMapReadyCallback {
         )
         map.setStyle(
             Style.Builder()
-                .fromUri(TestStyles.DEMOTILES)
+                .fromUri(TestStyles.MAPMETRICS_DEMO)
                 .withLayer(layer!!)
                 .withSource(source!!)
         )

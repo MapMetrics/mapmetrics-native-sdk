@@ -51,7 +51,7 @@ class AnimatedImageSourceActivity : AppCompatActivity(), OnMapReadyCallback {
         val layer = RasterLayer(ID_IMAGE_LAYER, ID_IMAGE_SOURCE)
         map.setStyle(
             Style.Builder()
-                .fromUri(TestStyles.AMERICANA)
+                .fromUri(TestStyles.MAPMETRICS_DEMO)
                 .withSource(imageSource)
                 .withLayer(layer)
         ) { style: Style? ->

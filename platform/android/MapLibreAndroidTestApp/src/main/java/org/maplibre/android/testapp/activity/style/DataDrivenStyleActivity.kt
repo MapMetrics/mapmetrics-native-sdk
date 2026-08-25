@@ -42,7 +42,7 @@ class DataDrivenStyleActivity : AppCompatActivity() {
         mapView.getMapAsync {
             // Store for later
             maplibreMap = it
-            it.setStyle(TestStyles.OPENFREEMAP_BRIGHT) { style: Style? ->
+            it.setStyle(TestStyles.MAPMETRICS_DEMO) { style: Style? ->
                 // Add a parks layer
                 addParksLayer()
 

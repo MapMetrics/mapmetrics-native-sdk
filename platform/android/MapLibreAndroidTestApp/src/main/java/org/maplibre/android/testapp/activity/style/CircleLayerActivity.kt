@@ -49,7 +49,7 @@ class CircleLayerActivity : AppCompatActivity(), View.OnClickListener {
             if (map != null) {
                 maplibreMap = map
             }
-            maplibreMap.setStyle(TestStyles.PROTOMAPS_WHITE) {
+            maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO) {
                 maplibreMap.getStyle { style ->
                     addBusStopSource(style)
                     addBusStopCircleLayer(style)
@@ -283,8 +283,8 @@ class CircleLayerActivity : AppCompatActivity(), View.OnClickListener {
 
     private object Data {
         val STYLES = arrayOf(
-            TestStyles.PROTOMAPS_WHITE,
-            TestStyles.PROTOMAPS_LIGHT
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO
         )
     }
 

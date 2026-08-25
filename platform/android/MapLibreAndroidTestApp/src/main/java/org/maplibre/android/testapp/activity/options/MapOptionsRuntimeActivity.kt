@@ -59,7 +59,7 @@ class MapOptionsRuntimeActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(maplibreMap: MapLibreMap) {
         this.maplibreMap = maplibreMap
-        this.maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
+        this.maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO)
     }
 
     override fun onStart() {

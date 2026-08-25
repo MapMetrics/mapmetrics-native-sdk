@@ -29,16 +29,17 @@ class StyleUrlActivity : AppCompatActivity() {
         mapView = findViewById(R.id.mapView)
         mapView.onCreate(savedInstanceState)
 
+        // This activity exists to switch BETWEEN styles, so it is the one place
+        // that must keep more than one. Ours first; the rest are public styles
+        // that need no key and are useful for checking that an arbitrary URL
+        // loads, which is the point of the screen.
         val styles = arrayOf(
+            TestStyles.MAPMETRICS_DEMO,
             TestStyles.DEMOTILES,
             TestStyles.AMERICANA,
             TestStyles.OPENFREEMAP_LIBERTY,
-            TestStyles.OPENFREEMAP_BRIGHT,
             TestStyles.PROTOMAPS_LIGHT,
-            TestStyles.PROTOMAPS_DARK,
-            TestStyles.PROTOMAPS_GRAYSCALE,
-            TestStyles.PROTOMAPS_WHITE,
-            TestStyles.PROTOMAPS_BLACK
+            TestStyles.PROTOMAPS_DARK
         )
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, styles)
         urlInput.setAdapter(adapter)

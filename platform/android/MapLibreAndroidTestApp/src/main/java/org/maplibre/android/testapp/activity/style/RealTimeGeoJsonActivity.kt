@@ -62,7 +62,7 @@ class RealTimeGeoJsonActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(map: MapLibreMap) {
         maplibreMap = map
         maplibreMap.cameraPosition = CameraPosition.Builder().target(netherlands).zoom(6.0).build()
-        maplibreMap.setStyle(TestStyles.PROTOMAPS_WHITE) { style -> // add source
+        maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO) { style -> // add source
             ResourcesCompat.getDrawable(resources, R.drawable.ic_airplanemode_active_black, theme)
                 ?.let { style.addImage("plane", it) }
             // --8<-- [start:addSource]

@@ -26,6 +26,7 @@ import org.maplibre.android.testapp.R
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import org.maplibre.android.testapp.styles.TestStyles
 
 // # --8<-- [start:top]
 class JsonApiActivity : AppCompatActivity() {
@@ -52,7 +53,7 @@ class JsonApiActivity : AppCompatActivity() {
         mapView.getMapAsync { map ->
             maplibreMap = map
 
-            maplibreMap.setStyle("https://demotiles.maplibre.org/style.json")
+            maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO)
 
             // Fetch data from USGS
             getEarthQuakeDataFromUSGS()

@@ -50,7 +50,7 @@ open class SurfaceRecyclerViewActivity : AppCompatActivity() {
     class ItemAdapter(private val activity: SurfaceRecyclerViewActivity, private val inflater: LayoutInflater) : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
         private val items: List<Any> = listOf(
-            "one", "two", "three", MapItem(TestStyles.DEMOTILES), "four", "five", MapItem(TestStyles.DEMOTILES), "seven", "eight", "nine", "ten",
+            "one", "two", "three", MapItem(TestStyles.MAPMETRICS_DEMO), "four", "five", MapItem(TestStyles.MAPMETRICS_DEMO), "seven", "eight", "nine", "ten",
             "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
             "nineteen", "twenty", "twenty-one",
         )

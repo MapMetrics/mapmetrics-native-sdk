@@ -83,7 +83,7 @@ class ObserverActivity : AppCompatActivity(),
 
         mapView.getMapAsync {
             it.setStyle(
-                Style.Builder().fromUri(TestStyles.DEMOTILES)
+                Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO)
             )
             it.enableRenderingStatsView(true)
         }

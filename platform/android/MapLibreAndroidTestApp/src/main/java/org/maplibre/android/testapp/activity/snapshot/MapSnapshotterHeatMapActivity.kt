@@ -41,7 +41,7 @@ class MapSnapshotterHeatMapActivity : AppCompatActivity(), MapSnapshotter.Snapsh
                 override fun onGlobalLayout() {
                     container.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     Timber.i("Starting snapshot")
-                    val builder = Style.Builder().fromUri(TestStyles.AMERICANA)
+                    val builder = Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO)
                         .withSource(earthquakeSource!!)
                         .withLayerAbove(heatmapLayer, "water")
                     mapSnapshotter = MapSnapshotter(

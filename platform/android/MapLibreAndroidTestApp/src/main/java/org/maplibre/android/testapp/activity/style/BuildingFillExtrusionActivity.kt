@@ -41,7 +41,7 @@ class BuildingFillExtrusionActivity : AppCompatActivity() {
                 if (map != null) {
                     maplibreMap = map
                 }
-                maplibreMap.setStyle(TestStyles.OPENFREEMAP_BRIGHT) { style: Style ->
+                maplibreMap.setStyle(TestStyles.MAPMETRICS_DEMO) { style: Style ->
                     setupBuildings(style)
                     setupLight()
                 }

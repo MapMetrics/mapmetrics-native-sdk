@@ -48,7 +48,7 @@ class AnimatedSymbolLayerActivity : AppCompatActivity() {
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync {
             maplibreMap = it
-            it.setStyle(TestStyles.OPENFREEMAP_LIBERTY) { style ->
+            it.setStyle(TestStyles.MAPMETRICS_DEMO) { style ->
                 setupCars(style)
                 animateRandomRoutes(style)
                 animateTaxi(style)

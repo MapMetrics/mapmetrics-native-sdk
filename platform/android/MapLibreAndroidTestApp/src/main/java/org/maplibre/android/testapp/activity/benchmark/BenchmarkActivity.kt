@@ -44,6 +44,7 @@ import java.io.File
 import kotlin.collections.flatMap
 import kotlin.collections.toTypedArray
 import kotlin.coroutines.resume
+import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  * Benchmark using a [android.view.TextureView]
@@ -124,10 +125,10 @@ class BenchmarkActivity : AppCompatActivity() {
             ),
             styleURLs = listOf(
                 "https://external.xx.fbcdn.net/maps/vt/style/canterbury_1_0/?locale=en_US",
-                "https://americanamap.org/style.json",
+                TestStyles.MAPMETRICS_DEMO,
 //                "https://api.protomaps.com/styles/v2/light.json?key=e761cc7daedf832a",
-//                "https://tiles.versatiles.org/assets/styles/colorful.json",
-               "https://tiles.openfreemap.org/styles/bright"
+//                TestStyles.MAPMETRICS_DEMO,
+               TestStyles.MAPMETRICS_DEMO
             )
         )
     }

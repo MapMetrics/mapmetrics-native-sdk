@@ -31,7 +31,7 @@ class VectorTileActivity : AppCompatActivity() {
                     0
                 )
             )
-            it.setStyle(TestStyles.PROTOMAPS_GRAYSCALE) { style ->
+            it.setStyle(TestStyles.MAPMETRICS_DEMO) { style ->
                 // --8<-- [start:addTileSet]
                 val tileset = TileSet(
                     "openmaptiles",

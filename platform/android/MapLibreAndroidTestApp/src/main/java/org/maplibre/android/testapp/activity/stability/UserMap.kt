@@ -39,15 +39,15 @@ class UserMap : SupportMapFragment() {
         private val RANDOM = Random(RANDOM_SEED)
 
         private val STYLES = arrayListOf(
-            TestStyles.DEMOTILES,
-            TestStyles.AMERICANA,
-            TestStyles.OPENFREEMAP_LIBERTY,
-            TestStyles.OPENFREEMAP_BRIGHT,
-            TestStyles.PROTOMAPS_LIGHT,
-            TestStyles.PROTOMAPS_DARK,
-            TestStyles.PROTOMAPS_GRAYSCALE,
-            TestStyles.PROTOMAPS_WHITE,
-            TestStyles.PROTOMAPS_BLACK,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
+            TestStyles.MAPMETRICS_DEMO,
         )
 
         private val PLACES = arrayListOf(

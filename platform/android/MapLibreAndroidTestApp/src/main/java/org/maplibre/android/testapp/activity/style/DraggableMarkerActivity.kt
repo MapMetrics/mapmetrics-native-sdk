@@ -72,7 +72,7 @@ class DraggableMarkerActivity : AppCompatActivity() {
 
             maplibreMap.setStyle(
                 Style.Builder()
-                    .fromUri(TestStyles.PROTOMAPS_LIGHT)
+                    .fromUri(TestStyles.MAPMETRICS_DEMO)
                     .withImage(markerImageId, IconFactory.getInstance(this).defaultMarker().bitmap)
                     .withSource(source)
                     .withLayer(layer)

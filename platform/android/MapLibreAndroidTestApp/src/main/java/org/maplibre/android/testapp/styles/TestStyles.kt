@@ -13,12 +13,10 @@ object TestStyles {
      * Origin; native callers send no Origin and are allowed, which is why this
      * works here.
      *
-     * STAGING while the endpoint is only deployed there. Switch to
-     * https://gateway.mapmetrics-atlas.net/demo/style.json once it ships to
-     * production.
+     * Live on production since 2026-08-25.
      */
     const val MAPMETRICS_DEMO =
-        "https://gateway-mapatlas-staging.jim9710.workers.dev/demo/style.json"
+        "https://gateway.mapmetrics-atlas.net/demo/style.json"
 
     const val AMERICANA = "https://americanamap.org/style.json"
 

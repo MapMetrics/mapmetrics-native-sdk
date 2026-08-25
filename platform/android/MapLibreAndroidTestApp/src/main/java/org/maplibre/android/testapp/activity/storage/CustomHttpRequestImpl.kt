@@ -17,6 +17,7 @@ import org.maplibre.android.testapp.R
 import org.maplibre.android.testapp.utils.ApiKeyUtils
 import org.maplibre.android.testapp.utils.ExampleCustomModuleProviderImpl
 import timber.log.Timber
+import org.maplibre.android.testapp.styles.TestStyles
 
 /**
  * This example activity shows how to provide your own HTTP request implementation.
@@ -36,7 +37,7 @@ class CustomHttpRequestImplActivity : AppCompatActivity() {
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(
             OnMapReadyCallback { maplibreMap: MapLibreMap ->
-                maplibreMap.setStyle(Style.Builder().fromUri("https://demotiles.maplibre.org/style.json"))
+                maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO))
             }
         )
     }

@@ -42,7 +42,7 @@ class QueryRenderedFeaturesBoxCountActivity : AppCompatActivity() {
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync { maplibreMap: MapLibreMap ->
             this@QueryRenderedFeaturesBoxCountActivity.maplibreMap = maplibreMap
-            maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.AMERICANA))
+            maplibreMap.setStyle(Style.Builder().fromUri(TestStyles.MAPMETRICS_DEMO))
             selectionBox.setOnClickListener { _: View? ->
                 // Query
                 val top = selectionBox.top - mapView.top

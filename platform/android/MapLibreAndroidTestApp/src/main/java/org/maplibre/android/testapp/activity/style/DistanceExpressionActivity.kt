@@ -56,7 +56,7 @@ class DistanceExpressionActivity : AppCompatActivity() {
         val circle = TurfTransformation.circle(center, 150.0, TurfConstants.UNIT_METRES)
         maplibreMap.setStyle(
             Style.Builder()
-                .fromUri(TestStyles.OPENFREEMAP_BRIGHT)
+                .fromUri(TestStyles.MAPMETRICS_DEMO)
                 .withSources(
                     GeoJsonSource(
                         POINT_ID,
