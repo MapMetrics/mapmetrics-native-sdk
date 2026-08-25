@@ -3,6 +3,8 @@
 #include <mbgl/vulkan/upload_pass.hpp>
 #include <mbgl/vulkan/command_encoder.hpp>
 #include <mbgl/util/logging.hpp>
+#include <algorithm>
+#include <cstring>
 
 namespace mbgl {
 namespace vulkan {
@@ -140,8 +142,30 @@ void DynamicTexture::uploadImage(const uint8_t* pixelData, gfx::TextureHandle& t
         throw std::bad_alloc();
     }
 
-    vmaMapMemory(allocator, bufferAllocation->allocation, &bufferAllocation->mappedBuffer);
-    memcpy(bufferAllocation->mappedBuffer, pixelData, bufferInfo.size);
+    // MAP RESULT CHECKED, AND THE COPY BOUNDED BY THE ALLOCATION.
+    //
+    // vmaMapMemory can fail, and its result was ignored: mappedBuffer stays as
+    // it was and the memcpy below writes through it anyway. Crash seen on an
+    // Android emulator (Pixel_8a, API 36, arm64) -- SIGSEGV/SEGV_ACCERR inside
+    // __memcpy_aarch64_simd, called from Texture2D::uploadSubRegion, on the
+    // render thread, intermittently.
+    //
+    // The copy is also clamped to the size VMA actually allocated rather than
+    // the size requested. VMA should never return less, but the fault address
+    // in that crash sat past the start of the destination mapping, and a
+    // partially-uploaded texture is a far better outcome than writing outside
+    // it.
+    VmaAllocationInfo mappedInfo{};
+    vmaGetAllocationInfo(allocator, bufferAllocation->allocation, &mappedInfo);
+
+    if (vmaMapMemory(allocator, bufferAllocation->allocation, &bufferAllocation->mappedBuffer) != VK_SUCCESS ||
+        !bufferAllocation->mappedBuffer) {
+        mbgl::Log::Error(mbgl::Event::Render, "Vulkan dynamic texture mapping failed; skipping upload");
+        return;
+    }
+
+    const size_t copySize = std::min(static_cast<size_t>(bufferInfo.size), static_cast<size_t>(mappedInfo.size));
+    memcpy(bufferAllocation->mappedBuffer, pixelData, copySize);
 
     textureBuffersToUpload.emplace(texHandle, std::move(bufferAllocation));
 

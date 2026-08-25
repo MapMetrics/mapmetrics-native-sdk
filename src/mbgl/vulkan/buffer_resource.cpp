@@ -99,9 +99,14 @@ BufferResource::BufferResource(
         throw std::bad_alloc();
     }
 
-    vmaMapMemory(allocator, bufferAllocation->allocation, &bufferAllocation->mappedBuffer);
+    // Result checked: update() below writes through mappedBuffer, so a failed
+    // map would be a write through a stale or null pointer.
+    if (vmaMapMemory(allocator, bufferAllocation->allocation, &bufferAllocation->mappedBuffer) != VK_SUCCESS) {
+        mbgl::Log::Error(mbgl::Event::Render, "Vulkan buffer mapping failed");
+        bufferAllocation->mappedBuffer = nullptr;
+    }
 
-    if (data) {
+    if (data && bufferAllocation->mappedBuffer) {
         update(data, size, 0);
     }
 
