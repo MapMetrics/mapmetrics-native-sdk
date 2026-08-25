@@ -60,10 +60,16 @@ android {
 
     defaultConfig {
         compileSdk = 34
-        // Vulkan is the default renderer (MapLibre Android 13.0.0 onward) and
-        // Vulkan 1.0 first shipped in Android 7.0. A lower floor would advertise
-        // support for devices the default artifact cannot render on at all.
-        // Consumers targeting API 23 must use the -opengl artifact.
+        // Raised to 24 when Vulkan was the default renderer, because Vulkan 1.0
+        // first shipped in Android 7.0. As of 2.0.3 the default artefact is
+        // OpenGL ES, which runs on 21, so this floor is no longer required by
+        // the default build -- it is kept only to avoid narrowing the supported
+        // range for existing 2.0.x consumers mid-series.
+        //
+        // NOTE: minSdk is declared per MODULE, not per flavour, so every
+        // artefact inherits this number -- -opengl included. Dropping to a
+        // lower floor is a whole-module decision, not something a consumer can
+        // opt into by picking a different artefact.
         minSdk = 24
         buildConfigField("String", "GIT_REVISION_SHORT", "\"${getGitRevision()}\"")
         buildConfigField("String", "GIT_REVISION", "\"${getGitRevision(false)}\"")
