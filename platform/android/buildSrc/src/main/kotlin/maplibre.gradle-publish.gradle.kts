@@ -249,8 +249,28 @@ fun configureMavenPublication(
 }
 
 afterEvaluate {
-    configureMavenPublication("vulkan", "defaultrelease", "", "")
-    configureMavenPublication("vulkan", "defaultdebug", "-debug", " (Debug)", "Debug")
+    // THE DEFAULT ARTEFACT IS THE OPENGL BUILD.
+    //
+    // It was vulkan, and vulkan DOES NOT WORK ON THE ANDROID EMULATOR.
+    // Measured on a Pixel_8a AVD, API 36, arm64, default host-GPU mode:
+    //
+    //   test app + vulkan   SIGSEGV in RenderThread, instant crash
+    //   flutter  + vulkan   no crash, but renders NOTHING -- blank view
+    //   either   + opengl   renders correctly
+    //
+    // Both apps bundle the validation layers and both fail, so that is not the
+    // cause; TextureView instead of SurfaceView crashes too. The renderer is a
+    // compile-time product flavour, so there is no runtime fallback to reach
+    // for -- whichever flavour ships in the default artefact is what a consumer
+    // gets, forever, on every device.
+    //
+    // An emulator is where nearly every developer runs an SDK first. A default
+    // that crashes there fails at the first thing anyone does, so the default
+    // has to be the flavour that works everywhere. Vulkan remains available and
+    // fully supported as `mapmetrics-native-sdk-vulkan` for real hardware,
+    // where it is the faster path.
+    configureMavenPublication("opengl", "defaultrelease", "", "")
+    configureMavenPublication("opengl", "defaultdebug", "-debug", " (Debug)", "Debug")
     configureMavenPublication("vulkan", "vulkanrelease", "-vulkan", "(Vulkan)")
     configureMavenPublication("vulkan", "vulkandebug", "-vulkan-debug", "(Vulkan, Debug)", "Debug")
     // Right now this is the same as the first, but in the future we might release a major version
