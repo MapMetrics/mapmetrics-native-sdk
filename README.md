@@ -15,6 +15,63 @@ This project originated as a fork of Mapbox GL Native, before their switch to a 
   <img src="https://user-images.githubusercontent.com/649392/211550776-8779041a-7c12-4bed-a7bd-c2ec80af2b29.png" alt="Android device with MapMetrics" width="24%">   <img src="https://user-images.githubusercontent.com/649392/211550762-0f42ebc9-05ab-4d89-bd59-c306453ea9af.png" alt="iOS device with MapMetrics" width="25%">
 </p>
 
+## Map styles
+
+### Rendering a map with no API key
+
+The gateway serves a **demo style** that needs no credential:
+
+```
+https://gateway.mapmetrics-atlas.net/demo/style.json
+```
+
+Every example app in this repository uses it, which is why they run straight
+from a clean checkout. It is rate-limited, capped at zoom 12 and watermarked
+— enough to confirm a setup works, deliberately not enough to ship. Get a real
+key at https://mapatlas.eu.
+
+### Where the style is configured
+
+One constant per platform sits behind every example:
+
+| Platform | File | Constant |
+|---|---|---|
+| Android | `platform/android/MapLibreAndroidTestApp/src/main/java/org/maplibre/android/testapp/styles/TestStyles.kt` | `MAPMETRICS_DEMO` |
+| iOS (Swift) | `platform/ios/app-swift/Sources/Styles.swift` | `MAPMETRICS_DEMO_STYLE` |
+| iOS (ObjC) | `platform/ios/app/MBXViewController.mm`, `MBXSnapshotsViewController.m` | URL literal — no shared constant |
+
+Some examples deliberately do **not** use the demo style, each for a reason
+recorded next to it: the offline examples (bulk region download is exactly
+what the demo's rate limit and zoom cap exist to refuse), `PMTilesExample`
+(different protocol), `CameraSliderExample` (satellite imagery we do not
+serve), and `DDSCircleLayerExample`'s data source (OpenMapTiles schema, while
+the demo tiles are Protomaps).
+
+### A caveat worth knowing
+
+If your code sets **no** style at all, you do not get the MapMetrics demo —
+you get MapLibre's. `TileServerOptions::DefaultConfiguration()` returns
+`MapLibreConfiguration()`, based at `https://demotiles.maplibre.org`
+(`src/mbgl/util/tile_server_options.cpp`). That default is shared by iOS and
+Android. Always name a style explicitly until that is changed.
+
+## Building the example apps
+
+The iOS apps build for the **simulator with no Apple Developer account** — a
+provisioning profile is required only for device builds:
+
+```bash
+bazel build //platform/ios:App --//:renderer=metal --ios_multi_cpus=sim_arm64
+```
+
+Use `--ios_multi_cpus`, not `--platforms`: `ios_application` applies its own
+platform transition, so `--platforms` does not reach the rule and a build you
+believe is targeting a device may quietly be a simulator build.
+
+For device builds, copy `platform/darwin/bazel/example_config.bzl` to
+`config.bzl` (gitignored) and set the profile name and team ID to a profile
+installed on your machine.
+
 ## Getting Started
 
 ### Android
